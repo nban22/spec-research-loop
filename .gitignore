@@ -6,6 +6,9 @@
 # claude code local overrides
 .claude/settings.local.json
 
+# state tạm của hook prompt-guard (prompt nguyên văn + snapshot git đầu turn)
+.claude/.state/
+
 node_modules/
 dist/
 build/

@@ -2,5 +2,46 @@
   "enableAllProjectMcpServers": true,
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt-guard.mjs\" capture",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt-guard.mjs\" audit",
+            "timeout": 20,
+            "statusMessage": "Prompt audit…"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt-guard.mjs\" stop",
+            "timeout": 30,
+            "statusMessage": "Prompt audit + dev-log…"
+          }
+        ]
+      }
+    ]
   }
 }

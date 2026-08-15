@@ -1,0 +1,16 @@
+{
+  "prompt-audit": {
+    "enabled": true,
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/prompt-guard.mjs stop --host=antigravity",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
