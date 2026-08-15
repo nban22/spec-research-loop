@@ -1,0 +1,12 @@
+# secrets — không bao giờ commit
+.env
+.env.*
+!.env.example
+
+# claude code local overrides
+.claude/settings.local.json
+
+node_modules/
+dist/
+build/
+.next/
