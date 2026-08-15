@@ -18,10 +18,15 @@ claude plugin install typescript-lsp@claude-plugins-official
 
 Hoặc gõ `/plugin install typescript-lsp@claude-plugins-official` trong session, rồi `/reload-plugins`.
 
+(`.claude/settings.json` đã khai `enabledPlugins`, nên thường Claude Code tự cài plugin khi mở repo. Nhưng **binary npm ở bước 1 thì bắt buộc phải tự cài** — plugin chỉ là lớp cấu hình.)
+
 ## 3. Approve MCP server
 
-Mở Claude Code ở root repo → nó hỏi trust `.mcp.json` (server `context7`) → **Allow**.
-Lỡ bấm Deny thì chạy `claude mcp reset-project-choices` rồi mở lại.
+**Không cần làm gì.** `.claude/settings.json` đã bật `enableAllProjectMcpServers: true`, nên mọi server trong `.mcp.json` tự được duyệt — kể cả khi sau này thêm server mới.
+
+Lần đầu mở repo, Claude Code vẫn hỏi *"Do you trust the files in this folder?"* → **Yes**. Đây là prompt của chính thư mục, không bỏ được, và bấm Yes một lần là xong vĩnh viễn.
+
+Nếu vẫn thấy `⏸ Pending approval` (do trước đó lỡ bấm Deny): `claude mcp reset-project-choices` rồi mở lại.
 
 Kiểm tra: `claude mcp list` phải thấy `context7 - ✓ Connected` và `next-devtools - ✓ Connected`.
 
