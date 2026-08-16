@@ -174,7 +174,13 @@ Các mục "Khuyến khích sáng tạo": concept map, citation graph, timeline 
 
 **Cẩn thận với nhóm metric kỹ thuật** (JSON validity, latency, token cost, unsupported claim rate, claim precision/recall, contradiction rate): chúng xuất hiện ở Bước 6, tức là **nội dung spec mà hệ thống sinh ra cho user**, không phải NFR của website bạn. Nhưng tái sử dụng chúng làm metric cho §7 là hoàn toàn hợp lý và ăn điểm.
 
-**Không có yêu cầu về:** concurrent users, response-time SLA, security/auth nâng cao, accessibility, mobile responsive, uptime, i18n. **Đừng tốn thời gian vào những thứ này.**
+**Không có yêu cầu về:** concurrent users, response-time SLA, security/auth nâng cao, accessibility nâng cao, uptime, i18n. **Đừng tốn thời gian vào những thứ này.**
+
+> **Cập nhật 2026-08-16 — responsive mobile đã chuyển thành BẮT BUỘC.** Dòng trên trước đây có liệt kê
+> "mobile responsive" vào danh sách bỏ qua. Đó là nhận định đúng về *đề bài* (đề không đòi) nhưng sai
+> về *dự án*: chủ dự án quyết định app phải dùng được trên điện thoại lẫn desktop. Đề không cấm, nên
+> đây là quyết định được phép. Ràng buộc kỹ thuật ở `docs/STACK.md` §5, thiết kế ở
+> `docs/DESIGN_SYSTEM.md` §6. Auth cũng tương tự — xem `docs/STACK.md` §11.
 
 ---
 

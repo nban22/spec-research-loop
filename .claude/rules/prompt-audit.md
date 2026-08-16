@@ -27,7 +27,7 @@ Mỗi file mở đầu bằng block:
 ---
 id: judge_gap
 version: 1
-model: claude-opus-5 | deepseek-chat
+model: deepseek-v4-pro | deepseek-v4-flash
 inputs: [spec_json, sources_json]
 output: JSON schema — xem cuối file
 updated: YYYY-MM-DD
