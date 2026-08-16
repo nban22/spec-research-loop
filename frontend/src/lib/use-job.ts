@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { api, qk } from './api';
+import { api, apiUrl, qk } from './api';
 import type { ApiJob } from './types';
 
 export type JobView = {
@@ -53,7 +53,11 @@ export function useJob(jobId: string | null, onDone?: () => void): JobView {
 
   useEffect(() => {
     if (!jobId) return;
-    const es = new EventSource(`/api/jobs/${jobId}/stream`);
+    // `withCredentials` là bắt buộc khi gọi thẳng sang api.<domain>: không có nó thì
+    // EventSource **không gửi cookie** và server trả 401 — luồng tiến độ chết im lặng.
+    const es = new EventSource(apiUrl(`/jobs/${jobId}/stream`), {
+      withCredentials: true,
+    });
 
     const bump = () => {
       setConnectionLost(false);

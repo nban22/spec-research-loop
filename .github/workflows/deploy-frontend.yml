@@ -1,0 +1,112 @@
+name: Build & deploy frontend
+
+# SpecResearch Loop là MONOREPO → image kèm hậu tố service, và `paths:` lọc để sửa backend
+# không kéo theo build lại frontend.
+#
+# QUAN TRỌNG: NEXT_PUBLIC_* được nướng vào bundle JS lúc BUILD, nên prod và beta là hai image
+# THỰC SỰ KHÁC NHAU (khác API base). Chúng là giá trị CÔNG KHAI (nhìn thấy trong bundle đã ship)
+# nên để ở environment *Variables* chứ không phải Secrets — dạng chữ thường, tra được trong
+# Environments UI, và không bị che thành `***` trong log build.
+on:
+  push:
+    branches: [main, beta]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+      - '.dockerignore'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-frontend
+
+jobs:
+  # ---------- 1. Build & push ----------
+  build:
+    runs-on: ubuntu-latest
+    # Build cần NEXT_PUBLIC_* theo từng environment → phải bind environment ngay ở job build.
+    environment: ${{ github.ref_name == 'main' && 'production' || 'beta' }}
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.vars.outputs.image }}
+      channel: ${{ steps.vars.outputs.channel }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve channel + image tags
+        id: vars
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            channel=prod; moving=latest
+          else
+            channel=beta; moving=beta
+          fi
+          base=$(echo "${REGISTRY}/${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+          sha=${GITHUB_SHA::7}
+          {
+            echo "channel=${channel}"
+            echo "image=${base}:${channel}-${sha}"
+            echo "tags=${base}:${channel}-${sha},${base}:${moving}"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # NEXT_PUBLIC_API_BASE quyết định FE gọi thẳng api.<domain> hay đi qua rewrite proxy.
+      # Để trống ⇒ cùng origin, không cần CORS. Đặt URL ⇒ gọi thẳng, cần CORS + cookie Domain.
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend/Dockerfile
+          push: true
+          tags: ${{ steps.vars.outputs.tags }}
+          build-args: |
+            NEXT_PUBLIC_API_BASE=${{ vars.NEXT_PUBLIC_API_BASE }}
+            BACKEND_ORIGIN=${{ vars.BACKEND_ORIGIN || 'http://backend:3001' }}
+          cache-from: type=gha,scope=frontend-${{ steps.vars.outputs.channel }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ steps.vars.outputs.channel }}
+
+  # ---------- 2. SSH lên server, pull image đã ghim, restart ----------
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ needs.build.outputs.channel == 'prod' && 'production' || 'beta' }}
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            set -e
+            # APP_DIR là gốc chung của dự án trên server; mỗi service có compose riêng
+            # trong thư mục con (backend/ có thêm .env, frontend/ thì không).
+            cd "${{ vars.APP_DIR }}/frontend"
+            # GHCR_PULL_USER là Variable công khai, mặc định về owner của repo (khớp namespace
+            # của image) để không bao giờ rỗng và nuốt mất flag phía sau — chính trường hợp
+            # username rỗng làm docker bỏ --password-stdin rồi chết với thông báo khó hiểu
+            # "cannot perform an interactive login from a non-TTY device".
+            GHCR_USER="${{ vars.GHCR_PULL_USER || github.repository_owner }}"
+            GHCR_TOKEN="${{ secrets.GHCR_PULL_TOKEN }}"
+            if [ -n "$GHCR_TOKEN" ]; then
+              echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            else
+              # Không có token thì vẫn đi tiếp: server có thể đã đăng nhập sẵn, hoặc package
+              # để public. Nếu cả hai đều không đúng, lệnh pull ngay dưới sẽ báo lỗi rõ ràng.
+              echo "GHCR_PULL_TOKEN chưa đặt — dùng thông tin đăng nhập sẵn có trên server."
+            fi
+            export FRONTEND_IMAGE="${{ needs.build.outputs.image }}"
+            docker compose pull frontend
+            docker compose up -d frontend
+            docker image prune -f

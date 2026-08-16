@@ -12,7 +12,7 @@ import { Panel } from '@/components/panel';
 import { ExportBar, HowItWorksList, SpecChecklist } from '@/components/spec-views';
 import { SupportTag } from '@/components/support-tag';
 import { WizardShell } from '@/components/wizard-shell';
-import { ApiError, api } from '@/lib/api';
+import { ApiError, api, apiUrl } from '@/lib/api';
 import {
   useGate,
   useJobAction,
@@ -65,7 +65,7 @@ export function Step5({ projectId }: { projectId: string }) {
       );
       // Tải bằng thẻ <a download>: cookie httpOnly vẫn tự đi kèm, và trang không rời SPA.
       const a = document.createElement('a');
-      a.href = `/api/spec-versions/${versionId}/export/${res.artifactId}`;
+      a.href = apiUrl(`/spec-versions/${versionId}/export/${res.artifactId}`);
       a.download = res.filename;
       document.body.appendChild(a);
       a.click();

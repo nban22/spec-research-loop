@@ -1,0 +1,28 @@
+# Build context là GỐC REPO (cả hai Dockerfile), nên file này phải phủ cả hai project.
+node_modules
+**/node_modules
+**/dist
+**/dist-eval
+**/.next
+**/.cache
+**/coverage
+
+# Bí mật — không bao giờ vào image (image nằm trên registry)
+.env
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+.github
+.claude
+.agents
+
+# Không cần lúc chạy
+docs
+prompts/dev-log
+backend/eval/results
+backend/test
+**/*.spec.ts
+**/*.md
+!prompts/*.md

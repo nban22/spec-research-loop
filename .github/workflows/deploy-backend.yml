@@ -1,0 +1,139 @@
+name: Build & deploy backend
+
+# SpecResearch Loop là MONOREPO (backend + frontend chung một repo), khác với kaikunai.
+# Hai hệ quả so với pattern gốc:
+#   1. Tên image phải kèm hậu tố service → ghcr.io/<owner>/<repo>-backend
+#   2. `paths:` lọc để sửa frontend không kéo theo build lại backend
+#
+# Branch → environment mapping:
+#   main → channel "prod"  (tag di động `latest`) → /opt/specresearch/prod
+#   beta → channel "beta"  (tag di động `beta`)   → /opt/specresearch/beta
+# Mỗi lần build đều đẩy thêm tag bất biến `<channel>-<shortsha>`; job deploy ghim ĐÚNG tag đó
+# để deploy luôn tái lập được / rollback được.
+on:
+  push:
+    branches: [main, beta]
+    paths:
+      - 'backend/**'
+      - 'prompts/**' # deliverable #5 nằm trong image backend
+      - '.github/workflows/deploy-backend.yml'
+      - '.dockerignore'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-backend
+
+jobs:
+  # ---------- 1. Build & push ----------
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.vars.outputs.image }}
+      channel: ${{ steps.vars.outputs.channel }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve channel + image tags
+        id: vars
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            channel=prod; moving=latest
+          else
+            channel=beta; moving=beta
+          fi
+          base=$(echo "${REGISTRY}/${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+          sha=${GITHUB_SHA::7}
+          {
+            echo "channel=${channel}"
+            echo "image=${base}:${channel}-${sha}"
+            echo "tags=${base}:${channel}-${sha},${base}:${moving}"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # context LÀ GỐC REPO, không phải ./backend — Dockerfile cần COPY `prompts/`,
+      # là thư mục ANH EM của backend/. Thiếu nó thì app boot bình thường nhưng mọi lời gọi
+      # LLM ném ENOENT (PromptLoaderService không tìm thấy prompts/).
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ steps.vars.outputs.tags }}
+          cache-from: type=gha,scope=backend-${{ steps.vars.outputs.channel }}
+          cache-to: type=gha,mode=max,scope=backend-${{ steps.vars.outputs.channel }}
+
+  # ---------- 2. Chạy migration TRƯỚC khi đổi container ----------
+  # Chạy từ runner chứ không phải trong container app, vì hai lý do:
+  #   - image runtime chỉ có prod deps, không có Prisma CLI (nó là devDependency)
+  #   - nhét `migrate` vào CMD thì nhiều replica sẽ đua nhau migrate
+  # Neon truy cập được từ internet nên runner nói chuyện thẳng với DB được.
+  migrate:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ needs.build.outputs.channel == 'prod' && 'production' || 'beta' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install Prisma CLI
+        working-directory: backend
+        run: npm ci --no-audit --no-fund --ignore-scripts
+      # `prisma.config.ts` nạp .env bằng tay nhưng bỏ qua key đã có sẵn trong process.env,
+      # nên DATABASE_URL truyền qua env ở đây được dùng đúng.
+      - name: prisma migrate deploy
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate deploy
+
+  # ---------- 3. SSH lên server, pull image đã ghim, restart ----------
+  deploy:
+    needs: [build, migrate]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.build.outputs.channel == 'prod' && 'production' || 'beta' }}
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            set -e
+            # APP_DIR là gốc chung của dự án trên server; mỗi service có compose riêng
+            # trong thư mục con (backend/ có thêm .env, frontend/ thì không).
+            cd "${{ vars.APP_DIR }}/backend"
+            # GHCR_PULL_USER là Variable công khai, mặc định về owner của repo (khớp namespace
+            # của image) để không bao giờ rỗng và nuốt mất flag phía sau — chính trường hợp
+            # username rỗng làm docker bỏ --password-stdin rồi chết với thông báo khó hiểu
+            # "cannot perform an interactive login from a non-TTY device".
+            GHCR_USER="${{ vars.GHCR_PULL_USER || github.repository_owner }}"
+            GHCR_TOKEN="${{ secrets.GHCR_PULL_TOKEN }}"
+            if [ -n "$GHCR_TOKEN" ]; then
+              echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            else
+              # Không có token thì vẫn đi tiếp: server có thể đã đăng nhập sẵn, hoặc package
+              # để public. Nếu cả hai đều không đúng, lệnh pull ngay dưới sẽ báo lỗi rõ ràng.
+              echo "GHCR_PULL_TOKEN chưa đặt — dùng thông tin đăng nhập sẵn có trên server."
+            fi
+            export BACKEND_IMAGE="${{ needs.build.outputs.image }}"
+            docker compose pull backend
+            docker compose up -d backend
+            docker image prune -f

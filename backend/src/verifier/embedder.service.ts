@@ -49,10 +49,18 @@ export class EmbedderService implements OnModuleInit {
       const mod = await dynamicImport<TransformersModule>(
         '@xenova/transformers',
       );
-      // Cache model vào thư mục app để lần chạy sau không phụ thuộc mạng.
+      /**
+       * Cache model để lần chạy sau không phụ thuộc mạng.
+       *
+       * Đường dẫn lấy từ `TRANSFORMERS_CACHE` và **phải tuyệt đối khi chạy trong container** —
+       * đường dẫn tương đối bám theo `cwd`, nên chỉ cần đổi thư mục làm việc là model bị tải lại
+       * từ đầu (~90 MB), hoặc chết hẳn nếu máy chủ không ra được internet.
+       * Dockerfile nướng sẵn model vào image ở đúng thư mục này.
+       */
       if (mod.env) {
         mod.env.allowLocalModels = false;
-        mod.env.cacheDir = '.cache/transformers';
+        mod.env.cacheDir =
+          process.env.TRANSFORMERS_CACHE ?? '.cache/transformers';
       }
       this.extractor = await mod.pipeline('feature-extraction', MODEL_ID);
       this.logger.log(`Model embedding sẵn sàng sau ${Date.now() - t0}ms.`);

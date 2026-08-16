@@ -1,0 +1,39 @@
+# Đặt ở server: /opt/outsource/spec-research-loop/frontend/docker-compose.yml
+# KHÔNG có `.env` — frontend không giữ bí mật nào. Mọi giá trị công khai (`NEXT_PUBLIC_*`)
+# đã được nướng vào bundle lúc BUILD, truyền qua build-arg từ GitHub Actions variables.
+#
+# nginx trên host proxy vào cổng 8111 đã map ra ngoài ở đây.
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/nban22/spec-research-loop-frontend:latest}
+    container_name: spec-research-loop-frontend
+    restart: unless-stopped
+    pull_policy: always
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      HOSTNAME: '0.0.0.0'
+      # Chỉ dùng cho `rewrites()` — đọc lúc server khởi động. Ở cấu hình hiện tại trình duyệt gọi
+      # thẳng https://api.dsa-bus-booking.io.vn (NEXT_PUBLIC_API_BASE), nên đường proxy này chỉ là
+      # lối dự phòng; trỏ ra domain công khai vì backend nằm ở compose project KHÁC, không chung
+      # network nội bộ.
+      BACKEND_ORIGIN: https://api.dsa-bus-booking.io.vn
+    ports:
+      - '8111:3000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'

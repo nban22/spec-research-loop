@@ -15,9 +15,27 @@ async function bootstrap(): Promise<void> {
   // **Không** dùng `ValidationPipe` của Nest: nó đòi `class-validator`, mà STACK §8 đã loại gói đó.
   // Zod là hệ validation duy nhất, gắn tại từng handler bằng `ZodBody` (backend/CLAUDE.md §3).
 
-  // FE và BE **cùng origin** nhờ `rewrites()` của Next.js, nên không cần CORS ở local.
-  // Vẫn bật `credentials` cho trường hợp gọi thẳng :3001 lúc dev/curl.
-  app.enableCors({ origin: true, credentials: true });
+  /**
+   * Ở local, FE và BE **cùng origin** nhờ `rewrites()` của Next.js nên CORS gần như không dùng tới.
+   * Khi deploy tách `app.example.com` / `api.example.com` thì nó trở thành bắt buộc.
+   *
+   * `CORS_ORIGINS` để trống ⇒ phản chiếu origin của request (tiện lúc dev). Khi deploy **phải**
+   * liệt kê rõ: CORS có `credentials: true` mà để mở nghĩa là **bất kỳ trang web nào** cũng gọi
+   * được API kèm cookie của người dùng đang đăng nhập.
+   */
+  const allowedOrigins = config.get('CORS_ORIGINS', { infer: true });
+  app.enableCors({
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+    credentials: true,
+  });
+  if (
+    allowedOrigins.length === 0 &&
+    config.get('NODE_ENV', { infer: true }) === 'production'
+  ) {
+    new Logger('Bootstrap').warn(
+      'CORS_ORIGINS đang để trống ở production — API nhận cookie từ mọi origin. Hãy khai báo danh sách origin.',
+    );
+  }
 
   const port = config.get('PORT', { infer: true });
   await app.listen(port);

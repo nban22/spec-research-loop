@@ -1,6 +1,24 @@
 import { messageOf } from './error-code';
 
 /**
+ * Gốc của API — **thích ứng theo môi trường**, quyết định lúc build.
+ *
+ * - Để trống (mặc định, và là cấu hình local): dùng đường dẫn tương đối `/api/*`, để
+ *   `rewrites()` của Next proxy sang backend ⇒ trình duyệt thấy **cùng origin**, không CORS.
+ * - Đặt `NEXT_PUBLIC_API_BASE=https://api.example.com`: gọi thẳng backend. Bớt được một chặng
+ *   proxy cho luồng SSE dài ~90 giây, đổi lại cần CORS + cookie có `Domain` ở phía backend.
+ *
+ * `NEXT_PUBLIC_*` được **nướng vào bundle lúc build**, không đọc lúc chạy — nên nó phải là
+ * `--build-arg` trong Dockerfile, không phải biến môi trường của container.
+ */
+export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? '').replace(/\/+$/, '');
+
+/** Dựng URL tuyệt đối cho những chỗ không đi qua `fetch` — ví dụ `EventSource`, link tải file. */
+export function apiUrl(path: string): string {
+  return API_BASE ? `${API_BASE}${path}` : `/api${path}`;
+}
+
+/**
  * Client duy nhất đi ra API. Cấm `fetch()` trực tiếp trong component (frontend/CLAUDE.md §3).
  * Đường dẫn luôn tương đối `/api/...` — Next `rewrites()` chuyển sang backend, nên FE và BE
  * cùng origin và cookie httpOnly tự đi kèm.
@@ -22,7 +40,7 @@ let refreshing: Promise<boolean> | null = null;
 
 async function tryRefresh(): Promise<boolean> {
   refreshing ??= (async () => {
-    const res = await fetch('/api/auth/refresh', {
+    const res = await fetch(apiUrl('/auth/refresh'), {
       method: 'POST',
       credentials: 'include',
     });
@@ -52,7 +70,7 @@ async function request<T>(
   body?: unknown,
   retried = false,
 ): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(apiUrl(path), {
     method,
     credentials: 'include',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,

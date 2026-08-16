@@ -1,0 +1,50 @@
+# Đặt ở server: /opt/outsource/spec-research-loop/backend/docker-compose.yml
+# Cạnh nó là file `.env` chứa bí mật (KHÔNG commit, KHÔNG nằm trong image).
+#
+# nginx trên host proxy vào cổng 8110 đã map ra ngoài ở đây.
+services:
+  backend:
+    # Mặc định là tag di động; workflow ghi đè bằng tag bất biến `<channel>-<sha>` lúc deploy.
+    image: ${BACKEND_IMAGE:-ghcr.io/nban22/spec-research-loop-backend:latest}
+    container_name: spec-research-loop-backend
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: '3001'
+
+      # ── Cookie: hai host CÙNG registrable domain ⇒ trình duyệt coi là *same-site* ⇒
+      #    giữ được SameSite=Lax (vẫn chống CSRF). KHÔNG cần hạ xuống None.
+      COOKIE_DOMAIN: .dsa-bus-booking.io.vn
+      COOKIE_SAMESITE: lax
+      COOKIE_SECURE: 'true'
+
+      # ── CORS phải ghi rõ: credentials=true mà để mở nghĩa là mọi trang web đều gọi được API
+      #    kèm cookie của người dùng đang đăng nhập.
+      CORS_ORIGINS: https://dsa-bus-booking.io.vn
+
+      PROMPTS_DIR: /app/prompts
+      TRANSFORMERS_CACHE: /app/.cache/transformers
+    ports:
+      - '8110:3001'
+    # Chromium cần /dev/shm lớn; mặc định 64 MB làm tab chết giữa lúc render PDF.
+    shm_size: '1gb'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3001/health').then(r=>r.json()).then(j=>process.exit(j.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
