@@ -1,0 +1,17 @@
+{
+  // Script eval biên dịch bằng **chính tsc của project** rồi chạy bằng node.
+  //
+  // Vì sao không chạy thẳng bằng `tsx` như STACK §0 ghi: `tsx` dựa trên esbuild, mà esbuild
+  // **không** phát `emitDecoratorMetadata` — thiếu metadata đó thì Nest không suy ra được kiểu
+  // tham số constructor và toàn bộ DI hỏng (`ConfigService` là `undefined`).
+  // `ts-node` thì vướng chỗ khác: client Prisma 7 sinh ra import kiểu `./enums.js`, CJS của
+  // ts-node không map ngược về `.ts` được.
+  // Biên dịch trước là cách duy nhất dùng đúng một toolchain với app, không thêm dependency nào.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-eval",
+    "noEmit": false
+  },
+  "include": ["src/**/*", "eval/**/*"],
+  "exclude": ["node_modules", "dist", "dist-eval", "**/*.spec.ts"]
+}

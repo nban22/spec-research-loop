@@ -1,0 +1,623 @@
+// ERD do docs/ARCHITECTURE.md §2 định nghĩa. File này chỉ hiện thực hoá.
+// Field giữ snake_case đúng như backend/CLAUDE.md §1 — không đổi sang camelCase ở tầng nào.
+// Enum phải khớp 1-1 với zod enum ở src/contracts/enums.ts (STACK §3.1 luật 1).
+
+// Prisma 7: generator là `prisma-client` (không có `-js`), `output` bắt buộc,
+// và URL kết nối nằm ở `prisma.config.ts` chứ không ở block `datasource`.
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- enums
+
+enum ProjectStep {
+  S1
+  S2
+  S3
+  S4
+  S5
+}
+
+enum ProjectStatus {
+  DRAFT
+  IN_PROGRESS
+  FINAL
+}
+
+enum Arm {
+  B1
+  B2
+  SYS
+  SYS_NO_VERIFY
+}
+
+enum SpecVersionStatus {
+  DRAFT
+  UNDER_REVIEW
+  ACCEPTED
+  FINAL
+}
+
+enum CardType {
+  PROBLEM
+  RESEARCH_QUESTION
+  GAP
+  CONTRIBUTION
+  CLAIM
+  EVIDENCE
+  CONSTRAINT
+  OPEN_QUESTION
+}
+
+enum CardStatus {
+  CONFIRMED
+  PROPOSED
+  MISSING
+  AMBIGUOUS
+  UNSUPPORTED
+  CONFLICT
+}
+
+enum CardOrigin {
+  GENERATOR
+  USER
+  JUDGE_FIX
+}
+
+// Không tồn tại giá trị LLM — kiểu dữ liệu là chỗ chặn rủi ro "LLM bịa paper" (ARCHITECTURE §2.4).
+enum SourceProvider {
+  SEMANTIC_SCHOLAR
+  OPENALEX
+  ARXIV
+  CROSSREF
+}
+
+enum SupportLabel {
+  SUPPORTED
+  WEAK
+  UNSUPPORTED
+}
+
+enum Entailment {
+  ENTAILS
+  PARTIAL
+  NOT_ENTAILED
+  CONTRADICTS
+}
+
+enum JudgeKey {
+  J1
+  J2
+  J3
+  J4
+  J5
+}
+
+enum JudgeRunStatus {
+  OK
+  FAILED
+}
+
+enum Severity {
+  CRITICAL
+  MAJOR
+  MINOR
+}
+
+enum IssueGroupStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum DecisionActor {
+  USER
+  SCRIPTED
+}
+
+enum JobKind {
+  ANALYZE
+  SEARCH
+  RELATED_WORK
+  GENERATE
+  JUDGE
+  VERIFY
+  EXPORT
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum LlmPurpose {
+  PARAPHRASE
+  DECOMPOSE
+  RELATED_WORK
+  GAP
+  CLAIM
+  EXPERIMENT
+  OPTIONS
+  JUDGE
+  ENTAILMENT
+  AUDITOR
+  B1_SINGLE_SHOT
+}
+
+enum ExportFormat {
+  MD
+  PDF
+}
+
+// ---------------------------------------------------------------- auth
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  display_name  String
+  created_at    DateTime @default(now())
+
+  refresh_tokens RefreshToken[]
+  projects       Project[]
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  user_id    String
+  token_hash String
+  expires_at DateTime
+  revoked_at DateTime?
+  created_at DateTime  @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([token_hash])
+}
+
+// ---------------------------------------------------------------- lõi
+
+model Project {
+  id                      String        @id @default(uuid())
+  user_id                 String
+  title                   String
+  raw_idea                String
+  domain                  String?
+  step                    ProjectStep   @default(S1)
+  status                  ProjectStatus @default(DRAFT)
+  current_spec_version_id String?
+  arm                     Arm           @default(SYS)
+  verifier_gate           Boolean       @default(true)
+  judge_round             Int           @default(0)
+  created_at              DateTime      @default(now())
+  updated_at              DateTime      @updatedAt
+
+  user           User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  spec_versions  SpecVersion[] @relation("ProjectVersions")
+  sources        Source[]
+  decisions      Decision[]
+  job_runs       JobRun[]
+  llm_calls      LlmCall[]
+  eval_runs      EvalRun[]
+
+  @@index([user_id])
+}
+
+model SpecVersion {
+  id                      String            @id @default(uuid())
+  project_id              String
+  version_no              Int
+  parent_version_id       String?
+  created_by_decision_id  String?
+  status                  SpecVersionStatus @default(DRAFT)
+  label                   String?
+  // Diễn giải lại ý tưởng, mức chắc chắn, vấn đề chính, từ khoá tìm kiếm.
+  // Thuộc về version chứ không thuộc project: chạy lại analyze là ra bản diễn giải khác.
+  meta                    Json?
+  created_at              DateTime          @default(now())
+
+  project           Project      @relation("ProjectVersions", fields: [project_id], references: [id], onDelete: Cascade)
+  parent_version    SpecVersion? @relation("VersionLineage", fields: [parent_version_id], references: [id])
+  child_versions    SpecVersion[] @relation("VersionLineage")
+  created_by        Decision?    @relation("DecisionCreatesVersion", fields: [created_by_decision_id], references: [id])
+
+  cards              Card[]
+  related_work_rows  RelatedWorkRow[]
+  experiment_plan    ExperimentPlan?
+  resource_estimate  ResourceEstimate?
+  export_artifacts   ExportArtifact[]
+  judge_runs         JudgeRun[]
+  issue_groups       IssueGroup[]
+  verifier_runs      VerifierRun[]
+  decisions          Decision[]   @relation("DecisionAskedAtVersion")
+  resulting_of       Decision[]   @relation("DecisionResultsInVersion")
+  job_runs           JobRun[]
+  llm_calls          LlmCall[]
+
+  @@unique([project_id, version_no])
+  @@index([project_id])
+}
+
+model Card {
+  id                    String     @id @default(uuid())
+  spec_version_id       String
+  type                  CardType
+  status                CardStatus
+  title                 String
+  body                  String
+  payload               Json?
+  order_index           Int        @default(0)
+  parent_card_id        String?
+  origin                CardOrigin @default(GENERATOR)
+  conflict_with_card_id String?
+  created_at            DateTime   @default(now())
+
+  spec_version SpecVersion @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+  parent_card  Card?       @relation("CardTree", fields: [parent_card_id], references: [id])
+  child_cards  Card[]      @relation("CardTree")
+
+  card_sources CardSource[]
+  issues       Issue[]
+
+  @@index([spec_version_id])
+  @@index([spec_version_id, type])
+}
+
+model Source {
+  id             String         @id @default(uuid())
+  project_id     String
+  retrieved_from SourceProvider
+  external_id    String
+  title          String
+  authors        Json
+  year           Int?
+  venue          String?
+  doi            String?
+  url            String?
+  abstract       String?
+  citation_count Int?
+  raw            Json
+  doi_verified   Boolean?
+  retrieved_at   DateTime       @default(now())
+  created_at     DateTime       @default(now())
+
+  project           Project          @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  card_sources      CardSource[]
+  related_work_rows RelatedWorkRow[]
+
+  @@unique([project_id, retrieved_from, external_id])
+  @@index([project_id])
+  @@index([doi])
+}
+
+model CardSource {
+  id                String        @id @default(uuid())
+  card_id           String
+  source_id         String
+  support_label     SupportLabel  @default(WEAK)
+  similarity        Float?
+  entailment        Entailment?
+  confidence        Float?
+  evidence_sentence String?
+  flags             Json?
+  verifier_run_id   String?
+  created_at        DateTime      @default(now())
+
+  card         Card         @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  source       Source       @relation(fields: [source_id], references: [id], onDelete: Cascade)
+  verifier_run VerifierRun? @relation(fields: [verifier_run_id], references: [id])
+  human_checks HumanCheck[]
+
+  @@unique([card_id, source_id])
+  @@index([card_id])
+  @@index([source_id])
+}
+
+model RelatedWorkRow {
+  id              String   @id @default(uuid())
+  spec_version_id String
+  source_id       String
+  what_done       String
+  feedback_type   String
+  what_missing    String
+  order_index     Int      @default(0)
+  created_at      DateTime @default(now())
+
+  spec_version SpecVersion @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+  source       Source      @relation(fields: [source_id], references: [id], onDelete: Cascade)
+
+  @@index([spec_version_id])
+}
+
+// ---------------------------------------------------------------- judge
+
+model JudgeRun {
+  id              String         @id @default(uuid())
+  spec_version_id String
+  judge_key       JudgeKey
+  round           Int
+  model           String
+  prompt_id       String
+  prompt_hash     String
+  input_digest    String
+  raw_output      Json
+  parse_attempts  Int            @default(1)
+  status          JudgeRunStatus @default(OK)
+  error_code      String?
+  job_id          String?
+  started_at      DateTime       @default(now())
+  finished_at     DateTime?
+  created_at      DateTime       @default(now())
+
+  spec_version SpecVersion @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+  job          JobRun?     @relation(fields: [job_id], references: [id])
+  issues       Issue[]
+  llm_calls    LlmCall[]
+
+  @@unique([spec_version_id, judge_key, round])
+  @@index([spec_version_id])
+}
+
+model Issue {
+  id             String   @id @default(uuid())
+  judge_run_id   String
+  issue_group_id String?
+  severity       Severity
+  title          String
+  reason         String
+  suggestion     String
+  target_card_id String?
+  created_at     DateTime @default(now())
+
+  judge_run   JudgeRun    @relation(fields: [judge_run_id], references: [id], onDelete: Cascade)
+  issue_group IssueGroup? @relation(fields: [issue_group_id], references: [id])
+  target_card Card?       @relation(fields: [target_card_id], references: [id])
+
+  @@index([judge_run_id])
+  @@index([issue_group_id])
+}
+
+model IssueGroup {
+  id                 String           @id @default(uuid())
+  spec_version_id    String
+  round              Int              @default(1)
+  canonical_title    String
+  max_severity       Severity
+  judge_keys         Json
+  agreement_count    Int
+  judges_completed   Int
+  disagreement_score Float
+  status             IssueGroupStatus @default(OPEN)
+  created_at         DateTime         @default(now())
+
+  spec_version SpecVersion @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+  issues       Issue[]
+  decisions    Decision[]
+
+  @@index([spec_version_id])
+}
+
+// ---------------------------------------------------------------- quyết định
+
+model Decision {
+  id                          String        @id @default(uuid())
+  project_id                  String
+  spec_version_id             String
+  step                        ProjectStep
+  issue_group_id              String?
+  question                    String
+  options                     Json
+  chosen_key                  String
+  custom_text                 String?
+  actor                       DecisionActor @default(USER)
+  // Bản nháp thay đổi đã tính lúc `POST /decisions` và đã hiện trong DiffView.
+  // Lưu lại để `apply` áp **đúng** thứ người dùng đã duyệt — tính lại bằng LLM lúc apply thì
+  // diff đã xem và thứ được ghi có thể khác nhau.
+  draft                       Json?
+  applied                     Boolean       @default(false)
+  resulting_spec_version_id   String?
+  created_at                  DateTime      @default(now())
+
+  project      Project      @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  spec_version SpecVersion  @relation("DecisionAskedAtVersion", fields: [spec_version_id], references: [id], onDelete: Cascade)
+  issue_group  IssueGroup?  @relation(fields: [issue_group_id], references: [id])
+  resulting    SpecVersion? @relation("DecisionResultsInVersion", fields: [resulting_spec_version_id], references: [id])
+  created      SpecVersion[] @relation("DecisionCreatesVersion")
+
+  @@index([project_id])
+  @@index([issue_group_id])
+}
+
+// ---------------------------------------------------------------- spec phụ trợ
+
+model ExperimentPlan {
+  id              String   @id @default(uuid())
+  spec_version_id String   @unique
+  plan            Json
+  created_at      DateTime @default(now())
+
+  spec_version SpecVersion @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+}
+
+model ResourceEstimate {
+  id                   String   @id @default(uuid())
+  spec_version_id      String   @unique
+  inputs               Json
+  vram_gb              Float
+  hours_min            Float
+  hours_max            Float
+  tokens_est           Float
+  cost_usd             Float
+  fits_rtx3090         Boolean
+  downscale_suggestion Json?
+  created_at           DateTime @default(now())
+
+  spec_version SpecVersion @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+}
+
+model ExportArtifact {
+  id              String       @id @default(uuid())
+  spec_version_id String
+  format          ExportFormat
+  checksum        String
+  byte_size       Int
+  created_at      DateTime     @default(now())
+
+  spec_version SpecVersion @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+
+  @@index([spec_version_id])
+}
+
+model VerifierRun {
+  id              String   @id @default(uuid())
+  spec_version_id String
+  config          Json
+  units_total     Int
+  units_l4        Int
+  label_counts    Json
+  created_at      DateTime @default(now())
+
+  spec_version SpecVersion  @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+  card_sources CardSource[]
+
+  @@index([spec_version_id])
+}
+
+// ---------------------------------------------------------------- job + đo
+
+model JobRun {
+  id              String    @id @default(uuid())
+  project_id      String?
+  spec_version_id String?
+  kind            JobKind
+  status          JobStatus @default(QUEUED)
+  progress        Json      @default("{\"done\":0,\"total\":1}")
+  message         String?
+  error_code      String?
+  created_at      DateTime  @default(now())
+  finished_at     DateTime?
+
+  project      Project?     @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  spec_version SpecVersion? @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+  events       JobEvent[]
+  judge_runs   JudgeRun[]
+
+  @@index([project_id])
+  @@index([spec_version_id])
+}
+
+model JobEvent {
+  id         String   @id @default(uuid())
+  job_id     String
+  seq        Int
+  type       String
+  payload    Json
+  created_at DateTime @default(now())
+
+  job JobRun @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@unique([job_id, seq])
+  @@index([job_id])
+}
+
+model LlmCall {
+  id                String     @id @default(uuid())
+  purpose           LlmPurpose
+  model             String
+  prompt_id         String
+  prompt_hash       String
+  prompt_tokens     Int        @default(0)
+  completion_tokens Int        @default(0)
+  cache_hit_tokens  Int        @default(0)
+  cache_miss_tokens Int        @default(0)
+  latency_ms        Int        @default(0)
+  attempts          Int        @default(1)
+  ok                Boolean    @default(true)
+  error_code        String?
+  project_id        String?
+  spec_version_id   String?
+  judge_run_id      String?
+  eval_run_id       String?
+  created_at        DateTime   @default(now())
+
+  project      Project?     @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  spec_version SpecVersion? @relation(fields: [spec_version_id], references: [id], onDelete: Cascade)
+  judge_run    JudgeRun?    @relation(fields: [judge_run_id], references: [id], onDelete: Cascade)
+  eval_run     EvalRun?     @relation(fields: [eval_run_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@index([eval_run_id])
+  @@index([purpose])
+}
+
+// ---------------------------------------------------------------- eval
+
+model EvalRun {
+  id           String   @id @default(uuid())
+  batch_id     String
+  arm          Arm
+  idea_id      String
+  project_id   String
+  config       Json
+  total_tokens Int      @default(0)
+  wall_ms      Int      @default(0)
+  ok           Boolean  @default(true)
+  error_text   String?
+  created_at   DateTime @default(now())
+
+  project        Project        @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  metrics        EvalMetric[]
+  auditor_scores AuditorScore[]
+  llm_calls      LlmCall[]
+
+  @@unique([batch_id, arm, idea_id])
+  @@index([batch_id])
+}
+
+model EvalMetric {
+  id          String   @id @default(uuid())
+  eval_run_id String
+  key         String
+  value       Float
+  created_at  DateTime @default(now())
+
+  eval_run EvalRun @relation(fields: [eval_run_id], references: [id], onDelete: Cascade)
+
+  @@unique([eval_run_id, key])
+}
+
+model AuditorScore {
+  id              String   @id @default(uuid())
+  eval_run_id     String
+  blind_label     String
+  severity_counts Json
+  raw             Json
+  created_at      DateTime @default(now())
+
+  eval_run EvalRun @relation(fields: [eval_run_id], references: [id], onDelete: Cascade)
+
+  @@index([eval_run_id])
+}
+
+model HumanCheck {
+  id             String       @id @default(uuid())
+  card_source_id String
+  human_label    SupportLabel
+  auto_label     SupportLabel
+  match          Boolean
+  note           String?
+  created_at     DateTime     @default(now())
+
+  card_source CardSource @relation(fields: [card_source_id], references: [id], onDelete: Cascade)
+
+  @@index([card_source_id])
+}

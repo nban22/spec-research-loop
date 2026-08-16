@@ -1,0 +1,124 @@
+{
+  "batch_id": "aa000000-0000-4000-8000-000000000001",
+  "generated_at": "2026-08-16T10:17:54.900Z",
+  "thresholds": {
+    "tau_low": 0.35,
+    "tau_high": 0.72,
+    "conf_min": 0.7,
+    "title_match": 0.85,
+    "min_abstract_chars": 200,
+    "stale_years": 8
+  },
+  "rows": [
+    {
+      "arm": "B1",
+      "idea_id": "I01",
+      "citation_validity": 0.4,
+      "unsupported_rate": 0.6,
+      "completeness_14": 6,
+      "issues_major_critical": 0,
+      "json_validity": 1,
+      "l4_llm_ratio": 0,
+      "total_tokens": 3902,
+      "wall_ms": 36210
+    },
+    {
+      "arm": "B2",
+      "idea_id": "I01",
+      "citation_validity": 1,
+      "unsupported_rate": 0.9166666666666666,
+      "completeness_14": 14,
+      "issues_major_critical": 0,
+      "json_validity": 0.6875,
+      "l4_llm_ratio": 0.9166666666666666,
+      "total_tokens": 128406,
+      "wall_ms": 471889
+    }
+  ],
+  "summary": {
+    "B1": {
+      "citation_validity": {
+        "mean": 0.4,
+        "std": 0,
+        "n": 1
+      },
+      "unsupported_rate": {
+        "mean": 0.6,
+        "std": 0,
+        "n": 1
+      },
+      "completeness_14": {
+        "mean": 6,
+        "std": 0,
+        "n": 1
+      },
+      "issues_major_critical": {
+        "mean": 0,
+        "std": 0,
+        "n": 1
+      },
+      "json_validity": {
+        "mean": 1,
+        "std": 0,
+        "n": 1
+      },
+      "l4_llm_ratio": {
+        "mean": 0,
+        "std": 0,
+        "n": 1
+      },
+      "total_tokens": {
+        "mean": 3902,
+        "std": 0,
+        "n": 1
+      },
+      "wall_ms": {
+        "mean": 36210,
+        "std": 0,
+        "n": 1
+      }
+    },
+    "B2": {
+      "citation_validity": {
+        "mean": 1,
+        "std": 0,
+        "n": 1
+      },
+      "unsupported_rate": {
+        "mean": 0.9166666666666666,
+        "std": 0,
+        "n": 1
+      },
+      "completeness_14": {
+        "mean": 14,
+        "std": 0,
+        "n": 1
+      },
+      "issues_major_critical": {
+        "mean": 0,
+        "std": 0,
+        "n": 1
+      },
+      "json_validity": {
+        "mean": 0.6875,
+        "std": 0,
+        "n": 1
+      },
+      "l4_llm_ratio": {
+        "mean": 0.9166666666666666,
+        "std": 0,
+        "n": 1
+      },
+      "total_tokens": {
+        "mean": 128406,
+        "std": 0,
+        "n": 1
+      },
+      "wall_ms": {
+        "mean": 471889,
+        "std": 0,
+        "n": 1
+      }
+    }
+  }
+}

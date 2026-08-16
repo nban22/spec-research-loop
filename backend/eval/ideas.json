@@ -1,0 +1,52 @@
+[
+  {
+    "id": "I01",
+    "domain": "SE",
+    "text": "Tôi muốn dùng LLM để tự động phát hiện lỗi logic trong code review."
+  },
+  {
+    "id": "I02",
+    "domain": "Medical",
+    "text": "Tôi muốn làm hệ thống gợi ý phác đồ điều trị từ hồ sơ bệnh án."
+  },
+  {
+    "id": "I03",
+    "domain": "Transport",
+    "text": "Tôi muốn dùng graph neural network để dự đoán ùn tắc giao thông ở TP.HCM."
+  },
+  {
+    "id": "I04",
+    "domain": "NLP",
+    "text": "Tôi muốn cải thiện RAG cho tài liệu pháp luật tiếng Việt."
+  },
+  {
+    "id": "I05",
+    "domain": "Systems",
+    "text": "Tôi muốn giảm chi phí inference của LLM bằng cách chọn model động."
+  },
+  {
+    "id": "I06",
+    "domain": "CV",
+    "text": "Tôi muốn phát hiện sản phẩm lỗi trên dây chuyền bằng ảnh."
+  },
+  {
+    "id": "I07",
+    "domain": "Security",
+    "text": "Tôi muốn dùng LLM để phát hiện email lừa đảo tiếng Việt."
+  },
+  {
+    "id": "I08",
+    "domain": "Edu",
+    "text": "Tôi muốn tự động chấm bài luận của học sinh cấp 3."
+  },
+  {
+    "id": "I09",
+    "domain": "Finance",
+    "text": "Tôi muốn dự báo rủi ro tín dụng từ dữ liệu giao dịch."
+  },
+  {
+    "id": "I10",
+    "domain": "HCI",
+    "text": "Tôi muốn đo mức độ tin tưởng của người dùng vào gợi ý của AI."
+  }
+]

@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  // Chốt `include` vào đúng `src/` thay vì liệt kê `exclude`: mọi file .ts mới ở gốc backend
+  // (`prisma.config.ts`, `scripts/`, `eval/`) sẽ kéo `rootDir` lên một cấp và đẩy output thành
+  // `dist/src/main.js`, làm `node dist/main` chết. Đã dính hai lần — khoá lại ở đây.
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "src/generated/**/*.spec.ts"]
 }
