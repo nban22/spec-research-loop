@@ -15,6 +15,8 @@
 | Frontend | Next.js 16.3.1 App Router · React 19 · TypeScript strict | Pages Router |
 | Styles | Tailwind CSS v4 (`@import "tailwindcss"`, **không có `tailwind.config.*`**) | CSS-in-JS, SCSS, styled-components |
 | UI kit | shadcn/ui (`npx shadcn init`) | MUI, Ant Design, Mantine, Chakra |
+| Icon | `lucide-react` — **đi kèm shadcn, không phải dependency mới** | react-icons, heroicons, font-awesome |
+| Font | `Be Vietnam Pro` nạp qua `next/font` (có sẵn trong Next.js). Lý do chọn: `DESIGN_SYSTEM.md` §2 | `@fontsource/*`, link CDN Google Fonts, tự host file font |
 | Server state | TanStack Query v5 | Redux, RTK Query, SWR |
 | Client state | Zustand (chỉ UI state: stepper, panel, modal) | Redux, Context làm store toàn cục |
 | Form | react-hook-form + `@hookform/resolvers/zod` | Formik, form thủ công |
@@ -226,6 +228,8 @@ File này chỉ chốt cách *dùng* ORM:
 - **SSE**: `new EventSource('/api/jobs/:id/stream')`. Flow: `POST /jobs` tạo job → nhận `jobId` → mở `EventSource` → nhận từng event `judge.started` / `judge.done` / `job.done` → `queryClient.invalidateQueries` khi xong. `EventSource` **không set được header `Authorization`** — đó là lý do token đi bằng cookie chứ không giữ trong memory.
 - Màu theo `CardStatus` (đề khuyến khích): map enum → Tailwind class ở **một** file duy nhất, đừng rải inline. Bảng màu và token do `docs/DESIGN_SYSTEM.md` định nghĩa, không quyết ở file này.
 - Mockup trong `docs/sample*.png` là **gợi ý**, đề nói rõ không cần làm y hệt. Mockup chỉ có bản desktop — bản mobile do `docs/DESIGN_SYSTEM.md` §6 định nghĩa.
+- **Mockup không phủ hết yêu cầu của đề.** Ba khối đề đòi mà không mockup nào vẽ: bảng thẻ phân rã 8 loại × 6 trạng thái (bước 2 + chức năng 3), khối quyết định ở B3, và phần *bất đồng* của chức năng 13. Chốt ở `DESIGN_SYSTEM.md` §5.4 và §8 #10–#11. Làm theo mockup mà bỏ ba khối đó là **thiếu chức năng bắt buộc**, không phải "khác thiết kế".
+- **Bố cục màn hình nào có gì**: `DESIGN_SYSTEM.md` §5.4 (desktop) và §6.9 (mobile). **Trạng thái chờ / rỗng / lỗi**: §5.5 — bắt buộc, vì mọi việc gọi LLM mất 20–90s và đó là phần lớn thời gian người dùng nhìn màn hình.
 - **Responsive — BẮT BUỘC.** App phải dùng được ở cả điện thoại và desktop. Làm theo **đúng chuẩn Tailwind + shadcn**, không phát minh hệ riêng:
   - Giữ **nguyên** thang breakpoint mặc định của Tailwind (`sm` 640 · `md` 768 · `lg` 1024 · `xl` 1280 · `2xl` 1536). **Không** khai `--breakpoint-*`, **không** xoá mốc nào — shadcn có dùng `sm:` bên trong component của nó.
   - Viết **mobile-first**. Bố cục cấp trang chỉ cần 2 mốc `md:` và `xl:`.
@@ -318,17 +322,24 @@ Muốn thêm dependency ngoài danh sách ở §0 → hỏi trước, đừng t�
 
 | # | Giai đoạn | Điều kiện coi là xong |
 |---|---|---|
-| 0 | Setup | `DESIGN_SYSTEM.md` + `ARCHITECTURE.md` chốt xong · 6 file `prompts/` · `contracts/` · Prisma migrate chạy được trên Neon |
+| 0 | Setup | `DESIGN_SYSTEM.md` + `ARCHITECTURE.md` chốt xong · 6 file `prompts/` · `contracts/` · Prisma migrate chạy được trên Neon · **token màu/chữ trong `globals.css` + `status-style.ts` + khung `WizardShell`/`DecisionSheet` dựng xong và chạy được ở 375px** |
 | 0.5 | Auth (§11) | Đăng ký → đăng nhập → refresh → guard chặn được project của user khác |
-| 1 | Xương sống (15%) | Nhập ý tưởng → paraphrase → sinh thẻ 8 loại/6 trạng thái → lưu `Decision` |
+| 1 | Xương sống (15%) | Nhập ý tưởng → paraphrase → sinh thẻ 8 loại/6 trạng thái (**hiện ra ở `CardBoard`**) → lưu `Decision` |
 | 2 | Grounding (20%) | Semantic Scholar/OpenAlex thật + bảng related work + citation verifier |
 | 3 | Nội dung spec (20%) | Gap 4-câu-hỏi · Claim–Evidence 5 trường (nhớ **Điều kiện bác bỏ**) · experiment plan · resource estimator |
 | 4 | Judge loop (20%) | 5 judge song song · consensus/disagreement · A/B/C/Other · diff · version |
-| 5 | Export + UI (5%) | PDF **và** Markdown · stepper · màu theo trạng thái |
+| 5 | Export + hoàn thiện UI (5%) | PDF **và** Markdown · nghiệm thu responsive theo `DESIGN_SYSTEM.md` §6.10 · trạng thái chờ/rỗng/lỗi (§5.5) |
 | 6 | Đánh giá (15%) | B1 · B2 (feature flag `SKIP_JUDGE`) · 3 arm × 4 metric · human check 20 cặp |
 | 7 | Video + docs (5%) | `ARCHITECTURE.md` cập nhật đúng code thật · video demo |
 
 **Quy tắc:** không sang giai đoạn sau khi giai đoạn trước chưa chạy end-to-end. Pipeline xấu chạy trọn 10 bước > 3 bước đẹp + 7 bước rỗng.
+
+> **Đọc kỹ chỗ này — 5% ở giai đoạn 5 là 5% của phần *còn lại*, không phải toàn bộ UI.**
+> Khung bố cục (`WizardShell`, `DecisionSheet`, `Stepper`, token màu) thuộc **giai đoạn 0**, và mỗi
+> giai đoạn 1–4 tự làm luôn phần giao diện của mình theo bản đồ màn hình ở `DESIGN_SYSTEM.md` §5.4 —
+> chạy được ở cả 375px và desktop mới coi là xong giai đoạn đó. Giai đoạn 5 chỉ còn export và nghiệm
+> thu. **Không bọc responsive lên một app đã dựng xong** — `ARCHITECTURE.md` §8 nói cùng một điều, và
+> đó là lý do dòng này tồn tại thay vì để người đọc suy ra "UI làm sau cùng, đáng 5%".
 
 ---
 

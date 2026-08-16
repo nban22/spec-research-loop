@@ -19,7 +19,7 @@ Nguồn yêu cầu: `docs/SPECRESEARCH_LOOP-kim-chi-nam.md` (từ `SPECRESEARCH 
 
 ---
 
-## Đọc trước — 10 điều tài liệu này quyết mà chưa file nào quyết
+## Đọc trước — 12 điều tài liệu này quyết mà chưa file nào quyết
 
 Đây không phải mục của khuôn mẫu, chỉ là lối vào. Chi tiết nằm ở mục được trỏ.
 
@@ -35,6 +35,8 @@ Nguồn yêu cầu: `docs/SPECRESEARCH_LOOP-kim-chi-nam.md` (từ `SPECRESEARCH 
 | 8 | Verifier fail thì cho xuất bản hay chặn | **Fail-closed** (không nhãn ⇒ không xuất), nhưng Crossref chết thì **fail-open có flag** — bất đối xứng có lý do | C2 · F.8 · 3.4 |
 | 9 | Prompt injection qua ô "ý tưởng thô" | Không thêm phòng thủ mới: mọi cửa kiểm quan trọng đã là rule, không phải lời dặn trong prompt | 3.5 |
 | 10 | `ARCHITECTURE.md` §5 tự mâu thuẫn về `/issue-groups/:id/options` | Nêu ra, đề xuất giữ đồng bộ, chờ chốt | 4.4 |
+| 11 | Giao diện **không có mặt** trong danh mục tính năng, nên responsive chỉ là một dòng NFR không ai đào | Vỏ wizard thành một tính năng có phân tích riêng; ba điểm nóng: cột quyết định chìm ở mobile · màn hình đứng im 20–90s · vỏ không bọc lên sau được | 1.2 #15 · S7 |
+| 12 | Ba khối đề **bắt buộc** mà không mockup nào vẽ, nên dễ bị bỏ khi làm theo mockup | Bảng thẻ 8 loại × 6 trạng thái ở B1 · khối quyết định ở B3 · phần *bất đồng* của chức năng 13 | 4.4 #14–16 |
 
 ---
 
@@ -70,9 +72,10 @@ Hạng quyết định độ sâu ở PHẦN 2. Cột "16 CN" trỏ về danh s�
 | 12 | Lịch sử phiên bản & decision log | · | 15,8 | Hai màn hình đọc dữ liệu do #9 sinh ra | Chỉ đọc, không ghi, không tải |
 | 13 | **Eval harness 3 arm** | ⭐ | — | Chạy 10 ý tưởng × 4 arm, tính 4 metric, chấm blind, xuất bảng số | Không phải tính năng người dùng nhưng là deliverable #4+#7+#8 và ~15% khối lượng. Nó là lý do tồn tại của hai cột trong bảng `Project`. Rủi ro đặc thù: **sai lệch âm thầm, không báo lỗi** |
 | 14 | Trang Trợ giúp | · | — | Trang tĩnh một màn hình | Có trong nav của mockup, ngoài 16 chức năng (ARCHITECTURE §3 đã ghi) |
+| 15 | **Vỏ wizard 5 bước, trạng thái chờ & responsive** | ● | 1–16 (vỏ) | Khung ba cột đổi theo bề rộng, stepper, bottom sheet quyết định, và toàn bộ cách app cư xử trong lúc chờ LLM | Không có tải, nhưng nó là **thứ duy nhất người chấm nhìn thấy** — và là chỗ NFR-G-3 (human-in-the-loop) sống hoặc chết. Bản trước của tài liệu này liệt kê 14 tính năng mà **không có cái nào là giao diện**, nên responsive chỉ tồn tại như một dòng NFR không ai đào sâu. Xem S7 |
 
 **5 tính năng ⭐ Core:** #4, #7, #8, #9, #13 → phân tích đủ 8 mục.
-**6 tính năng ● Supporting:** #1, #3, #5, #6, #10, #11 → chỉ F.1, F.4, F.5 (+ F.8 nếu có điểm nóng).
+**7 tính năng ● Supporting:** #1, #3, #5, #6, #10, #11, #15 → chỉ F.1, F.4, F.5 (+ F.8 nếu có điểm nóng).
 **3 tính năng · Trivial:** #2, #12, #14 → đã mô tả một dòng ở trên, không có khối riêng.
 
 ### 1.3 Ràng buộc toàn cục
@@ -92,7 +95,8 @@ do tôi tự nghĩ ra mà không truy được về đề bài hoặc một quy�
 | NFR-G-8 | **Khả dụng** | Không có SLA. Đủ để chạy một buổi demo và một batch eval qua đêm | Đề không có yêu cầu availability |
 | NFR-G-9 | **Cô lập dữ liệu** | User chỉ thấy dữ liệu của mình. Ngoài ra không có yêu cầu bảo mật nào | STACK §11 — auth là phần thêm vào, đề không đòi |
 | NFR-G-10 | **Tỉ lệ đọc/ghi** | Ghi theo đợt lớn và hiếm (tạo version, chạy judge), đọc nhiều lần giữa các đợt. Con số tuyệt đối rất nhỏ | Suy ra từ luồng 5 bước |
-| NFR-G-11 | **Responsive** | Đi hết 5 bước ở bề rộng 375px | Quyết định chủ dự án (STACK §5), đề không đòi nhưng không cấm |
+| NFR-G-11 | **Responsive** | Đi hết 5 bước **và chốt được spec cuối** ở 375px, 768px và 1280px, không cuộn ngang ở cấp trang, và ở mọi bước thao tác chính chạm tới được **không cần cuộn**. Bảng kiểm đầy đủ: `DESIGN_SYSTEM.md` §6.10 | Quyết định chủ dự án (STACK §5), đề không đòi nhưng không cấm. Mục tiêu viết dài hơn các dòng khác vì đây là NFR duy nhất **kiểm được bằng mắt trong 5 phút** — mơ hồ thì nó thành "trông cũng ổn trên điện thoại" |
+| NFR-G-13 | **Tiến độ nhìn thấy được** | Không tồn tại thao tác nào để người dùng đứng trước một màn hình không nói gì quá ~2 giây; mọi việc dài phải hiện đang làm gì và đã trôi bao lâu | Việc gọi LLM mất 20–90s (NFR-SRC-3, NFR-VER-3, NFR-JDG-3). Đây là NFR bị bỏ quên ở bản trước: ba dòng trên đặt ra *giới hạn độ trễ*, không dòng nào đặt ra *phải nói gì trong lúc chờ*. Hiện thực ở `DESIGN_SYSTEM.md` §5.5 |
 | NFR-G-12 | **Ngôn ngữ** | Vỏ tiếng Việt, ruột spec tiếng Anh, không trộn | STACK §10 — điều kiện để verifier so được claim với abstract |
 
 **Ba thứ cố ý không có trong bảng này:** SLA độ trễ, số người dùng đồng thời, và uptime. Không phải
@@ -1041,6 +1045,73 @@ khởi động. Ở một tiến trình phục vụ một người, đó là đ�
 
 ---
 
+### S7: Vỏ wizard 5 bước, trạng thái chờ & responsive `[● Supporting]`
+
+> Thiết kế chi tiết ở `DESIGN_SYSTEM.md` — bố cục desktop §5.4, trạng thái chờ §5.5, ba tầng responsive
+> §6. Ở đây chỉ trả lời câu của **tài liệu này**: vỏ đó **vỡ ở đâu**, và mỗi lựa chọn đánh đổi cái gì.
+
+**F.1 — Yêu cầu chức năng.** Actor: người dùng đã đăng nhập, ở bất kỳ bước nào. Đi tới lui giữa 5 bước
+và nhảy về bước đã qua · thấy mình đang ở bước mấy và vòng thứ mấy · ở mỗi bước thấy đồng thời **ngữ
+cảnh · nội dung hệ thống sinh · việc mình phải quyết** · biết hệ thống đang làm gì trong lúc chờ và
+việc đó đã chạy bao lâu · làm được tất cả những việc trên ở bề rộng 375px. **Ngoài phạm vi:** dark
+mode · i18n · animation phức tạp · offline · cài như PWA (STACK §5 đã loại cả năm).
+
+**F.4 — "API" của vỏ là ranh giới state, không phải endpoint.** Vỏ không có endpoint riêng; hợp đồng
+của nó là **cái gì được phép nằm ở đâu**, và đây là chỗ dễ hỏng nhất khi nhiều người cùng code:
+
+| Loại state | Ở đâu | Lý do |
+|---|---|---|
+| Mọi thứ đến từ API — thẻ, nguồn, issue, version, trạng thái job | TanStack Query | Có cache, có invalidate, có retry sẵn. Đây là **nguồn sự thật** |
+| Bước đang đứng | **URL** (`/projects/:id/step/N`) | F5 phải về đúng chỗ, và link gửi được. Để trong Zustand là mất cả hai |
+| Nấc của `DecisionSheet`, panel/accordion đang mở, filter bảng issue | Zustand | UI state thuần, không ai cần nó sau khi đóng tab |
+| Tiến độ job | Query của `GET /jobs/:id`, SSE chỉ **đẩy** cập nhật vào đó | S5 · F.8 — SSE là đường tăng tốc, không phải nguồn sự thật. Nếu component tự giữ tiến độ trong `useState` thì mất kết nối là mất luôn tiến độ |
+
+Luật một dòng: **không bao giờ chép dữ liệu server vào Zustand** (STACK §5). Chép là có hai bản, và
+bản trong Zustand sẽ cũ đúng vào lúc người dùng vừa tạo version mới.
+
+**F.5 — Data model.** Không có bảng nào. Thứ duy nhất phải bền qua F5 là *bước đang đứng*, đã nằm ở
+URL, và `Project.current_spec_version_id` đã cho biết version nào đang mở.
+
+**F.8 — Ba điểm nóng thật.**
+
+**(a) Cột quyết định biến mất ở mobile.** Desktop có ba cột nên "chỗ phải quyết" luôn trong tầm mắt.
+Ở 375px, cách hiển nhiên — xếp ba cột thành ba khối dọc — đẩy cột quyết định xuống đáy trang, và mọi
+thao tác trở thành *cuộn hết trang rồi mới làm được*. Đó **không phải lỗi thẩm mỹ**: nó phá NFR-G-3,
+vì hệ thống này không có bước nào tự chốt, nên chỗ chứa việc chờ người dùng không được phép chìm.
+*Xử lý:* ba vai giữ bằng ba cơ chế khác nhau — ngữ cảnh thành accordion, nội dung chiếm toàn bề rộng,
+quyết định vào bottom sheet neo đáy không đóng hẳn được (`DESIGN_SYSTEM.md` §6.3).
+*Đánh đổi:* được — việc cần làm luôn trong vùng ngón cái ở mọi bề rộng. Mất — sheet chiếm chỗ vĩnh
+viễn ở đáy, trang nội dung phải chừa lề dưới, và một bottom sheet không dismiss được là hành vi khác
+thói quen; phương án lùi đã ghi ở `DESIGN_SYSTEM.md` §9.
+
+**(b) Màn hình đứng im 20–90 giây.** Đây là hệ quả trực tiếp của kiến trúc job nền: mọi việc gọi LLM
+trả `jobId` ngay rồi chạy tiếp ở nền. Ba tình huống chắc chắn xảy ra, và cả ba trông giống hệt nhau
+nếu không thiết kế trước: job đang chạy bình thường · SSE đứt nhưng job vẫn chạy · job đã chết.
+Thêm một tình huống thứ tư đặc thù của hệ này: **8 giây CPU của embedding giữ event loop** (C2 · F.7)
+làm SSE của job judge **đang chạy song song** ngừng phát — người xem thấy thanh tiến độ đứng hình
+trong khi không có gì hỏng.
+*Xử lý:* bốn kiểu chờ và sáu luật ở `DESIGN_SYSTEM.md` §5.5; điểm cốt lõi là luôn có **đường thứ hai
+không phụ thuộc SSE** (`GET /jobs/:id`) và giao diện phải phơi ra sự khác nhau giữa ba tình huống trên.
+*Đánh đổi:* được — không bao giờ có màn hình treo không giải thích được, và lỗi bộ phận (1 judge chết,
+Crossref chết) hiện thành thông tin thay vì biến mất. Mất — nhiều trạng thái hơn phải viết và phải
+kiểm, và người dùng thỉnh thoảng nhìn thấy chi tiết nội bộ ("J2 lỗi"). Ở một hệ thống mà **tính minh
+bạch là điểm được chấm**, phơi ra là lựa chọn đúng.
+
+**(c) Vỏ không bọc lên sau được.** `WizardShell` quyết định mọi màn hình có ba cột hay một cột, và
+`DecisionSheet` quyết định chỗ đặt mọi hành động. Sửa hai thứ này khi đã có năm bước dựng xong nghĩa
+là sửa cả năm bước.
+*Xử lý:* khung dựng ở **giai đoạn 0**, trước cả tính năng đầu tiên (STACK §9, ARCHITECTURE §8); mỗi
+giai đoạn 1–4 tự nghiệm thu giao diện của mình ở cả 375px lẫn desktop.
+*Đánh đổi:* được — không có đợt "làm responsive" nào cả, vì không bao giờ tồn tại phiên bản chỉ chạy
+desktop. Mất — giai đoạn 0 dài thêm, và phải chốt `DESIGN_SYSTEM.md` trước khi viết dòng UI đầu tiên.
+Đó chính là lý do file đó tồn tại.
+
+**Không phải điểm nóng, ghi ra để khỏi bị đào lại:** hiệu năng render (vài chục thẻ, không phải danh
+sách ảo) · số lượng bundle (không đo, không tối ưu) · SSR vs CSR (mọi trang đều sau đăng nhập và phụ
+thuộc dữ liệu riêng của người dùng ⇒ render phía client, không có nhu cầu SEO).
+
+---
+
 ## PHẦN 3 — Mối quan tâm xuyên suốt
 
 ### 3.1 Xác thực & phân quyền
@@ -1258,13 +1329,19 @@ chốt.
 | 11 | Ngưỡng verifier (`τ_low`, `τ_high`, `conf_min`) hiện là **ước đoán** | Hiệu chỉnh bằng grid 3×3 trên 20 cặp người-gán-nhãn ở cuối giai đoạn 2; đưa bảng grid vào repo | Bạn (sau khi có dữ liệu) |
 | 12 | Hai file dev-log cùng mang số thứ tự **008** | Đổi số một trong hai để dãy không trùng | Bạn |
 | 13 | **Deploy target chưa chốt**, mà Puppeteer không chạy trên serverless mặc định của Vercel | Chọn host có Chromium, hoặc chấp nhận chạy local lúc demo (đã có ở `ARCHITECTURE.md` §9 #9) | Bạn |
+| 14 | **Không mockup nào vẽ bảng thẻ phân rã 8 loại × 6 trạng thái**, dù đó là bước 2 + chức năng 3 của đề. Trước bản này, không tài liệu giao diện nào cấp chỗ cho nó ⇒ sáu `CardStatus` không xuất hiện trên màn hình nào | Thêm `CardBoard` vào cột giữa của B1 (`DESIGN_SYSTEM.md` §5.4 #1, §8 #10) | Bạn |
+| 15 | **Mockup 3 (B3) không có cột quyết định** — cột phải thuần thông báo. Bước đó tự chốt, trái NFR-G-3 | Thêm khối quyết định *duyệt · giảm quy mô · Other* ở cuối cột phải B3 (`DESIGN_SYSTEM.md` §5.4 #2, §8 #11) | Bạn |
+| 16 | **Chức năng 13 đòi cả đồng thuận lẫn bất đồng**, nhưng chỉ có `ConsensusMeter`; phần bất đồng không có chỗ hiển thị | Thêm `DisagreementNote` cho nhóm issue chỉ một judge nêu (`DESIGN_SYSTEM.md` §5.3) | Bạn |
+| 17 | **Dải node ở đáy mockup 1–4 không phải stepper 5 bước** — nhãn đổi theo từng mockup và luôn kết bằng node *Xác nhận*; đó là tiến độ trong một vòng. Bản trước gộp nó với stepper toàn cục rồi bỏ đi | Giữ thành `RoundTracker` trong `SummaryBar` (`DESIGN_SYSTEM.md` §8 #2). Đây là chỗ hiểu sai mockup dễ xảy ra nhất — cần bạn xác nhận | Bạn |
+| 18 | **Mockup 5 liệt kê 10 mục spec, đề bước 8 liệt kê 14** | Lấy 14 theo đề (`DESIGN_SYSTEM.md` §8 #9) | Bạn |
+| 19 | **"Mức chắc chắn" (mockup 1) là một enum thứ tư** chưa được ánh xạ ở đâu | Render thành dòng trong `HintBox`, **không** tạo badge thứ tư (`DESIGN_SYSTEM.md` §3.8) | Bạn |
 
 ---
 
 ## Bảng kiểm chất lượng
 
-- [x] Đã liệt kê và phân hạng **hết** tính năng ở 1.2 trước khi phân tích — 14 mục, 5 Core / 6 Supporting / 3 Trivial
-- [x] Mỗi tính năng Core có đủ 8 mục (C1–C5); Supporting chỉ F.1/F.4/F.5 + F.8 khi có điểm nóng thật (S1, S5, S6 có; S2, S3, S4 không)
+- [x] Đã liệt kê và phân hạng **hết** tính năng ở 1.2 trước khi phân tích — 15 mục, 5 Core / 7 Supporting / 3 Trivial
+- [x] Mỗi tính năng Core có đủ 8 mục (C1–C5); Supporting chỉ F.1/F.4/F.5 + F.8 khi có điểm nóng thật (S1, S5, S6, S7 có; S2, S3, S4 không)
 - [x] Mọi quyết định thiết kế truy ngược được về một mã NFR hoặc một con số ở F.3
 - [x] Không mục nào lấn sang phần khác — con số nằm ở F.3, cách mở rộng nằm ở F.8, thuật toán verifier để nguyên ở `ARCHITECTURE.md` §6 và chỉ được trỏ tới
 - [x] Mọi lựa chọn đều kèm đánh đổi — kể cả các lựa chọn "không làm gì"

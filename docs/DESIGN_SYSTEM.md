@@ -168,6 +168,26 @@ Thẻ **không** tô nền theo trạng thái — sáu nền màu cạnh nhau s�
 - Riêng `MISSING`: cả viền thẻ chuyển đứt nét, nền chìm xuống, chữ mờ đi — thẻ trông như một ô còn
   trống chờ điền, vì đó chính xác là nó.
 
+### 3.8 `ConfidenceLevel` — nhóm thứ tư, và vì sao nó **không** được làm badge
+
+Mockup 1 hiện *"Mức chắc chắn: Trung bình"* — đây là một giá trị enum thứ tư (`HIGH` · `MEDIUM` ·
+`LOW`), nói về **mức tự tin của hệ thống khi diễn giải lại ý tưởng**, không nói về thẻ, issue hay
+nguồn.
+
+**Quyết định: không tạo component badge thứ tư.** Ba vật thể ở §3.1 đã dùng hết ba hình dạng phân biệt
+được khi in trắng đen; thêm cái thứ tư là bắt người đọc học thêm một từ vựng nữa cho một giá trị chỉ
+xuất hiện đúng một chỗ. Thay vào đó `ConfidenceLevel` render thành **một dòng trong `HintBox`**: nhãn
+"Mức chắc chắn" + giá trị bằng chữ tiếng Việt, sắc thái của hộp lấy theo bảng dưới.
+
+| Giá trị | Chữ hiển thị | Sắc thái `HintBox` | Vì sao |
+|---|---|---|---|
+| `HIGH` | Cao | ổn (`ok`) | Hệ thống hiểu chắc — không có việc gì phải làm |
+| `MEDIUM` | Trung bình | cảnh báo (`warn`) | Đúng như mockup 1. Ngụ ý: nên đọc lại phần diễn giải |
+| `LOW` | Thấp | cảnh báo (`warn`), **kèm câu nhắc sửa lại ý tưởng** | **Không dùng `danger`** — hệ thống hiểu chưa chắc không phải là *lỗi*, và đỏ là tài sản riêng của "có vấn đề" (§1 nguyên tắc 4) |
+
+Ánh xạ này nằm cùng chỗ với ba nhóm kia (`status-style.ts`, §7.1) để không ai đi tìm ở nơi thứ hai,
+nhưng nó **không** đi qua `StatusChip`/`SeverityBadge`/`SupportTag`.
+
 ---
 
 ## 4. Chữ, khoảng cách, hình khối
@@ -272,7 +292,8 @@ Kích thước nút lấy từ prop `size` sẵn có của shadcn — **không t
 | `StepPickerSheet` | **[mobile]** Sheet liệt kê 5 bước kèm trạng thái, cho nhảy về bước đã qua |
 | `WizardShell` | Chọn bố cục theo bề rộng (§6.3): một cột + sheet · hai cột · ba cột. Nhận tham số cho biết bước này dùng tỉ lệ cột nào (§6.4) |
 | `DecisionSheet` | **[mobile]** Bottom sheet ba nấc, giữ toàn bộ cột quyết định. **Không đóng hẳn được** — §6.3 |
-| `SummaryBar` | Dải đáy "Tóm tắt sau vòng N" + gợi ý bên phải. **Không** lặp lại stepper. Trên mobile xếp dọc và nằm trên vùng chừa cho `DecisionSheet` |
+| `SummaryBar` | Dải đáy "Tóm tắt sau vòng N" + `RoundTracker` + gợi ý bên phải. **Không** lặp lại `Stepper` toàn cục. Trên mobile xếp dọc và nằm trên vùng chừa cho `DecisionSheet` |
+| `RoundTracker` | **Tiến độ *bên trong* một vòng**, nằm trong `SummaryBar`: `Sinh nội dung → Bạn xác nhận → Sang bước tiếp theo` (ở B4 dài hơn: `… → Judge kiểm lại → Hoàn tất`). Đây là thứ mockup 1–4 vẽ ở đáy trang mà **không phải** stepper 5 bước — xem §8 #2. Giữ nó là cách UI thể hiện chữ *Loop* trong tên đồ án và bước 10 của đề (sửa → verify lại → judge lại → xác nhận) |
 
 **Hiển thị trạng thái — ba component độc quyền đọc bảng ánh xạ**
 
@@ -287,7 +308,14 @@ Kích thước nút lấy từ prop `size` sẵn có của shadcn — **không t
 | Component | Trách nhiệm |
 |---|---|
 | `Panel` | Card cấp một có accent — viên gạch dựng nên mọi cột. Nhận accent, icon, tiêu đề, vùng thao tác |
+| `IdeaInput` | **Ô nhập ý tưởng thô** (mockup 1 cột trái): vùng văn bản kiểu trích dẫn, nút bút chì để chuyển sang chế độ sửa, chip chủ đề bên dưới, nút chính "Phân tích ý tưởng" chiếm trọn bề rộng. Đây là điểm vào của toàn app — chức năng 1 |
+| `TopicChipList` | Chip chủ đề do hệ thống suy ra từ ý tưởng (mockup 1: *Nghiên cứu AI*, *Prompt Optimization*…). **Chỉ đọc** — khác `KeywordChipInput` (sửa được, dùng ở B2). Hai thứ trông giống nhau nhưng khác quyền, đừng gộp |
+| `ParaphraseCard` | **"Cách hệ thống đang hiểu ý tưởng"** (mockup 1 cột giữa): đoạn diễn giải trên nền `ok` rất nhạt, sửa tại chỗ được. Hiện thực chức năng 2. Dùng lại ở B4 cho hộp "Cách hệ thống đang hiểu lựa chọn" |
+| `KeyProblemList` | **"Vấn đề chính"** (mockup 1): danh sách gạch đầu dòng, dùng họ `warn` — **không** dùng cam như mockup, xem §8 #5 |
+| `CardBoard` | **Bảng thẻ phân rã: 8 loại × 6 trạng thái.** Nhóm `SpecCard` theo `type`, mỗi nhóm một tiêu đề nhỏ; lọc nhanh theo `CardStatus`. Hiện thực chức năng 3 + bước 2 của đề — xem §5.4, đây là khối **bắt buộc** mà mockup 1 không vẽ |
 | `SpecCard` | Một thẻ trong 8 loại: vạch màu trạng thái cạnh trái + `StatusChip` + nội dung + nguồn đính kèm |
+| `SpecOutline` | **"Spec tạm thời"** (mockup 4 cột trái): danh sách mục spec, mỗi mục = icon tile + số thứ tự + tên + mô tả một dòng, kèm nút "Xem chi tiết Spec tạm thời" mở `Dialog`/`Sheet`. Khác `SpecChecklist` ở chỗ nó là **mục lục để đọc**, không phải bảng kiểm đủ/thiếu |
+| `HowItWorksList` | **"LLM tóm tắt cách làm"** (mockup 5 cột phải): 4 bước đánh số trong vòng tròn `ok`, giải thích hệ thống đã đi tới spec này bằng đường nào |
 | `GapCard` | Thẻ gap với 4 câu hỏi bắt buộc của đề (đã làm được gì / còn hạn chế gì / vì sao hạn chế đó quan trọng / kiểm nghiệm bằng thí nghiệm nào) — thiếu ô nào thì ô đó mang trạng thái `MISSING` |
 | `ClaimEvidenceCard` | Năm hàng: Claim · Baseline · Metric · Evidence · **Điều kiện bác bỏ** |
 | `RelatedWorkTable` | Năm cột theo mockup 2 (Nghiên cứu · Đã làm gì · Loại feedback · Điểm còn thiếu · Nguồn). Trên mobile đổi sang `RelatedWorkCardList` |
@@ -296,13 +324,13 @@ Kích thước nút lấy từ prop `size` sẵn có của shadcn — **không t
 | `ExperimentPlanList` | TN1…TNn: mã thí nghiệm + tiêu đề + các gạch đầu dòng |
 | `StatTileGrid` / `StatTile` | Lưới ô thông số (Model, Seed prompts, Candidates, Số vòng…) |
 | `EstimateRows` | VRAM · Thời gian · Token · Chi phí, kèm cảnh báo khi vượt ngưỡng RTX 3090 |
-| `SpecChecklist` | 14 mục của spec kèm trạng thái đủ/thiếu (mockup 5 cột trái) |
+| `SpecChecklist` | **14 mục** của spec kèm trạng thái đủ/thiếu (mockup 5 cột trái). Mockup chỉ vẽ 10 — lấy 14 theo đề bước 8, xem §8 #9 |
 
 **Tương tác & quyết định**
 
 | Component | Trách nhiệm |
 |---|---|
-| `OptionList` | A/B/C/**Other**. **Tự chèn option `Other` nếu API không trả về** — đây là NFR, không để phụ thuộc LLM. Chọn `Other` thì bắt buộc nhập lý do |
+| `OptionList` | A/B/C/**Other**. **Tự chèn option `Other` nếu API không trả về** — đây là NFR, không để phụ thuộc LLM. Chọn `Other` thì bắt buộc nhập lý do. **Hai biến thể** (§5.4): *gọn* — lưới ô ngắn tự xuống dòng, nhãn 2–4 chữ, dùng ở B1/B2; *xếp chồng* — mỗi option một hàng chiếm trọn bề rộng có dấu tích bên phải, dùng khi nhãn dài hoặc kèm mô tả, như B4. Chọn biến thể theo **độ dài nhãn**, không theo bước |
 | `OptionHint` | Dòng "Ví dụ: …" với icon bóng đèn, cỡ chú thích, màu `decide` |
 | `HintBox` | Hộp gợi ý/cảnh báo, bốn sắc thái: thông tin · ổn · cảnh báo · nguy hiểm. Dùng cho "Gợi ý", "Mức chắc chắn", cảnh báo vượt tài nguyên, banner kết thúc |
 | `ConfirmDialog` | Cửa ngõ **bắt buộc** cho mọi thao tác tạo version mới hoặc chốt spec. Không có đường nào chốt spec mà không qua đây |
@@ -316,7 +344,8 @@ Kích thước nút lấy từ prop `size` sẵn có của shadcn — **không t
 | `IssueTable` | Cột: Severity · Vấn đề · Lý do · **Judge** · Thao tác. Mặc định sắp theo severity giảm dần. Trên mobile đổi sang `IssueCardList` |
 | `IssueCardList` | **[mobile]** Mỗi issue một card: `SeverityBadge` và tiêu đề ở đầu, lý do ở giữa, `JudgeTracePill` ở chân. Giữ nguyên thứ tự sắp xếp |
 | `JudgeTracePill` | Pill `J1`…`J5`. Nhiều judge cùng nêu thì hiện cả nhóm — đây là bằng chứng trace mà đề yêu cầu |
-| `ConsensusMeter` | Thanh nhỏ "3/5 judge đồng ý" — hiện thực chức năng 13 ở mức nhìn thấy được |
+| `ConsensusMeter` | Thanh nhỏ "3/5 judge đồng ý" — nửa **đồng thuận** của chức năng 13. Mẫu số là **số judge chạy xong**, không phải hằng số 5; judge lỗi phải nói thẳng ra: *"3/4 judge đồng ý (J2 lỗi)"* (SYSTEM_DESIGN_ANALYSIS C3 · F.7) |
+| `DisagreementNote` | Nửa **bất đồng** của chức năng 13 — phần mockup không vẽ và dễ quên nhất. Trên nhóm issue chỉ có 1 judge nêu trong khi các judge khác im lặng, hiện một dòng chú thích rằng đây là ý kiến thiểu số. Bất đồng là **thông tin cho người dùng cân nhắc**, không phải lỗi ⇒ dùng họ `neutral`, không dùng `warn` |
 
 **Version & xuất bản**
 
@@ -336,8 +365,90 @@ Kích thước nút lấy từ prop `size` sẵn có của shadcn — **không t
 | `SourceFilterList` | Danh sách checkbox "Nguồn ưu tiên" (peer-reviewed, proceedings, …) |
 | `AuthCard` | Khung hẹp giữa canvas cho login/register: logo, tiêu đề, form, link chuyển trang |
 | `LoginForm` / `RegisterForm` | react-hook-form + zod; lỗi hiển thị bằng cách map `ErrorCode` sang tiếng Việt (§7.1) |
-| `JobProgress` | Bám SSE, dùng chung cho analyze / search / judge / verify |
-| `EmptyState` / `ErrorState` | Trạng thái rỗng và lỗi dùng chung |
+| `ProjectList` / `ProjectCard` | Màn `/projects`: mỗi dự án một card — tên (lấy từ ý tưởng thô, cắt bớt), bước đang đứng, số version, thời điểm sửa cuối, nút mở. Kèm `EmptyState` cho người dùng mới. Mockup không vẽ màn này nhưng nav có mục "Dự án" và ARCHITECTURE §3 đã cấp route |
+| `JobProgress` | Bám SSE, dùng chung cho analyze / search / judge / verify — xem §5.5 |
+| `EmptyState` / `ErrorState` | Trạng thái rỗng và lỗi dùng chung — xem §5.5 |
+
+### 5.4 Bản đồ màn hình — component nào nằm ở cột nào (desktop)
+
+§6.9 đã nói bố cục **mobile**. Mục này nói bố cục **desktop**, tức là thứ 5 mockup vẽ. Không có mục
+này thì người code biết có những component gì nhưng không biết xếp chúng ở đâu.
+
+Route và ánh xạ 16 chức năng → màn hình: `ARCHITECTURE.md` §3. Ở đây chỉ nói **bố cục**.
+
+| Bước | Cột 1 — ngữ cảnh (`brand`) | Cột 2 — nội dung hệ thống sinh (`ok`/trung tính) | Cột 3 — quyết định (`decide`) | Preset (§6.4) |
+|---|---|---|---|---|
+| **B1** Nhập ý tưởng & Làm rõ | `IdeaInput` + `TopicChipList` + nút *Phân tích ý tưởng* | `ParaphraseCard` → `KeyProblemList` → `HintBox` mức chắc chắn (§3.8) → **`CardBoard`** | 2–3 câu hỏi làm rõ, mỗi câu một `OptionList` *gọn* + `OptionHint` | Cân bằng |
+| **B2** Nghiên cứu & Research Gap | `Panel` từ khoá (`KeywordChipInput`) + `Panel` `SourceFilterList` | `RelatedWorkTable` | `GapCard` → `OptionList` *gọn* (hướng tập trung) + `OptionHint` | Giữa rộng |
+| **B3** Contribution & Thí nghiệm | `Panel` contribution (danh sách đánh số) + `ClaimEvidenceCard` | `ExperimentPlanList` | `StatTileGrid` → `EstimateRows` → `HintBox` cảnh báo vượt tài nguyên → **`OptionList` duyệt kế hoạch** | Cân bằng |
+| **B4** Judge độc lập & Sửa spec | `SpecOutline` + nút *Xem chi tiết Spec tạm thời* | `JudgePanel` → dải "Judge đánh giá độc lập, không xem nhận xét của nhau" → `IssueTable` + `ConsensusMeter` + `DisagreementNote` | `OptionList` *xếp chồng* → `ParaphraseCard` ("Cách hệ thống đang hiểu lựa chọn") → `BeforeAfter` → `HintBox` `ok` "Spec cuối cùng" → nút chốt qua `ConfirmDialog` | Giữa rộng |
+| **B5** Spec cuối | `SpecChecklist` + `HintBox` tóm tắt đề tài | `HowItWorksList` → `BeforeAfter` ("Ví dụ dễ hiểu") → `ExportBar` | — (không có cột quyết định) | Hai cột |
+
+Đáy mọi bước trừ B5: `SummaryBar` (gồm `RoundTracker`). B5 thay bằng `HintBox` `ok` chiếm trọn bề
+rộng — banner "Spec đã sẵn sàng cho bước triển khai hoặc viết proposal" của mockup 5.
+
+**Ba chỗ bản đồ này lệch mockup, đều có lý do — [QĐ]:**
+
+1. **`CardBoard` ở B1 là khối bắt buộc mà mockup không vẽ.** Đề bước 2 và chức năng 3 đòi phân rã ý
+   tưởng thành **8 loại thẻ mang 6 trạng thái**; mockup 1 chỉ vẽ phần diễn giải. Không có `CardBoard`
+   thì sáu `CardStatus` ở §3.2 không bao giờ hiện ra trên màn hình, và cả §3 trở thành trang trí.
+   Đặt nó **dưới** phần diễn giải trong cột giữa, cuộn dọc — không tách thành bước riêng, vì
+   `ARCHITECTURE.md` §4 đã gộp bước 1–2 của đề vào B1.
+2. **B3 có thêm một `OptionList` mà mockup 3 không có.** Mockup 3 để cột phải làm việc *thông báo*
+   (kiểm tra khả thi), nên bước này không có chỗ nào để người dùng quyết. Điều đó vi phạm NFR-G-3
+   *không bước nào tự chốt*. Thêm một khối quyết định gọn ở cuối cột phải: **duyệt kế hoạch · giảm
+   quy mô theo đề xuất · Other**. Ba phương án này khớp thẳng với câu *"hệ thống có thể đề xuất giảm
+   quy mô nếu vượt tài nguyên"* ở bước 7 của đề.
+3. **`DisagreementNote` ở B4.** Chức năng 13 đòi tổng hợp **cả đồng thuận lẫn bất đồng**; mockup chỉ
+   vẽ bảng issue. Không có nó thì nửa sau của chức năng 13 không demo được.
+
+**Màn hình ngoài wizard** — đủ để phủ nav và 16 chức năng, không có màn nào thừa:
+
+| Route | Nội dung | Bố cục |
+|---|---|---|
+| `/login`, `/register` | `AuthCard` + `LoginForm`/`RegisterForm` | Một cột hẹp giữa canvas ở mọi bề rộng |
+| `/` (Trang chủ) | `IdeaInput` cỡ lớn để mở dự án mới + vài `ProjectCard` gần đây | Một cột, có bề rộng tối đa |
+| `/projects` (Dự án) | `ProjectList` + `EmptyState` | Lưới card: 1 cột mobile · 2 tablet · 3 desktop |
+| `/projects/:id/versions` (Lịch sử phiên bản) | `VersionTimeline` + `DiffView` + `DecisionLog` | Hai cột desktop (chọn bên trái, diff bên phải); mobile chọn bằng sheet rồi mới hiện diff |
+| `/help` (Trợ giúp) | Trang tĩnh một màn | Một cột |
+
+### 5.5 Trạng thái chờ, rỗng, lỗi — phần UX chiếm nhiều thời gian nhất của app
+
+Đây **không** phải chi tiết phụ. Một lời gọi phân tích mất 20–40s, tìm nguồn 20–60s, chạy 5 judge tới
+~90s (`SYSTEM_DESIGN_ANALYSIS.md` NFR-SRC-3, NFR-VER-3, NFR-JDG-3). Cộng lại, **người dùng nhìn màn
+hình chờ nhiều hơn nhìn màn hình xong**. Nếu không chốt trước thì mỗi chỗ sẽ tự chế một kiểu chờ.
+
+**Bốn kiểu chờ, chọn theo thời gian và theo việc có tiến độ thật hay không:**
+
+| Kiểu | Dùng khi | Hình thức |
+|---|---|---|
+| Nút bận | Thao tác đồng bộ dưới ~1s: lưu quyết định, ước lượng tài nguyên | Nút chuyển trạng thái vô hiệu + vòng xoay nhỏ trong nút. Không skeleton, không overlay |
+| Skeleton | Đọc dữ liệu đã có, dưới vài giây: mở lại một bước, tải danh sách dự án | `skeleton` của shadcn, **đúng hình khối của nội dung thật** — sai hình thì trang nhảy khi dữ liệu về |
+| `JobProgress` có tiến độ | Job nền **biết được tổng số việc**: 5 judge, N unit verify | Thanh tiến độ + "3/5 judge xong" + dòng việc đang chạy. Ở B4, `JudgeCard` tự sáng lên theo SSE — dãy chấm của nó **là** tiến độ, không cần thêm thanh thứ hai |
+| `JobProgress` không tiến độ | Job nền **một lời gọi, không chia nhỏ được**: paraphrase, sinh gap, sinh kế hoạch | Thanh chạy vô định + **câu mô tả hệ thống đang làm gì bằng tiếng Việt** + thời gian đã trôi. Không hiện phần trăm giả |
+
+**Sáu luật, tất cả đều để tránh một màn hình đứng im không giải thích được:**
+
+1. **Chờ nằm tại chỗ của nội dung**, không phải overlay toàn trang. Người dùng vẫn phải đọc được cột
+   khác và vẫn cuộn được — đó là lý do mọi việc dài đều là job nền chứ không phải request đồng bộ.
+2. **Luôn nói đang làm gì bằng chữ.** "Đang tìm nguồn trên Semantic Scholar…" chứ không phải một vòng
+   xoay trống. Chuỗi này là **tiếng Việt**, kể cả khi kết quả sinh ra là tiếng Anh (STACK §10).
+3. **Quá ~10 giây thì hiện thời gian đã trôi**; quá ~60 giây thì thêm một dòng trấn an rằng job vẫn
+   chạy và có thể rời trang rồi quay lại. Đây là lời hứa mà `GET /jobs/:id` giữ được, không phải lời
+   nói suông.
+4. **Mất kết nối SSE không được trông giống job chết.** Hiện dải "mất kết nối, đang thử lại"; khi
+   không nối lại được thì đổi sang nút *Tải lại trạng thái* gọi `GET /jobs/:id`. SSE là đường tăng
+   tốc, không phải nguồn sự thật (`SYSTEM_DESIGN_ANALYSIS.md` S5 · F.8) — giao diện phải phản ánh
+   đúng điều đó.
+5. **Lỗi bộ phận hiện ra, không bị nuốt.** Ba lỗi bộ phận đã biết, mỗi lỗi một chỗ hiển thị:
+   judge lỗi → `JudgeCard` đó mang trạng thái lỗi và `ConsensusMeter` đổi mẫu số; nguồn thiếu
+   abstract → `SupportTag` `WEAK` kèm lý do; Crossref chết → cờ *DOI chưa kiểm được* trên `SourceChip`.
+   Job vẫn `DONE` — người dùng thấy cái gì được, cái gì không.
+6. **`ErrorState` luôn có một hành động.** Chạy lại, sửa đầu vào, hoặc quay về bước trước. Thông báo
+   lấy từ `lib/error-code.ts` (§7.1), **không** in mã lỗi thô ra màn hình.
+
+`EmptyState` cũng theo luật 6: mỗi trạng thái rỗng nói rõ vì sao rỗng và nút tiếp theo là gì — chưa
+có dự án nào, chưa tìm nguồn lần nào, judge chưa chạy vòng nào.
 
 ---
 
@@ -349,20 +460,21 @@ mockup và pattern chuẩn, không sao chép.
 ### 6.1 Ba tầng bố cục, trên breakpoint mặc định của Tailwind
 
 Dùng **nguyên** thang breakpoint của Tailwind, không thêm không bớt, không khai lại. Bố cục cấp trang
-chỉ cần **hai trong năm mốc**: mốc tablet và mốc desktop. Ba mốc còn lại vẫn tồn tại và shadcn vẫn
-dùng chúng bên trong `components/ui/` — ta không đụng tới.
+chỉ cần **hai trong năm mốc**: `md` (768px) và `xl` (1280px) — cùng hai mốc mà STACK §5 chốt, ghi tên
+ra đây để hai tài liệu không trôi khỏi nhau. Ba mốc còn lại (`sm`, `lg`, `2xl`) vẫn tồn tại và shadcn
+vẫn dùng chúng bên trong `components/ui/` — ta không đụng tới.
 
 | Tầng | Bố cục |
 |---|---|
-| **Mobile** (dưới mốc tablet) | **Một cột + bottom sheet** |
-| **Tablet** | **Hai cột**: ngữ cảnh và nội dung gộp bên trái, quyết định giữ bên phải và dính khi cuộn |
-| **Desktop** | **Ba cột** đầy đủ, trong một container có bề rộng tối đa, căn giữa |
+| **Mobile** (dưới `md`) | **Một cột + bottom sheet** |
+| **Tablet** (`md` → dưới `xl`) | **Hai cột**: ngữ cảnh và nội dung gộp bên trái, quyết định giữ bên phải và dính khi cuộn |
+| **Desktop** (`xl` trở lên) | **Ba cột** đầy đủ, trong một container có bề rộng tối đa, căn giữa |
 
 Viết **mobile-first** như Tailwind hướng dẫn: kiểu không tiền tố áp cho mọi bề rộng, tiền tố tablet
 và desktop chỉ chồng thêm khi màn hình rộng ra.
 
-Bề rộng để kiểm tra: **375px** (điện thoại phổ biến nhất), **đúng mốc tablet**, **đúng mốc desktop**.
-Rộng hơn mốc desktop thì bố cục không đổi nữa nên không cần kiểm riêng.
+Bề rộng để kiểm tra: **375px** (điện thoại phổ biến nhất), **768px** (đúng `md`), **1280px** (đúng
+`xl`). Rộng hơn `xl` thì bố cục không đổi nữa nên không cần kiểm riêng.
 
 ### 6.2 Vấn đề thật của màn hình này
 
@@ -492,11 +604,16 @@ trang — hai hệ song song sẽ khiến không ai đoán được cái nào th
 
 | Bước | Ngữ cảnh → accordion | Nội dung → toàn bề rộng | Quyết định → `DecisionSheet` |
 |---|---|---|---|
-| **B1** Nhập ý tưởng | *Không thu gọn* — ô nhập ý tưởng là hành động chính của bước này | Cách hệ thống hiểu + Vấn đề chính + Mức chắc chắn | Ba câu hỏi làm rõ, mỗi câu một khối trong sheet |
+| **B1** Nhập ý tưởng | *Không thu gọn* — `IdeaInput` là hành động chính của bước này | `ParaphraseCard` → `KeyProblemList` → mức chắc chắn → **`CardBoard` một cột, mặc định lọc theo trạng thái cần chú ý** | Ba câu hỏi làm rõ, mỗi câu một khối trong sheet |
 | **B2** Nghiên cứu | Từ khoá + "Nguồn ưu tiên" (đóng) | `RelatedWorkCardList` | Research gap + lựa chọn hướng |
-| **B3** Contribution | Contribution + `ClaimEvidenceCard` (mở) | `ExperimentPlanList` → `StatTileGrid` → `EstimateRows` → cảnh báo vượt tài nguyên | Duyệt claim–evidence và kế hoạch |
-| **B4** Judge | "Spec tạm thời" (đóng) | `JudgePanel` cuộn ngang → dải "judge độc lập" → `IssueCardList` | `OptionList` A/B/C/Other → `BeforeAfter` → nút xác nhận |
-| **B5** Spec cuối | — | `SpecChecklist` → tóm tắt → `BeforeAfter` | Không có sheet; `ExportBar` dính đáy |
+| **B3** Contribution | Contribution + `ClaimEvidenceCard` (mở) | `ExperimentPlanList` → `StatTileGrid` → `EstimateRows` → cảnh báo vượt tài nguyên | Duyệt kế hoạch: duyệt · giảm quy mô · Other (§5.4 #2) |
+| **B4** Judge | `SpecOutline` (đóng) | `JudgePanel` cuộn ngang → dải "judge độc lập" → `IssueCardList` + `ConsensusMeter` | `OptionList` *xếp chồng* → `BeforeAfter` → nút xác nhận |
+| **B5** Spec cuối | — | `SpecChecklist` → `HowItWorksList` → `BeforeAfter` | Không có sheet; `ExportBar` dính đáy |
+
+**`CardBoard` ở mobile.** Tám nhóm × sáu trạng thái là khối dày nhất của B1. Ở 375px xếp một cột, mỗi
+loại thẻ một `accordion`; các nhóm còn thẻ ở trạng thái `MISSING`/`AMBIGUOUS`/`CONFLICT`/`UNSUPPORTED`
+**mở sẵn**, nhóm đã `CONFIRMED` hết thì đóng. Nguyên tắc quen thuộc của §6.9: mở hay đóng tuỳ chỗ đó
+còn việc hay không, không tuỳ vị trí ở desktop.
 
 Nguyên tắc chung: **accordion mở hay đóng tuỳ bước đó user còn phải nhập gì không**, không theo vị
 trí cột ở desktop.
@@ -512,6 +629,12 @@ Coi là xong khi ở cả ba bề rộng kiểm tra (§6.1):
 - [ ] Sáu `CardStatus` + ba `Severity` + ba `SupportLabel` vẫn hiện đủ nhãn chữ ở 375px — không rút
       gọn badge thành chấm (§3.6)
 - [ ] Xoay ngang điện thoại không vỡ
+- [ ] `CardBoard` đọc được ở 375px: tám loại thẻ đều tới được, thẻ dài không tràn ngang (§6.9)
+- [ ] Mọi trạng thái chờ ở §5.5 kiểm ở 375px — thanh tiến độ, dòng mô tả và thời gian đã trôi không
+      bị `DecisionSheet` che
+- [ ] Đi được **trọn** năm bước ở 375px bằng bàn phím ngoài, không dùng chuột (NFR-G-11)
+- [ ] Bảng dài (`RelatedWorkTable`, `IssueTable`, `DecisionLog`) đã đổi sang card list, không còn
+      bảng thật ở dưới mốc `md`
 
 ### 6.11 Phương án đã cân nhắc và loại
 
@@ -552,7 +675,7 @@ Mục này nói về **tổ chức file**, không nói về styles — nên nó 
 
 ```
 frontend/src/lib/types.ts         3 union type khai lại tay từ backend/src/contracts/ (STACK §3.1)
-frontend/src/lib/status-style.ts  ánh xạ CardStatus / Severity / SupportLabel → class
+frontend/src/lib/status-style.ts  ánh xạ CardStatus / Severity / SupportLabel / ConfidenceLevel → class
 frontend/src/lib/error-code.ts    ErrorCode → thông báo tiếng Việt
 ```
 
@@ -594,6 +717,11 @@ grep -rnE "(bg|text|border|ring|from|to)-(red|green|blue|yellow|orange|purple|vi
 | Nội dung 14 mục spec render **nguyên văn tiếng Anh** do backend trả, FE không dịch | STACK §10 — dịch ở FE làm lệch cái mà verifier đã chấm |
 | Sửa enum ở `backend/src/contracts/` → sửa `types.ts` **và** `status-style.ts` trong **cùng commit** | STACK §3.1 luật 2 |
 | Không thêm họ màu mới ngoài tám họ ở §2 | Thêm là phá luật "đỏ/cam/vàng = có vấn đề" ở §1 |
+| **Không tắt vòng focus.** Giữ `:focus-visible` mặc định của shadcn; chỗ tự viết phải có vòng focus thấy được | Đi hết năm bước bằng bàn phím là một mục nghiệm thu (§6.10). Tắt outline cho "sạch" là cách nhanh nhất phá nó |
+| Mọi nút chỉ có icon (`SourceChip`, nút xoá chip, nút mở accordion) phải có nhãn cho trình đọc màn hình | Không có chữ thì không có gì để đọc — và §6.7 đã cấm đặt thông tin trong `title`/hover |
+| Thứ tự tab đi theo thứ tự đọc: ngữ cảnh → nội dung → quyết định | Trùng với thứ tự ba cột ở §1 nguyên tắc 2, nên không cần `tabindex` thủ công nếu DOM viết đúng thứ tự |
+| Chuỗi mô tả trạng thái chờ (§5.5 luật 2) đặt cùng chỗ với `error-code.ts`, không rải trong component | Cùng lý do với ánh xạ enum: một nơi sửa, không phải mười chỗ |
+| Ánh xạ `ConfidenceLevel` (§3.8) để trong `status-style.ts` nhưng **không** đi qua ba component badge | §3.8 — nó là dòng chữ trong `HintBox`, không phải vật thể thứ tư |
 
 ---
 
@@ -602,13 +730,17 @@ grep -rnE "(bg|text|border|ring|from|to)-(red|green|blue|yellow|orange|purple|vi
 | # | Mâu thuẫn | Xử lý |
 |---|---|---|
 | 1 | Mockup 5 gắn nhãn stepper `1.Nhập ý tưởng · 2.Làm rõ · 3.Nghiên cứu · 4.Judge · 5.Spec cuối`, nhưng tiêu đề trang của mockup 1–4 lại là `1.Nhập ý tưởng & Làm rõ · 2.Nghiên cứu & Research Gap · 3.Contribution & Kế hoạch thí nghiệm · 4.Judge & Xác nhận` — lệch một bước | Lấy đánh số của mockup 1–4 (tự nhất quán và khớp 10 bước của đề). Nhãn chốt ở `ARCHITECTURE.md` §4 |
-| 2 | Mockup 1–4 đặt stepper ở đáy, mockup 5 đặt ở đầu | Chọn đầu trang cho cả năm bước — §6.11 |
+| 2 | Mockup 1–4 có một dải node ở đáy, mockup 5 có một dải node ở đầu — **và hai dải đó không phải cùng một thứ** | Đọc kỹ thì dải ở đáy đổi nhãn theo từng mockup (`Ý tưởng·Làm rõ·Xác nhận·Sang bước tiếp theo` ở mockup 1 và 3; thêm `Judge độc lập·Hoàn tất` ở mockup 4) và luôn kết bằng một node **Xác nhận** — đó là tiến độ *bên trong một vòng*, không phải 5 bước toàn cục. Chốt: `Stepper` 5 bước lên đầu trang cho cả năm bước (§6.11); dải ở đáy **giữ lại** thành `RoundTracker` trong `SummaryBar` (§5.3). Bản trước của file này coi hai dải là một và bỏ mất dải dưới — mất luôn phần UI thể hiện vòng lặp ở bước 10 của đề |
 | 3 | Mockup 1–4 dùng nav có avatar xám không tên; mockup 5 có thêm chuông và tên user | Lấy nav của mockup 5, **bỏ chuông** (không có tính năng thông báo trong 16 chức năng) — có auth thì phải hiện được đang đăng nhập bằng tài khoản nào |
 | 4 | Badge `MINOR` ở mockup 4 dùng chữ trắng trên nền vàng, không đọc được | Đổi sang chữ màu mực — §3.3 |
 | 5 | Mockup 1 dùng cam để trang trí danh sách "Vấn đề chính", trong khi §1 nguyên tắc 4 giữ cam riêng cho `Severity` | Đổi khối đó sang họ `warn` |
 | 6 | Kim-chỉ-nam §4 và STACK §5 (bản cũ) ghi "không cần responsive mobile, đừng tốn thời gian" | **Đã bỏ luật đó** theo yêu cầu của bạn. Responsive giờ là ràng buộc bắt buộc — §6. Cả hai file đã sửa; đề bài vốn không cấm, chỉ là không đòi |
 | 7 | Mockup chỉ có bản desktop, không có bản mobile để đối chiếu | Toàn bộ phần mobile ở §6 là **[QĐ]**. Nếu giảng viên có bản mobile thì phải đối chiếu lại |
 | 8 | Bản trước của file này xoá breakpoint mặc định, tự khai thang chiều cao nút, và chép chuỗi class/CSS/px vào tài liệu | **Đã bỏ hết.** File giờ chỉ mô tả ý đồ bằng ngôn ngữ tự nhiên; cách viết cụ thể do Tailwind + shadcn quyết lúc implement |
+| 9 | Mockup 5 liệt kê **10 mục** trong "Bản đặc tả nghiên cứu cuối", nhưng đề bước 8 liệt kê **14 mục** (mockup thiếu *Proposed approach*, *Baselines và metrics*, *Ablation plan*, *Open issues*) | Lấy **14** theo đề — mockup là gợi ý, đề là yêu cầu. Đây cũng là con số mà `ARCHITECTURE.md` và chức năng 11 dùng. `SpecChecklist` phải cuộn được ở mobile vì 14 dòng dài hơn một màn 375px |
+| 10 | **Không mockup nào vẽ bảng thẻ phân rã**, trong khi đề bước 2 + chức năng 3 đòi 8 loại thẻ × 6 trạng thái — và cả §3 của file này chỉ có nghĩa khi bảng đó tồn tại | Thêm `CardBoard` vào cột giữa của B1 (§5.4 #1). Nếu bỏ thì sáu `CardStatus` không bao giờ xuất hiện trên màn hình nào |
+| 11 | **Mockup 3 không có cột quyết định** — cột phải là "Kiểm tra tính khả thi", thuần thông báo. Bước đó không có chỗ nào để người dùng chốt, trái NFR-G-3 | Thêm một `OptionList` gọn ở cuối cột phải B3: duyệt kế hoạch · giảm quy mô theo đề xuất · Other (§5.4 #2) |
+| 12 | Mockup 1–2 vẽ option thành ô ngắn nằm ngang; mockup 4 vẽ option thành hàng chiếm trọn bề rộng có dấu tích | Không phải mâu thuẫn mà là **hai biến thể của cùng một component**, chọn theo độ dài nhãn — đã ghi vào `OptionList` (§5.3) |
 
 ---
 
@@ -627,3 +759,11 @@ grep -rnE "(bg|text|border|ring|from|to)-(red|green|blue|yellow|orange|purple|vi
       `DecisionSheet` phải dựng ngay từ phase 0 — không bọc mobile lên sau được. *(chờ: bạn)*
 - [ ] Máy tính bảng nằm ngang có cần một tầng riêng không? Hiện nó dùng chung bố cục hai cột với
       tablet dọc. *(chờ: bạn)*
+- [ ] **`CardBoard` ở B1** (§5.4 #1) là khối đề bắt buộc nhưng mockup không vẽ. Cần bạn xác nhận vị
+      trí: dưới phần diễn giải trong cột giữa của B1, hay tách thành một bước riêng giữa B1 và B2.
+      Tôi chọn phương án thứ nhất vì `ARCHITECTURE.md` §4 đã gộp bước 1–2 của đề vào B1. *(chờ: bạn)*
+- [ ] **Khối quyết định thêm vào B3** (§5.4 #2) — mockup 3 không có, nhưng thiếu nó thì B3 tự chốt,
+      trái NFR-G-3. Cần bạn xác nhận ba phương án *duyệt · giảm quy mô · Other* là đúng ý. *(chờ: bạn)*
+- [ ] **`RoundTracker`** (§8 #2) — tôi đọc dải node ở đáy mockup 1–4 là tiến độ trong một vòng. Nếu
+      giảng viên có ý khác thì đây là chỗ hiểu sai dễ xảy ra nhất trong cả file. *(chờ: bạn)*
+- [ ] `SpecChecklist` lấy **14 mục** theo đề chứ không phải 10 mục như mockup 5 (§8 #9). *(chờ: bạn)*
