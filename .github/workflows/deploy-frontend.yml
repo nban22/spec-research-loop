@@ -104,7 +104,7 @@ jobs:
             else
               # Không có token thì vẫn đi tiếp: server có thể đã đăng nhập sẵn, hoặc package
               # để public. Nếu cả hai đều không đúng, lệnh pull ngay dưới sẽ báo lỗi rõ ràng.
-              echo "GHCR_PULL_TOKEN chưa đặt — dùng thông tin đăng nhập sẵn có trên server."
+              echo "GHCR_PULL_TOKEN chưa đặt (repo secret) — dùng thông tin đăng nhập sẵn có trên server."
             fi
             export FRONTEND_IMAGE="${{ needs.build.outputs.image }}"
             docker compose pull frontend
