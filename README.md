@@ -27,7 +27,7 @@ echo "BACKEND_ORIGIN=http://localhost:3001" > frontend/.env.local
 | `DEEPSEEK_API_KEY` | ✅ | https://platform.deepseek.com |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | ✅ | ≥ 32 ký tự, **hai chuỗi khác nhau** |
 | `OPENALEX_MAILTO` | ✅ | Email bất kỳ, để vào polite pool |
-| `SEMANTIC_SCHOLAR_API_KEY` | ❌ | **Tuỳ chọn.** Có key → 1 req/s ổn định; không key → dùng pool chung, gặp 429 thì tự fallback sang OpenAlex. Điền key vào `.env` là đủ, **không phải sửa dòng code nào** |
+| `SEMANTIC_SCHOLAR_API_KEY` | ❌ | **Tuỳ chọn.** Key dạng `s2k-…`, gửi ở header `x-api-key`. Có key → 1 req/s ổn định (cộng dồn mọi endpoint); không key → dùng pool chung, gặp 429 thì tự fallback sang OpenAlex. Điền key vào `.env` là đủ, **không phải sửa dòng code nào** |
 
 Thiếu biến bắt buộc thì app **fail ngay lúc boot**, không fail giữa request.
 

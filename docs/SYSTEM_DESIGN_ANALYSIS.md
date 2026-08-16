@@ -189,7 +189,7 @@ Chốt ở `STACK.md`; ở đây chỉ tóm để đọc liền mạch.
 | Phụ thuộc ngoài | Dùng cho | Giới hạn đã biết | Rủi ro nếu chết/chậm |
 |---|---|---|---|
 | **DeepSeek API** | Mọi việc sinh nội dung, 5 judge, entailment, auditor | JSON mode **không** ép schema; không có `seed`; không có embedding API | Toàn bộ phần sinh nội dung dừng. **Không có provider dự phòng** — quyết định có ý thức của STACK §2.1 |
-| **Semantic Scholar** | Nguồn chính | Không key: pool chung **5.000 req/5 phút cho toàn thế giới** → không dự đoán được. Có key: **1 req/s** ổn định | Không có nguồn ⇒ bước B2 tắc. Đây là *đúng thiết kế*: thà tắc còn hơn để LLM bịa |
+| **Semantic Scholar** | Nguồn chính | Không key: pool chung **5.000 req/5 phút cho toàn thế giới** → không dự đoán được. Có key (đã cấp 2026-08-16): **1 req/s cộng dồn trên mọi endpoint** — ta đặt nhịp 1.100ms để nằm *dưới* ngưỡng như S2 yêu cầu | Không có nguồn ⇒ bước B2 tắc. Đây là *đúng thiết kế*: thà tắc còn hơn để LLM bịa |
 | **OpenAlex** | Nguồn dự phòng + lấy abstract khi S2 thiếu | 100.000 req/ngày, 10 req/s; vào polite pool bằng `mailto` | Mất lớp dự phòng, phụ thuộc hoàn toàn vào S2 |
 | **Crossref** | Verify DOI ở tầng L0 của verifier | Polite pool bằng contact info | Mất **một trong hai** bằng chứng tồn tại của nguồn → xử lý ở §3.4 |
 | **Neon Postgres** | Toàn bộ dữ liệu | Free tier ~0.5 GB | App chết hoàn toàn. Không có HA — chấp nhận (NFR-G-8) |

@@ -33,7 +33,12 @@ const CROSSREF_ENDPOINT = 'https://api.crossref.org/works';
 /** DOI của arXiv/Zenodo đăng ký ở DataCite chứ không phải Crossref — xem `verifyDoi`. */
 const DATACITE_ENDPOINT = 'https://api.datacite.org/dois';
 
-/** Nhịp gọi khi CÓ key: 1 req/s ổn định (SYSTEM_DESIGN_ANALYSIS §1.5). */
+/**
+ * Nhịp gọi khi CÓ key: hạn mức S2 cấp là 1 req/s **cộng dồn trên mọi endpoint**, và họ yêu cầu đặt
+ * nhịp *thấp hơn* ngưỡng đó. 1.100ms ⇒ ~0,91 req/s, dưới ngưỡng (SYSTEM_DESIGN_ANALYSIS §1.5).
+ * "Cộng dồn mọi endpoint" là lý do mọi lời gọi S2 phải đi qua **một** gate `s2` duy nhất — thêm
+ * endpoint S2 mới thì dùng lại gate này, đừng mở gate riêng.
+ */
 const S2_INTERVAL_WITH_KEY_MS = 1_100;
 /** Nhịp gọi khi KHÔNG có key: pool chung dùng với cả thế giới ⇒ nới rộng hẳn. */
 const S2_INTERVAL_NO_KEY_MS = 3_500;
@@ -44,7 +49,8 @@ const OPENALEX_INTERVAL_MS = 150;
  * chứ không phải tải của ta (C1 · F.3).
  *
  * Không có key Semantic Scholar là **ràng buộc thiết kế, không phải blocker**: client tự chọn
- * chế độ lúc runtime. Khi chủ dự án điền key vào `.env`, không dòng code nào phải sửa.
+ * chế độ lúc runtime. Key đã được cấp 2026-08-16 và điền vào `.env` — đúng như thiết kế, không
+ * dòng code nào phải sửa. Nhánh không-key vẫn giữ nguyên vì người chấm clone repo sẽ chạy không key.
  */
 @Injectable()
 export class SourceClient {

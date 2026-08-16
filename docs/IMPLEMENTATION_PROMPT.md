@@ -55,9 +55,11 @@ hỏi, đừng tự chọn một bên.
 | `DEEPSEEK_API_KEY` | **Đã có** | Dùng ngay |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Chưa có | Tự sinh, **hai chuỗi khác nhau**, ≥32 byte |
 | `OPENALEX_MAILTO` | Chưa có | Điền email bất kỳ của chủ dự án để vào polite pool |
-| `SEMANTIC_SCHOLAR_API_KEY` | **Đã request, chưa được cấp** | Xem ngay dưới đây |
+| `SEMANTIC_SCHOLAR_API_KEY` | **Đã có** (cấp 2026-08-16) | Dùng ngay. Vẫn phải chạy được khi thiếu — xem dưới |
 
-**Semantic Scholar chưa có key — đây là ràng buộc thiết kế, không phải blocker.** Làm đúng ba việc:
+**Key Semantic Scholar đã được cấp: hạn mức 1 req/s cộng dồn trên mọi endpoint, gửi ở header
+`x-api-key`.** Nhưng vẫn giữ nguyên thiết kế hai chế độ — người chấm clone repo về sẽ không có key
+trong `.env`. Làm đúng ba việc:
 
 1. **Không** để thiếu key làm app không boot được. Validate env bằng zod (`@nestjs/config`) nhưng khai
    biến này là **optional**; các biến khác thiếu thì fail lúc boot.
