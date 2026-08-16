@@ -124,6 +124,42 @@ Test tự động tương ứng: `src/judge/judge-independence.spec.ts`.
 
 ---
 
+## Deploy
+
+Đang chạy thật: **https://dsa-bus-booking.io.vn** · API **https://api.dsa-bus-booking.io.vn**
+
+CI/CD tự động khi push lên `main` (channel `prod`) hoặc `beta`. Mỗi lần build đẩy một tag bất
+biến `<channel>-<shortsha>` cộng một tag di động (`latest`/`beta`); job deploy ghim **đúng** tag
+vừa build nên rollback được.
+
+```
+push main ──► build image (GHCR) ──► prisma migrate deploy ──► ssh + docker compose up -d
+```
+
+| Thành phần | Nơi đặt |
+| --- | --- |
+| Ảnh Docker | `ghcr.io/nban22/spec-research-loop-{backend,frontend}` |
+| Compose + `.env` | `/opt/outsource/spec-research-loop/{backend,frontend}/` trên server |
+| nginx | `/etc/nginx/sites-available/{,api.}dsa-bus-booking.io.vn`, TLS do certbot |
+| Cổng nội bộ | backend `8110` · frontend `8111` |
+
+Cấu hình GitHub (đặt bằng `gh`): secrets `DEPLOY_HOST` · `DEPLOY_USER` · `DEPLOY_SSH_KEY`;
+environment `production` có secret `DATABASE_URL` và variables `APP_DIR` ·
+`NEXT_PUBLIC_API_BASE` · `BACKEND_ORIGIN` · `GHCR_PULL_USER`.
+
+Bốn điểm dễ hỏng, đã xử lý — chi tiết ghi ngay trong từng file:
+
+1. **`prompts/` phải nằm trong image backend.** Đó là lý do build context là **gốc repo** chứ
+   không phải `backend/`. Thiếu nó thì app boot bình thường, `/health` vẫn xanh, nhưng mọi lời
+   gọi LLM ném `ENOENT`.
+2. **nginx buffer SSE.** Route `/jobs/*/stream` có `proxy_buffering off` + `gzip off` +
+   `read_timeout` dài, nếu không thanh tiến độ 5 judge trông như treo.
+3. **Cookie qua hai subdomain.** Cùng registrable domain ⇒ vẫn là *same-site*, nên giữ được
+   `SameSite=Lax` (chống CSRF) chỉ với `Domain=.dsa-bus-booking.io.vn`, không phải hạ xuống `None`.
+   `EventSource` phải bật `withCredentials` mới gửi cookie cross-origin.
+4. **Chỉ một replica.** `JobsService` giữ SSE state trong bộ nhớ process; hai replica thì client
+   có thể mở stream trúng instance không chạy job đó.
+
 ## Cấu trúc
 
 ```
