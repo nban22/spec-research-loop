@@ -16,6 +16,10 @@ on:
     paths:
       - 'backend/**'
       - 'prompts/**' # deliverable #5 nằm trong image backend
+      # …nhưng `prompts/dev-log/` là log nội bộ, không phải prompt runtime, và nó được ghi ở
+      # CUỐI MỖI TURN sửa file (rule prompt-audit §B). Không loại trừ thì mỗi lần chép dev-log
+      # lại build và deploy backend một lần vô ích.
+      - '!prompts/dev-log/**'
       - '.github/workflows/deploy-backend.yml'
       - '.dockerignore'
   workflow_dispatch:
