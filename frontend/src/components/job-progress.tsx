@@ -92,7 +92,7 @@ export function JobProgress({
               <button
                 type="button"
                 onClick={onReload}
-                className="underline underline-offset-2"
+                className="cursor-pointer underline underline-offset-2"
               >
                 Tải lại trạng thái
               </button>

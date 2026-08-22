@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, api } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { ErrorState } from './states';
 
 /** Chip chủ đề **chỉ đọc** — khác `KeywordChipInput` (sửa được, dùng ở B2). Đừng gộp hai thứ. */
@@ -67,13 +68,18 @@ export function IdeaInput({
           aria-label="Ý tưởng nghiên cứu"
         />
       ) : (
-        <div className="border-brand-line bg-brand-soft relative rounded-md border-l-4 px-3 py-2.5">
+        <div
+          className={cn(
+            'border-brand-line bg-brand-soft relative rounded-md border-l-4 px-3 py-2.5',
+            editable && 'pr-11',
+          )}
+        >
           <p className="text-ink-1 text-sm leading-relaxed">{text}</p>
           {editable && (
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-brand-strong hover:bg-brand-line absolute top-1.5 right-1.5 rounded p-1.5"
+              className="border-brand-line bg-surface text-brand-strong hover:bg-brand-line absolute top-1.5 right-1.5 cursor-pointer rounded-md border p-1.5 shadow-xs"
               aria-label="Sửa ý tưởng"
             >
               <Pencil className="size-3.5" aria-hidden />

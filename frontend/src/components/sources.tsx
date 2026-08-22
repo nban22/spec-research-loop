@@ -36,7 +36,7 @@ export function SourceChip({ source }: { source: ApiSource }) {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="border-hairline bg-sunken text-ink-2 hover:border-brand-line inline-flex max-w-full items-center gap-1 rounded-sm border px-2 py-1 text-xs"
+          className="border-hairline bg-sunken text-ink-2 hover:border-brand-line inline-flex max-w-full cursor-pointer items-center gap-1 rounded-sm border px-2 py-1 text-xs"
         >
           <span className="truncate">{source.title}</span>
           {source.year && <span className="text-ink-4 shrink-0">({source.year})</span>}
@@ -237,7 +237,7 @@ export function KeywordChipInput({
             <button
               type="button"
               onClick={() => onChange(keywords.filter((x) => x !== k))}
-              className="hover:bg-brand-line rounded p-1"
+              className="hover:bg-brand-line cursor-pointer rounded p-1"
               aria-label={`Xoá từ khoá ${k}`}
             >
               <X className="size-3" aria-hidden />

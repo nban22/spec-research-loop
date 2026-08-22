@@ -132,7 +132,7 @@ export function TopNav() {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-full"
+                className="flex cursor-pointer items-center gap-2 rounded-full"
                 aria-label="Tài khoản"
               >
                 <Avatar className="size-8">

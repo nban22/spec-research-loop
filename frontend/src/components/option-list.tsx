@@ -93,7 +93,7 @@ export function OptionList({
                   ? 'border-decide-ink bg-decide-soft border-2'
                   : 'border-hairline bg-surface hover:border-decide-line',
                 variant === 'compact' ? 'text-xs' : 'w-full text-sm',
-                disabled && 'opacity-60',
+                disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
               )}
             >
               <span className="flex items-start gap-2">
@@ -101,7 +101,7 @@ export function OptionList({
                 <span className="min-w-0 flex-1">
                   <span className="text-ink-1 font-medium">{o.label}</span>
                   {o.recommended && (
-                    <span className="text-ok-strong bg-ok-soft ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold">
+                    <span className="text-ok-strong bg-ok-soft ml-2 inline-flex whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold">
                       GỢI Ý
                     </span>
                   )}

@@ -146,7 +146,7 @@ export function Step1({ projectId }: { projectId: string }) {
         <button
           type="button"
           onClick={() => router.push(`/projects/${projectId}/step/2`)}
-          className="bg-brand-ink w-full rounded-md px-4 py-2.5 text-sm font-medium text-white"
+          className="bg-brand-ink w-full cursor-pointer rounded-md px-4 py-2.5 text-sm font-medium text-white"
         >
           Sang bước tiếp theo
         </button>

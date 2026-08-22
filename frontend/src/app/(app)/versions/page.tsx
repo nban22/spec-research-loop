@@ -46,13 +46,13 @@ export default function VersionsIndexPage() {
 
 function ProjectCardWithVersionLink({ project }: { project: ProjectSummary }) {
   return (
-    <div className="space-y-1">
+    <div>
       <ul className="contents">
         <ProjectCard project={project} />
       </ul>
       <Link
         href={`/projects/${project.id}/versions`}
-        className="text-brand-strong block px-3 text-xs underline underline-offset-2"
+        className="text-brand-strong mt-3 block px-3 text-xs underline underline-offset-2"
       >
         Xem lịch sử phiên bản →
       </Link>
