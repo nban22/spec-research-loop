@@ -30,7 +30,7 @@ describe('Auth API (e2e)', () => {
     await app.close();
   });
 
-  it('POST /auth/register creates user and returns tokens', async () => {
+  it('POST /auth/register creates user and sets auth cookies', async () => {
     const server = app.getHttpServer() as request.Test;
     const res = await request(server)
       .post('/auth/register')
@@ -43,6 +43,7 @@ describe('Auth API (e2e)', () => {
 
     const body = res.body as { user: { email: string } };
     expect(body.user.email).toBe('user1@example.com');
+    expect(res.get('Set-Cookie')).toBeDefined();
   });
 
   it('POST /auth/register rejects duplicate email', async () => {
@@ -78,8 +79,8 @@ describe('Auth API (e2e)', () => {
       })
       .expect(200);
 
-    const body = res.body as { user: unknown; access_token: string };
-    expect(body).toHaveProperty('user');
-    expect(body).toHaveProperty('access_token');
+    const body = res.body as { user: { email: string } };
+    expect(body.user.email).toBe('user1@example.com');
+    expect(res.get('Set-Cookie')).toBeDefined();
   });
 });

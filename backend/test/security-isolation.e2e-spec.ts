@@ -11,8 +11,8 @@ describe('Security Isolation Cross-User (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
 
-  let tokenA: string;
-  let tokenB: string;
+  let cookieA: string[];
+  let cookieB: string[];
   let projectAId: string;
 
   beforeAll(async () => {
@@ -35,8 +35,7 @@ describe('Security Isolation Cross-User (e2e)', () => {
       password: 'Password123!',
       display_name: 'User A',
     });
-    const bodyA = resA.body as { access_token: string };
-    tokenA = bodyA.access_token;
+    cookieA = resA.get('Set-Cookie') as unknown as string[];
 
     // Register User B
     const resB = await request(server).post('/auth/register').send({
@@ -44,13 +43,12 @@ describe('Security Isolation Cross-User (e2e)', () => {
       password: 'Password123!',
       display_name: 'User B',
     });
-    const bodyB = resB.body as { access_token: string };
-    tokenB = bodyB.access_token;
+    cookieB = resB.get('Set-Cookie') as unknown as string[];
 
     // Create Project for User A
     const projRes = await request(server)
       .post('/projects')
-      .set('Authorization', `Bearer ${tokenA}`)
+      .set('Cookie', cookieA)
       .send({ raw_idea: 'User A research project proposal raw idea text.' });
     const projBody = projRes.body as { id: string };
     projectAId = projBody.id;
@@ -64,7 +62,7 @@ describe('Security Isolation Cross-User (e2e)', () => {
     const server = app.getHttpServer() as request.Test;
     await request(server)
       .get(`/projects/${projectAId}`)
-      .set('Authorization', `Bearer ${tokenB}`)
+      .set('Cookie', cookieB)
       .expect(404);
   });
 
@@ -72,7 +70,7 @@ describe('Security Isolation Cross-User (e2e)', () => {
     const server = app.getHttpServer() as request.Test;
     await request(server)
       .patch(`/projects/${projectAId}`)
-      .set('Authorization', `Bearer ${tokenB}`)
+      .set('Cookie', cookieB)
       .send({ title: 'Hacked Title' })
       .expect(404);
   });
@@ -81,7 +79,7 @@ describe('Security Isolation Cross-User (e2e)', () => {
     const server = app.getHttpServer() as request.Test;
     await request(server)
       .delete(`/projects/${projectAId}`)
-      .set('Authorization', `Bearer ${tokenB}`)
+      .set('Cookie', cookieB)
       .expect(404);
   });
 });
