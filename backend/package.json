@@ -14,10 +14,13 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
-    "test:watch": "jest --watch",
+    "test:unit": "jest",
+    "test:api": "node ./test/run-e2e.mjs",
     "test:cov": "jest --coverage",
+    "test:all": "npm run test:unit && npm run test:api",
+    "test:watch": "jest --watch",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "node ./test/run-e2e.mjs",
     "eval:build": "tsc -p tsconfig.eval.json",
     "eval:run": "npm run eval:build && node dist-eval/eval/run-eval.js",
     "eval:score": "npm run eval:build && node dist-eval/eval/score.js",
@@ -87,10 +90,41 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
+    "coveragePathIgnorePatterns": [
+      "/generated/",
+      "\\.module\\.ts$",
+      "\\.controller\\.ts$",
+      "\\.strategy\\.ts$",
+      "\\.guard\\.ts$",
+      "\\.contracts\\.ts$",
+      "main\\.ts$",
+      "source\\.client\\.ts$",
+      "deepseek\\.provider\\.ts$",
+      "embedder\\.service\\.ts$"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 35,
+        "functions": 35,
+        "lines": 50,
+        "statements": 50
+      },
+      "./src/auth/": {
+        "functions": 80,
+        "lines": 80
+      },
+      "./src/project/": {
+        "functions": 80,
+        "lines": 80
+      }
+    },
     "testEnvironment": "node"
   }
 }

@@ -19,7 +19,7 @@ services:
       # network nội bộ.
       BACKEND_ORIGIN: https://api.dsa-bus-booking.io.vn
     ports:
-      - '8111:3000'
+      - '127.0.0.1:8111:3000'
     healthcheck:
       test:
         [

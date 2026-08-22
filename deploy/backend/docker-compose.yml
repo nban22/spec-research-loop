@@ -28,7 +28,7 @@ services:
       PROMPTS_DIR: /app/prompts
       TRANSFORMERS_CACHE: /app/.cache/transformers
     ports:
-      - '8110:3001'
+      - '127.0.0.1:8110:3001'
     # Chromium cần /dev/shm lớn; mặc định 64 MB làm tab chết giữa lúc render PDF.
     shm_size: '1gb'
     healthcheck:

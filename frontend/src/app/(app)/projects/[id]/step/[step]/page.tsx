@@ -27,17 +27,20 @@ export default function StepPage({ params }: PageProps<'/projects/[id]/step/[ste
     queryFn: () => api.get<ApiProjectDetail>(`/projects/${id}`),
   });
 
-  // Người dùng nhảy về bước đã qua được; bước chưa tới thì khoá.
-  const reachedNo = STEPS.find((s) => s.step === data?.project.step)?.no ?? 1;
-  const maxReached = Math.max(reachedNo, stepNo);
+  // URL có thể bị nhập tay; chỉ render những bước backend đã xác nhận là đã tới.
+  // Trong lúc đang tải giữ nguyên URL requested để không nhấp nháy về bước 1.
+  const reachedNo = data
+    ? (STEPS.find((s) => s.step === data.project.step)?.no ?? 1)
+    : stepNo;
+  const visibleStepNo = Math.min(stepNo, reachedNo);
 
   return (
     <>
-      <Stepper projectId={id} current={stepNo} maxReached={maxReached} />
+      <Stepper projectId={id} current={visibleStepNo} maxReached={reachedNo} />
 
       <div className="mx-auto w-full max-w-[1400px] px-3 pt-3 md:px-4">
         <h1 className="text-ink-1 text-lg font-semibold md:text-xl">
-          {stepNo}. {STEPS[stepNo - 1]?.title}
+          {visibleStepNo}. {STEPS[visibleStepNo - 1]?.title}
         </h1>
         <p className="text-ink-3 line-clamp-2 text-xs md:text-sm">
           {data?.project.title ?? 'Đang tải dự án…'}
@@ -49,13 +52,13 @@ export default function StepPage({ params }: PageProps<'/projects/[id]/step/[ste
           <Skeleton className="h-40 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>
-      ) : stepNo === 1 ? (
+      ) : visibleStepNo === 1 ? (
         <Step1 projectId={id} />
-      ) : stepNo === 2 ? (
+      ) : visibleStepNo === 2 ? (
         <Step2 projectId={id} />
-      ) : stepNo === 3 ? (
+      ) : visibleStepNo === 3 ? (
         <Step3 projectId={id} />
-      ) : stepNo === 4 ? (
+      ) : visibleStepNo === 4 ? (
         <Step4 projectId={id} />
       ) : (
         <Step5 projectId={id} />

@@ -32,6 +32,23 @@ export class JobsService {
       message?: string;
     } = {},
   ): Promise<string> {
+    if (opts.projectId) {
+      const active = await this.prisma.jobRun.findFirst({
+        where: {
+          project_id: opts.projectId,
+          kind,
+          status: { in: ['QUEUED', 'RUNNING'] },
+        },
+        select: { id: true },
+      });
+      if (active) {
+        throw AppError.conflict(
+          'JOB_ALREADY_RUNNING',
+          'Một tiến trình cùng loại đang chạy cho dự án này.',
+          { jobId: active.id },
+        );
+      }
+    }
     const job = await this.prisma.jobRun.create({
       data: {
         kind,

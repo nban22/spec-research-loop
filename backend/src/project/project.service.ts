@@ -12,12 +12,12 @@ export const createProjectSchema = z.object({
 });
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 
-export const patchProjectSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
-  step: z.enum(['S1', 'S2', 'S3', 'S4', 'S5']).optional(),
-  raw_idea: z.string().min(20).max(4000).optional(),
-  verifier_gate: z.boolean().optional(),
-});
+export const patchProjectSchema = z
+  .object({
+    title: z.string().min(1).max(200).optional(),
+    raw_idea: z.string().min(20).max(4000).optional(),
+  })
+  .strict();
 export type PatchProjectInput = z.infer<typeof patchProjectSchema>;
 
 @Injectable()
@@ -137,11 +137,7 @@ export class ProjectService {
       where: { id: projectId },
       data: {
         ...(input.title ? { title: input.title } : {}),
-        ...(input.step ? { step: input.step } : {}),
         ...(input.raw_idea ? { raw_idea: input.raw_idea } : {}),
-        ...(input.verifier_gate !== undefined
-          ? { verifier_gate: input.verifier_gate }
-          : {}),
       },
     });
   }
