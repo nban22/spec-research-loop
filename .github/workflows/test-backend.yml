@@ -37,13 +37,26 @@ jobs:
 
   backend-integration:
     name: Backend API Integration
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: spec_research_loop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: backend
     env:
-      DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
+      DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5432/spec_research_loop_test?schema=public' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

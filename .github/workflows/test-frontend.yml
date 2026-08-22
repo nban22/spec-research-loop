@@ -31,13 +31,12 @@ jobs:
 
   playwright-e2e:
     name: Playwright E2E Journeys
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
     env:
-      DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
+      DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5432/spec_research_loop_test?schema=public' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
