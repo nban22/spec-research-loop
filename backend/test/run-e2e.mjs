@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process';
 
-const testDbUrl = process.env.DATABASE_URL_TEST || process.env.TEST_DATABASE_URL;
+const testDbUrl = process.env.DATABASE_URL_TEST;
 
 if (!testDbUrl) {
-  console.error('DATABASE_URL_TEST (hoặc TEST_DATABASE_URL) bắt buộc cho test:e2e; không dùng DATABASE_URL để tránh chạm nhầm dữ liệu.');
+  console.error('DATABASE_URL_TEST bắt buộc cho test:e2e; không dùng DATABASE_URL để tránh chạm nhầm dữ liệu.');
   process.exit(1);
 }
 
