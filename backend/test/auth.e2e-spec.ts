@@ -24,7 +24,7 @@ describe('Auth API (e2e)', () => {
 
     prisma = app.get(PrismaService);
     await cleanDatabase(prisma);
-  });
+  }, 15000);
 
   afterAll(async () => {
     await app.close();
