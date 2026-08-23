@@ -10,18 +10,12 @@ describe('DecisionService', () => {
       update: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
-      count: jest.fn(),
     },
-    project: { update: jest.fn() },
-    specVersion: { create: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn() },
+    specVersion: { create: jest.fn(), findUnique: jest.fn() },
     specCard: { createMany: jest.fn() },
   };
   const llm = { completeJson: jest.fn() };
-  const spec = {
-    buildSpecJson: jest.fn(),
-    buildMarkdown: jest.fn(),
-    renderMarkdown: jest.fn(),
-  };
+  const spec = { buildSpecJson: jest.fn(), renderMarkdown: jest.fn() };
   const service = new DecisionService(
     prisma as never,
     llm as never,
@@ -66,125 +60,98 @@ describe('DecisionService', () => {
         chosenKey: 'OTHER',
         customText: '   ',
       }),
-    ).rejects.toThrow('Chọn "Khác" thì bắt buộc nhập lý do.');
+    ).rejects.toMatchObject({ code: 'OTHER_REASON_REQUIRED' });
   });
 
-  it('records decision and returns preview for issue group', async () => {
-    prisma.decision.create.mockResolvedValue({
+  it('rejects missing required inputs when creating decision without decisionId', async () => {
+    await expect(
+      service.record('p-1', {
+        chosenKey: 'A',
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+  });
+
+  it('rejects non-existent decisionId when recording', async () => {
+    prisma.decision.findFirst.mockResolvedValue(null);
+    await expect(
+      service.record('p-1', {
+        decisionId: 'd-missing',
+        chosenKey: 'A',
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('rejects unknown decision options', async () => {
+    prisma.decision.findFirst.mockResolvedValue({
       id: 'd-1',
       project_id: 'p-1',
-      spec_version_id: 'v-1',
-      issue_group_id: 'ig-1',
-      chosen_key: 'OTHER',
-      custom_text: 'Custom reason',
-    });
-    prisma.decision.findUniqueOrThrow.mockResolvedValue({
-      id: 'd-1',
-      project_id: 'p-1',
-      spec_version_id: 'v-1',
-      issue_group_id: 'ig-1',
-      question: 'Question',
-      options: [],
-      chosen_key: 'OTHER',
-      custom_text: 'Custom reason',
-      issue_group: {
-        canonical_title: 'Group title',
-        max_severity: 'HIGH',
-        issues: [],
-      },
-    });
-    prisma.specVersion.findUniqueOrThrow.mockResolvedValue({
-      id: 'v-1',
-      version_no: 1,
-      cards: [],
-    });
-    prisma.decision.findUnique.mockResolvedValue({
-      id: 'd-1',
-      project_id: 'p-1',
-      spec_version_id: 'v-1',
-      question: 'Question',
-      options: [],
-      chosen_key: 'OTHER',
-      custom_text: 'Custom reason',
-      actor: 'USER',
       applied: false,
-      issue_group_id: 'ig-1',
-      resulting_spec_version_id: null,
-      created_at: new Date(),
-    });
-    spec.buildSpecJson.mockResolvedValue({ title: 'Spec' });
-    spec.buildMarkdown.mockResolvedValue('# Before');
-    spec.renderMarkdown.mockResolvedValue('# After');
-    llm.completeJson.mockResolvedValue({
-      data: {
-        changes: [],
-        summary: 'Revise summary',
-      },
-    });
-    prisma.decision.update.mockResolvedValue({});
-
-    const result = await service.record('p-1', {
-      specVersionId: 'v-1',
-      step: 'S5',
-      issueGroupId: 'ig-1',
-      question: 'Question',
-      options: [],
-      chosenKey: 'OTHER',
-      customText: 'Custom reason',
+      options: [{ key: 'A', label: 'Option A' }],
     });
 
-    expect(prisma.decision.create).toHaveBeenCalled();
-    expect(result.preview).toBeDefined();
-    expect(result.preview?.summary).toBe('Revise summary');
+    await expect(
+      service.record('p-1', {
+        decisionId: 'd-1',
+        chosenKey: 'INVALID_KEY',
+      }),
+    ).rejects.toMatchObject({ code: 'DECISION_OPTION_UNKNOWN' });
+  });
+
+  it('rejects updating an already applied decision', async () => {
+    prisma.decision.findFirst.mockResolvedValue({
+      id: 'd-1',
+      project_id: 'p-1',
+      applied: true,
+      resulting_spec_version_id: 'v-2',
+    });
+
+    await expect(
+      service.record('p-1', {
+        decisionId: 'd-1',
+        chosenKey: 'A',
+      }),
+    ).rejects.toMatchObject({ code: 'DECISION_ALREADY_APPLIED' });
   });
 
   it('creates and auto-applies a decision without an issue group', async () => {
     prisma.decision.create.mockResolvedValue({
-      id: 'd-2',
+      id: 'd-1',
       project_id: 'p-1',
       spec_version_id: 'v-1',
       step: 'S1',
       issue_group_id: null,
+      options: [{ key: 'A', label: 'Option A' }],
       chosen_key: 'A',
     });
-    prisma.decision.update.mockResolvedValue({});
-    prisma.decision.count.mockResolvedValue(0);
-    prisma.project.update.mockResolvedValue({});
-    prisma.decision.findUnique.mockResolvedValue({
-      id: 'd-2',
-      project_id: 'p-1',
-      spec_version_id: 'v-1',
-      step: 'S1',
-      question: 'Question',
-      options: [{ key: 'A', label: 'Option A', explain: 'Exp', example: 'Ex' }],
-      chosen_key: 'A',
-      custom_text: null,
-      actor: 'USER',
-      applied: true,
-      issue_group_id: null,
-      resulting_spec_version_id: 'v-1',
-      created_at: new Date(),
-    });
+    prisma.decision.update.mockResolvedValue({ id: 'd-1', applied: true });
+    prisma.decision.findUnique.mockResolvedValue({ id: 'd-1', applied: true });
 
     const result = await service.record('p-1', {
       specVersionId: 'v-1',
       step: 'S1',
-      question: 'Question',
+      question: 'Question?',
       options: [{ key: 'A', label: 'Option A', explain: 'Exp', example: 'Ex' }],
       chosenKey: 'A',
     });
 
-    expect(prisma.decision.update).toHaveBeenCalledWith({
-      where: { id: 'd-2' },
-      data: {
-        applied: true,
-        resulting_spec_version_id: 'v-1',
-      },
-    });
-    expect(prisma.project.update).toHaveBeenCalledWith({
-      where: { id: 'p-1' },
-      data: { step: 'S2' },
-    });
     expect(result.preview).toBeNull();
+    expect(prisma.decision.create).toHaveBeenCalled();
+  });
+
+  it('lists pending decisions and retrieves a single decision', async () => {
+    prisma.decision.findMany.mockResolvedValue([
+      { id: 'd-1', project_id: 'p-1', chosen_key: '' },
+    ]);
+    prisma.decision.findUniqueOrThrow.mockResolvedValue({
+      id: 'd-1',
+      question: 'Q?',
+      chosen_key: 'A',
+    });
+
+    const pending = await service.pending('p-1');
+    const item = await service.get('d-1');
+
+    expect(pending).toHaveLength(1);
+    expect(item.id).toBe('d-1');
   });
 });

@@ -194,30 +194,6 @@ export class DecisionService {
           resulting_spec_version_id: decision.spec_version_id,
         },
       });
-
-      // Advance project.step if all decisions for the current step have been answered.
-      const pendingCount = await this.prisma.decision.count({
-        where: {
-          project_id: projectId,
-          step: decision.step,
-          applied: false,
-        },
-      });
-      if (pendingCount === 0) {
-        const nextStepMap: Record<string, ProjectStep> = {
-          S1: 'S2',
-          S2: 'S3',
-          S3: 'S4',
-          S4: 'S5',
-        };
-        const nextStep = nextStepMap[decision.step];
-        if (nextStep) {
-          await this.prisma.project.update({
-            where: { id: projectId },
-            data: { step: nextStep },
-          });
-        }
-      }
     }
 
     return { decision: await this.get(decision.id), preview };
@@ -383,43 +359,30 @@ export class DecisionService {
           select: { id: true, title: true },
         });
         const byTitle = new Map(created.map((c) => [c.title, c.id]));
-        const links: {
-          card_id: string;
-          source_id: string;
-          support_label: CardStatus;
-          evidence_sentence: string | null;
-          flags: unknown;
-        }[] = [];
+        const links: { card_id: string; source_id: string }[] = [];
         for (const old of parent.cards) {
           const newId = byTitle.get(old.title);
           if (!newId) continue;
           for (const cs of old.card_sources) {
-            links.push({
-              card_id: newId,
-              source_id: cs.source_id,
-              support_label: cs.support_label as CardStatus,
-              evidence_sentence: cs.evidence_sentence,
-              flags: json(cs.flags),
-            });
+            links.push({ card_id: newId, source_id: cs.source_id });
           }
         }
         if (links.length > 0) {
-          await tx.cardSource.createMany({ data: links });
+          await tx.cardSource.createMany({ data: links, skipDuplicates: true });
         }
 
         if (parent.related_work_rows.length > 0) {
           await tx.relatedWorkRow.createMany({
-            data: parent.related_work_rows.map((r, i) => ({
+            data: parent.related_work_rows.map((r) => ({
               spec_version_id: version.id,
               source_id: r.source_id,
               what_done: r.what_done,
               feedback_type: r.feedback_type,
               what_missing: r.what_missing,
-              order_index: i,
+              order_index: r.order_index,
             })),
           });
         }
-
         if (parent.experiment_plan) {
           await tx.experimentPlan.create({
             data: {
@@ -459,184 +422,214 @@ export class DecisionService {
         if (updated.count === 0) {
           throw AppError.conflict(
             'DECISION_ALREADY_APPLIED',
-            'Quyết định này đã được áp dụng ở một thao tác song song.',
-            { resultingSpecVersionId: version.id },
+            'Quyết định này vừa được áp dụng ở nơi khác.',
           );
         }
 
-        return { version: { id: version.id, version_no: version.version_no } };
+        if (decision.issue_group_id) {
+          await tx.issueGroup.update({
+            where: { id: decision.issue_group_id },
+            data: { status: 'RESOLVED' },
+          });
+        }
+
+        return version;
       });
-    } catch (err: unknown) {
-      if (
-        typeof err === 'object' &&
-        err !== null &&
-        'code' in err &&
-        err.code === 'P2002'
-      ) {
+    } catch (err) {
+      if (isUniqueViolation(err)) {
         throw AppError.conflict(
           'VERSION_CONFLICT',
-          'Đã có phiên bản mới hơn vừa được tạo. Hãy tải lại trang để xem diff mới nhất.',
+          'Spec đã thay đổi ở nơi khác. Tải lại rồi chọn lại.',
         );
       }
       throw err;
     }
   }
 
-  async get(id: string) {
-    const d = await this.prisma.decision.findUniqueOrThrow({ where: { id } });
-    return {
-      id: d.id,
-      spec_version_id: d.spec_version_id,
-      step: d.step,
-      question: d.question,
-      options: d.options as DecisionOption[],
-      chosen_key: d.chosen_key,
-      custom_text: d.custom_text,
-      actor: d.actor,
-      applied: d.applied,
-      issue_group_id: d.issue_group_id,
-      resulting_spec_version_id: d.resulting_spec_version_id,
-      created_at: d.created_at,
-    };
-  }
-
   async list(projectId: string) {
-    const list = await this.prisma.decision.findMany({
+    return this.prisma.decision.findMany({
       where: { project_id: projectId },
       orderBy: { created_at: 'desc' },
+      select: {
+        id: true,
+        step: true,
+        question: true,
+        options: true,
+        chosen_key: true,
+        custom_text: true,
+        actor: true,
+        applied: true,
+        issue_group_id: true,
+        spec_version_id: true,
+        resulting_spec_version_id: true,
+        created_at: true,
+      },
     });
-    return list.map((d) => ({
-      id: d.id,
-      spec_version_id: d.spec_version_id,
-      step: d.step,
-      question: d.question,
-      options: d.options as DecisionOption[],
-      chosen_key: d.chosen_key,
-      custom_text: d.custom_text,
-      actor: d.actor,
-      applied: d.applied,
-      issue_group_id: d.issue_group_id,
-      resulting_spec_version_id: d.resulting_spec_version_id,
-      created_at: d.created_at,
-    }));
   }
 
+  /** Câu hỏi đang chờ trả lời = `chosen_key` rỗng. Đây là "điểm dừng" của bước hiện tại. */
   async pending(projectId: string, step?: ProjectStep) {
-    const list = await this.prisma.decision.findMany({
-      where: { project_id: projectId, applied: false, ...(step ? { step } : {}) },
+    return this.prisma.decision.findMany({
+      where: {
+        project_id: projectId,
+        chosen_key: '',
+        ...(step ? { step } : {}),
+      },
       orderBy: { created_at: 'asc' },
+      select: {
+        id: true,
+        step: true,
+        question: true,
+        options: true,
+        spec_version_id: true,
+        issue_group_id: true,
+      },
     });
-    return list.map((d) => ({
-      id: d.id,
-      spec_version_id: d.spec_version_id,
-      step: d.step,
-      question: d.question,
-      options: d.options as DecisionOption[],
-      chosen_key: d.chosen_key,
-      custom_text: d.custom_text,
-      actor: d.actor,
-      applied: d.applied,
-      issue_group_id: d.issue_group_id,
-      resulting_spec_version_id: d.resulting_spec_version_id,
-      created_at: d.created_at,
-    }));
   }
 
+  async get(id: string) {
+    return this.prisma.decision.findUniqueOrThrow({
+      where: { id },
+      select: {
+        id: true,
+        step: true,
+        question: true,
+        options: true,
+        chosen_key: true,
+        custom_text: true,
+        actor: true,
+        applied: true,
+        issue_group_id: true,
+        spec_version_id: true,
+        resulting_spec_version_id: true,
+        created_at: true,
+      },
+    });
+  }
+
+  /** Markdown của bản nháp — dựng trong bộ nhớ, không ghi DB. */
   private async projectMarkdown(
     specVersionId: string,
-    revise: ReviseOutput,
+    draft: ReviseOutput,
   ): Promise<string> {
-    const parent = await this.prisma.specVersion.findUniqueOrThrow({
-      where: { id: specVersionId },
-      include: { cards: { include: { card_sources: true } } },
-    });
-
-    const tempSpec = {
-      specVersionId,
-      versionNo: parent.version_no + 1,
-      createdAt: new Date().toISOString().slice(0, 10),
-      label: `Sau quyết định: ${revise.summary}`,
-      cards: applyChanges(parent.cards, revise).map((c, i) => ({
-        id: `temp_${i}`,
-        spec_version_id: specVersionId,
-        type: c.type,
-        status: c.status,
-        title: c.title,
-        body: c.body,
-        payload: c.payload as Record<string, unknown> | null,
-        order_index: i,
-        origin: c.origin,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        card_sources: [],
-      })),
-      relatedWorkRows: [],
-      experimentPlan: null,
-      resourceEstimate: null,
-      decisions: [],
-      issues: [],
-    };
-
-    return this.spec.renderMarkdown(tempSpec);
+    const before = await this.spec.buildMarkdown(specVersionId);
+    // Diff hữu ích nhất ở mức thẻ; nối phần tóm tắt thay đổi vào cuối để người đọc thấy ngay.
+    const changed = draft.changes
+      .map(
+        (c) =>
+          `- \`${c.operation}\` ${c.target_card_title || c.new_title}\n  - ${c.rationale}`,
+      )
+      .join('\n');
+    return `${applyToMarkdown(before, draft)}\n\n---\n\n### Proposed changes\n\n${changed}\n`;
   }
 }
 
-function pickOption(options: unknown, key: string): DecisionOption | undefined {
-  if (key === 'OTHER') return OTHER_OPTION;
-  const list = Array.isArray(options) ? (options as DecisionOption[]) : [];
-  return list.find((o) => o.key === key);
-}
-
-type CardInput = {
+type CardLike = {
   type: CardType;
   status: CardStatus;
   title: string;
-  body: string | null;
+  body: string;
   payload: unknown;
-  origin: string;
-  card_sources: {
-    source_id: string;
-    support_label: string;
-    evidence_sentence: string | null;
-    flags: unknown;
-  }[];
+  origin: 'GENERATOR' | 'USER' | 'JUDGE_FIX';
+  order_index: number;
 };
 
-function applyChanges(
-  cards: CardInput[],
-  revise: ReviseOutput,
-): Omit<CardInput, 'card_sources'>[] {
-  const current: Omit<CardInput, 'card_sources'>[] = cards.map((c) => ({
-    type: c.type,
-    status: c.status,
-    title: c.title,
-    body: c.body,
-    payload: c.payload,
-    origin: c.origin,
-  }));
+/** Áp bản nháp lên tập thẻ — hàm thuần, dùng cho cả preview lẫn apply. */
+export function applyChanges(
+  cards: {
+    type: CardType;
+    status: CardStatus;
+    title: string;
+    body: string;
+    payload: unknown;
+    origin: 'GENERATOR' | 'USER' | 'JUDGE_FIX';
+    order_index: number;
+  }[],
+  draft: ReviseOutput,
+): CardLike[] {
+  const out: CardLike[] = cards.map((c) => ({ ...c }));
 
-  for (const ch of revise.changes) {
-    if (ch.operation === 'UPDATE') {
-      const card = current.find((c) => c.title === ch.target_card_title);
-      if (card) {
-        if (ch.new_title) card.title = ch.new_title;
-        if (ch.new_body) card.body = ch.new_body;
-        card.status = 'CONFIRMED';
-      }
-    } else if (ch.operation === 'DELETE') {
-      const idx = current.findIndex((c) => c.title === ch.target_card_title);
-      if (idx >= 0) current.splice(idx, 1);
-    } else if (ch.operation === 'ADD') {
-      current.push({
-        type: 'CLAIM',
-        status: 'CONFIRMED',
-        title: ch.new_title || 'Mới thêm',
-        body: ch.new_body,
-        payload: null,
-        origin: 'USER_REVISE',
+  for (const change of draft.changes) {
+    if (change.operation === 'ADD') {
+      out.push({
+        type: change.new_type ?? 'OPEN_QUESTION',
+        status: change.new_status ?? 'PROPOSED',
+        title: change.new_title,
+        body: change.new_body,
+        payload: change.new_payload ?? null,
+        origin: 'JUDGE_FIX',
+        order_index: out.length,
       });
+      continue;
     }
+
+    const match = GeneratorService.matchCardByTitle(
+      out.map((c, i) => ({ id: String(i), title: c.title })),
+      change.target_card_title,
+      0.8,
+    );
+    if (!match) continue;
+    const idx = Number(match.id);
+
+    if (change.operation === 'DELETE') {
+      out.splice(idx, 1);
+      continue;
+    }
+    if (change.operation === 'DEMOTE_TO_OPEN_QUESTION') {
+      out[idx] = {
+        ...out[idx],
+        type: 'OPEN_QUESTION',
+        status: 'PROPOSED',
+        title: change.new_title || out[idx].title,
+        body: change.new_body || out[idx].body,
+        payload: null,
+        origin: 'JUDGE_FIX',
+      };
+      continue;
+    }
+    out[idx] = {
+      ...out[idx],
+      type: change.new_type ?? out[idx].type,
+      status: change.new_status ?? out[idx].status,
+      title: change.new_title || out[idx].title,
+      body: change.new_body || out[idx].body,
+      payload: change.new_payload ?? out[idx].payload,
+      origin: 'JUDGE_FIX',
+    };
   }
 
-  return current;
+  return out;
+}
+
+function applyToMarkdown(before: string, draft: ReviseOutput): string {
+  let text = before;
+  for (const c of draft.changes) {
+    if (!c.target_card_title || !c.new_title) continue;
+    text = text.split(c.target_card_title).join(c.new_title);
+    if (c.new_body) {
+      // Thay phần thân nếu tìm thấy tiêu đề mới đứng đầu dòng bullet.
+      text = text.replace(
+        new RegExp(`(\\*\\*${escapeRegExp(c.new_title)}\\*\\* — )[^\\n]*`),
+        `$1${c.new_body.replace(/\n+/g, ' ')}`,
+      );
+    }
+  }
+  return text;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function pickOption(options: unknown, key: string): DecisionOption | null {
+  if (!Array.isArray(options)) return null;
+  return (options as DecisionOption[]).find((o) => o.key === key) ?? null;
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    (err as { code?: string }).code === 'P2002'
+  );
 }
