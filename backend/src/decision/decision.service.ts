@@ -11,6 +11,7 @@ import { GeneratorService } from '../generator/generator.service';
 import { LlmService } from '../llm/llm.service';
 import { SpecService } from '../spec/spec.service';
 import type {
+  CardOrigin,
   CardStatus,
   CardType,
   ProjectStep,
@@ -194,6 +195,30 @@ export class DecisionService {
           resulting_spec_version_id: decision.spec_version_id,
         },
       });
+
+      // Tự động chuyển bước project.step sang bước tiếp theo khi đã trả lời hết câu hỏi của bước hiện tại.
+      const pendingCount = await this.prisma.decision.count({
+        where: {
+          project_id: projectId,
+          step: decision.step,
+          applied: false,
+        },
+      });
+      if (pendingCount === 0) {
+        const nextStepMap: Record<string, ProjectStep> = {
+          S1: 'S2',
+          S2: 'S3',
+          S3: 'S4',
+          S4: 'S5',
+        };
+        const nextStep = nextStepMap[decision.step];
+        if (nextStep) {
+          await this.prisma.project.update({
+            where: { id: projectId },
+            data: { step: nextStep },
+          });
+        }
+      }
     }
 
     return { decision: await this.get(decision.id), preview };
@@ -373,16 +398,17 @@ export class DecisionService {
 
         if (parent.related_work_rows.length > 0) {
           await tx.relatedWorkRow.createMany({
-            data: parent.related_work_rows.map((r) => ({
+            data: parent.related_work_rows.map((r, i) => ({
               spec_version_id: version.id,
               source_id: r.source_id,
               what_done: r.what_done,
               feedback_type: r.feedback_type,
               what_missing: r.what_missing,
-              order_index: r.order_index,
+              order_index: i,
             })),
           });
         }
+
         if (parent.experiment_plan) {
           await tx.experimentPlan.create({
             data: {
@@ -447,7 +473,7 @@ export class DecisionService {
   }
 
   async list(projectId: string) {
-    return this.prisma.decision.findMany({
+    const list = await this.prisma.decision.findMany({
       where: { project_id: projectId },
       orderBy: { created_at: 'desc' },
       select: {
@@ -465,14 +491,17 @@ export class DecisionService {
         created_at: true,
       },
     });
+    return list.map((d) => ({
+      ...d,
+      options: d.options as DecisionOption[],
+    }));
   }
 
-  /** Câu hỏi đang chờ trả lời = `chosen_key` rỗng. Đây là "điểm dừng" của bước hiện tại. */
   async pending(projectId: string, step?: ProjectStep) {
-    return this.prisma.decision.findMany({
+    const list = await this.prisma.decision.findMany({
       where: {
         project_id: projectId,
-        chosen_key: '',
+        applied: false,
         ...(step ? { step } : {}),
       },
       orderBy: { created_at: 'asc' },
@@ -485,10 +514,14 @@ export class DecisionService {
         issue_group_id: true,
       },
     });
+    return list.map((d) => ({
+      ...d,
+      options: d.options as DecisionOption[],
+    }));
   }
 
   async get(id: string) {
-    return this.prisma.decision.findUniqueOrThrow({
+    const d = await this.prisma.decision.findUniqueOrThrow({
       where: { id },
       select: {
         id: true,
@@ -505,6 +538,10 @@ export class DecisionService {
         created_at: true,
       },
     });
+    return {
+      ...d,
+      options: d.options as DecisionOption[],
+    };
   }
 
   /** Markdown của bản nháp — dựng trong bộ nhớ, không ghi DB. */
@@ -522,6 +559,35 @@ export class DecisionService {
       .join('\n');
     return `${applyToMarkdown(before, draft)}\n\n---\n\n### Proposed changes\n\n${changed}\n`;
   }
+}
+
+function applyToMarkdown(before: string, draft: ReviseOutput): string {
+  let text = before;
+  for (const c of draft.changes) {
+    if (!c.target_card_title || !c.new_title) continue;
+    text = text.split(c.target_card_title).join(c.new_title);
+    if (c.new_body) {
+      // Thay phần thân nếu tìm thấy tiêu đề mới đứng đầu dòng bullet.
+      text = text.replace(
+        new RegExp(`(\\*\\*${escapeRegExp(c.new_title)}\\*\\* — )[^\\n]*`),
+        `$1${c.new_body.replace(/\n+/g, ' ')}`,
+      );
+    }
+  }
+  return text;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function pickOption(options: unknown, key: string): DecisionOption | undefined {
+  if (key === 'OTHER') return OTHER_OPTION;
+  const list = Array.isArray(options) ? (options as DecisionOption[]) : [];
+  for (const o of list) {
+    if (o.key === key) return o;
+  }
+  return undefined;
 }
 
 type CardLike = {
@@ -599,31 +665,6 @@ export function applyChanges(
   }
 
   return out;
-}
-
-function applyToMarkdown(before: string, draft: ReviseOutput): string {
-  let text = before;
-  for (const c of draft.changes) {
-    if (!c.target_card_title || !c.new_title) continue;
-    text = text.split(c.target_card_title).join(c.new_title);
-    if (c.new_body) {
-      // Thay phần thân nếu tìm thấy tiêu đề mới đứng đầu dòng bullet.
-      text = text.replace(
-        new RegExp(`(\\*\\*${escapeRegExp(c.new_title)}\\*\\* — )[^\\n]*`),
-        `$1${c.new_body.replace(/\n+/g, ' ')}`,
-      );
-    }
-  }
-  return text;
-}
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function pickOption(options: unknown, key: string): DecisionOption | null {
-  if (!Array.isArray(options)) return null;
-  return (options as DecisionOption[]).find((o) => o.key === key) ?? null;
 }
 
 function isUniqueViolation(err: unknown): boolean {
