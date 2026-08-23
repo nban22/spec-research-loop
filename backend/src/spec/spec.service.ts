@@ -62,6 +62,7 @@ export class SpecService {
             similarity: true,
             evidence_sentence: true,
             flags: true,
+            override_reason: true,
             source: {
               select: {
                 id: true,
@@ -144,7 +145,12 @@ export class SpecService {
         const support = c.card_sources
           .map(
             (cs) =>
-              `${cs.support_label} — ${cs.source.title}${cs.source.year ? ` (${cs.source.year})` : ''}`,
+              `${cs.support_label} — ${cs.source.title}${cs.source.year ? ` (${cs.source.year})` : ''}` +
+              // Trích dẫn được giữ lại dù verifier bác: **đánh dấu ngay trong spec xuất ra**.
+              // Đó là chỗ khác nhau giữa "bỏ qua có ghi nhận" và "không kiểm" (ARCHITECTURE §6.6).
+              (cs.override_reason
+                ? ` **[kept by user despite UNSUPPORTED: ${cs.override_reason}]**`
+                : ''),
           )
           .join('; ');
         const rows = [

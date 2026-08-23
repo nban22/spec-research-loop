@@ -72,40 +72,46 @@ async function main() {
         _sum: { prompt_tokens: true, completion_tokens: true },
       });
 
+      /**
+       * `config` phải nằm ở **cả hai** nhánh. Chạy lại một lượt (không `--resume`) sinh
+       * `Project` mới, nên giữ `config` cũ nghĩa là `prompt_hashes` và `repair` nói về một
+       * project đã không còn liên quan — và `score.ts` báo con số đó ra như thật.
+       */
+      const config = json({
+        model_generator: 'deepseek-v4-pro',
+        model_flash: 'deepseek-v4-flash',
+        temperature: 0,
+        prompt_hashes: promptHashes,
+        // Vòng sửa đã chạy tới đâu, và vì sao dừng. Không có nó thì bảng số không phân
+        // biệt được "hội đồng đã hài lòng" với "hết vòng mà vẫn còn issue".
+        repair: result.repair ?? null,
+        note: 'DeepSeek không có tham số seed — xem limitation trong evaluation_report.md',
+      });
+      const measured = {
+        project_id: result.projectId,
+        config,
+        total_tokens:
+          (tokens._sum.prompt_tokens ?? 0) + (tokens._sum.completion_tokens ?? 0),
+        wall_ms: result.wallMs,
+        ok: !result.error,
+        error_text: result.error ?? null,
+      };
+
       await s.prisma.evalRun.upsert({
         where: { batch_id_arm_idea_id: { batch_id: batchId, arm, idea_id: idea.id } },
-        create: {
-          batch_id: batchId,
-          arm,
-          idea_id: idea.id,
-          project_id: result.projectId,
-          config: json({
-            model_generator: 'deepseek-v4-pro',
-            model_flash: 'deepseek-v4-flash',
-            temperature: 0,
-            prompt_hashes: promptHashes,
-            note: 'DeepSeek không có tham số seed — xem limitation trong evaluation_report.md',
-          }),
-          total_tokens:
-            (tokens._sum.prompt_tokens ?? 0) + (tokens._sum.completion_tokens ?? 0),
-          wall_ms: result.wallMs,
-          ok: !result.error,
-          error_text: result.error ?? null,
-        },
-        update: {
-          project_id: result.projectId,
-          total_tokens:
-            (tokens._sum.prompt_tokens ?? 0) + (tokens._sum.completion_tokens ?? 0),
-          wall_ms: result.wallMs,
-          ok: !result.error,
-          error_text: result.error ?? null,
-        },
+        create: { batch_id: batchId, arm, idea_id: idea.id, ...measured },
+        update: measured,
       });
 
+      const repair = result.repair
+        ? ` · ${result.repair.rounds_run} vòng, ${result.repair.decisions_applied} sửa` +
+          `${result.repair.gate_decisions_applied > 0 ? ` + ${result.repair.gate_decisions_applied} gate` : ''}` +
+          ` (${result.repair.stopped_by})`
+        : '';
       log(
         result.error
           ? `   ✗ ${idea.id}/${arm}: ${result.error.slice(0, 120)}`
-          : `   ✓ ${idea.id}/${arm} — ${(result.wallMs / 1000).toFixed(1)}s`,
+          : `   ✓ ${idea.id}/${arm} — ${(result.wallMs / 1000).toFixed(1)}s${repair}`,
       );
     }
   }

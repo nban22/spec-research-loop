@@ -110,6 +110,7 @@ describe('ProjectService & patchProjectSchema', () => {
         arm: 'STANDARD',
         verifier_gate: true,
         judge_round: 1,
+        judge_rounds_total: 2,
         current_spec_version_id: 'v-1',
         created_at: new Date(),
         updated_at: new Date(),
@@ -128,6 +129,8 @@ describe('ProjectService & patchProjectSchema', () => {
 
       const res = await service.detail('p-1', 'u-1');
       expect(res.project.id).toBe('p-1');
+      // Bộ đếm cấp dự án phải đi ra FE, vì nút "Chạy vòng N" và nhãn "tối đa 3 vòng" đọc nó.
+      expect(res.project.judge_rounds_total).toBe(2);
       expect(res.currentVersion?.card_count).toBe(5);
       expect(res.source_count).toBe(3);
     });

@@ -109,6 +109,7 @@ export class ProjectService {
         arm: project.arm,
         verifier_gate: project.verifier_gate,
         judge_round: project.judge_round,
+        judge_rounds_total: project.judge_rounds_total,
         current_spec_version_id: project.current_spec_version_id,
         created_at: project.created_at,
         updated_at: project.updated_at,

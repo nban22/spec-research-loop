@@ -46,6 +46,7 @@ export type CardSourceMinAggregateOutputType = {
   confidence: number | null
   evidence_sentence: string | null
   verifier_run_id: string | null
+  override_reason: string | null
   created_at: Date | null
 }
 
@@ -59,6 +60,7 @@ export type CardSourceMaxAggregateOutputType = {
   confidence: number | null
   evidence_sentence: string | null
   verifier_run_id: string | null
+  override_reason: string | null
   created_at: Date | null
 }
 
@@ -73,6 +75,7 @@ export type CardSourceCountAggregateOutputType = {
   evidence_sentence: number
   flags: number
   verifier_run_id: number
+  override_reason: number
   created_at: number
   _all: number
 }
@@ -98,6 +101,7 @@ export type CardSourceMinAggregateInputType = {
   confidence?: true
   evidence_sentence?: true
   verifier_run_id?: true
+  override_reason?: true
   created_at?: true
 }
 
@@ -111,6 +115,7 @@ export type CardSourceMaxAggregateInputType = {
   confidence?: true
   evidence_sentence?: true
   verifier_run_id?: true
+  override_reason?: true
   created_at?: true
 }
 
@@ -125,6 +130,7 @@ export type CardSourceCountAggregateInputType = {
   evidence_sentence?: true
   flags?: true
   verifier_run_id?: true
+  override_reason?: true
   created_at?: true
   _all?: true
 }
@@ -226,6 +232,7 @@ export type CardSourceGroupByOutputType = {
   evidence_sentence: string | null
   flags: runtime.JsonValue | null
   verifier_run_id: string | null
+  override_reason: string | null
   created_at: Date
   _count: CardSourceCountAggregateOutputType | null
   _avg: CardSourceAvgAggregateOutputType | null
@@ -263,6 +270,7 @@ export type CardSourceWhereInput = {
   evidence_sentence?: Prisma.StringNullableFilter<"CardSource"> | string | null
   flags?: Prisma.JsonNullableFilter<"CardSource">
   verifier_run_id?: Prisma.StringNullableFilter<"CardSource"> | string | null
+  override_reason?: Prisma.StringNullableFilter<"CardSource"> | string | null
   created_at?: Prisma.DateTimeFilter<"CardSource"> | Date | string
   card?: Prisma.XOR<Prisma.CardScalarRelationFilter, Prisma.CardWhereInput>
   source?: Prisma.XOR<Prisma.SourceScalarRelationFilter, Prisma.SourceWhereInput>
@@ -281,6 +289,7 @@ export type CardSourceOrderByWithRelationInput = {
   evidence_sentence?: Prisma.SortOrderInput | Prisma.SortOrder
   flags?: Prisma.SortOrderInput | Prisma.SortOrder
   verifier_run_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  override_reason?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   card?: Prisma.CardOrderByWithRelationInput
   source?: Prisma.SourceOrderByWithRelationInput
@@ -303,6 +312,7 @@ export type CardSourceWhereUniqueInput = Prisma.AtLeast<{
   evidence_sentence?: Prisma.StringNullableFilter<"CardSource"> | string | null
   flags?: Prisma.JsonNullableFilter<"CardSource">
   verifier_run_id?: Prisma.StringNullableFilter<"CardSource"> | string | null
+  override_reason?: Prisma.StringNullableFilter<"CardSource"> | string | null
   created_at?: Prisma.DateTimeFilter<"CardSource"> | Date | string
   card?: Prisma.XOR<Prisma.CardScalarRelationFilter, Prisma.CardWhereInput>
   source?: Prisma.XOR<Prisma.SourceScalarRelationFilter, Prisma.SourceWhereInput>
@@ -321,6 +331,7 @@ export type CardSourceOrderByWithAggregationInput = {
   evidence_sentence?: Prisma.SortOrderInput | Prisma.SortOrder
   flags?: Prisma.SortOrderInput | Prisma.SortOrder
   verifier_run_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  override_reason?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   _count?: Prisma.CardSourceCountOrderByAggregateInput
   _avg?: Prisma.CardSourceAvgOrderByAggregateInput
@@ -343,6 +354,7 @@ export type CardSourceScalarWhereWithAggregatesInput = {
   evidence_sentence?: Prisma.StringNullableWithAggregatesFilter<"CardSource"> | string | null
   flags?: Prisma.JsonNullableWithAggregatesFilter<"CardSource">
   verifier_run_id?: Prisma.StringNullableWithAggregatesFilter<"CardSource"> | string | null
+  override_reason?: Prisma.StringNullableWithAggregatesFilter<"CardSource"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"CardSource"> | Date | string
 }
 
@@ -354,6 +366,7 @@ export type CardSourceCreateInput = {
   confidence?: number | null
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: string | null
   created_at?: Date | string
   card: Prisma.CardCreateNestedOneWithoutCard_sourcesInput
   source: Prisma.SourceCreateNestedOneWithoutCard_sourcesInput
@@ -372,6 +385,7 @@ export type CardSourceUncheckedCreateInput = {
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: string | null
+  override_reason?: string | null
   created_at?: Date | string
   human_checks?: Prisma.HumanCheckUncheckedCreateNestedManyWithoutCard_sourceInput
 }
@@ -384,6 +398,7 @@ export type CardSourceUpdateInput = {
   confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   card?: Prisma.CardUpdateOneRequiredWithoutCard_sourcesNestedInput
   source?: Prisma.SourceUpdateOneRequiredWithoutCard_sourcesNestedInput
@@ -402,6 +417,7 @@ export type CardSourceUncheckedUpdateInput = {
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   human_checks?: Prisma.HumanCheckUncheckedUpdateManyWithoutCard_sourceNestedInput
 }
@@ -417,6 +433,7 @@ export type CardSourceCreateManyInput = {
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: string | null
+  override_reason?: string | null
   created_at?: Date | string
 }
 
@@ -428,6 +445,7 @@ export type CardSourceUpdateManyMutationInput = {
   confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -442,6 +460,7 @@ export type CardSourceUncheckedUpdateManyInput = {
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -471,6 +490,7 @@ export type CardSourceCountOrderByAggregateInput = {
   evidence_sentence?: Prisma.SortOrder
   flags?: Prisma.SortOrder
   verifier_run_id?: Prisma.SortOrder
+  override_reason?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
 
@@ -489,6 +509,7 @@ export type CardSourceMaxOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
   evidence_sentence?: Prisma.SortOrder
   verifier_run_id?: Prisma.SortOrder
+  override_reason?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
 
@@ -502,6 +523,7 @@ export type CardSourceMinOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
   evidence_sentence?: Prisma.SortOrder
   verifier_run_id?: Prisma.SortOrder
+  override_reason?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
 
@@ -679,6 +701,7 @@ export type CardSourceCreateWithoutCardInput = {
   confidence?: number | null
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: string | null
   created_at?: Date | string
   source: Prisma.SourceCreateNestedOneWithoutCard_sourcesInput
   verifier_run?: Prisma.VerifierRunCreateNestedOneWithoutCard_sourcesInput
@@ -695,6 +718,7 @@ export type CardSourceUncheckedCreateWithoutCardInput = {
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: string | null
+  override_reason?: string | null
   created_at?: Date | string
   human_checks?: Prisma.HumanCheckUncheckedCreateNestedManyWithoutCard_sourceInput
 }
@@ -739,6 +763,7 @@ export type CardSourceScalarWhereInput = {
   evidence_sentence?: Prisma.StringNullableFilter<"CardSource"> | string | null
   flags?: Prisma.JsonNullableFilter<"CardSource">
   verifier_run_id?: Prisma.StringNullableFilter<"CardSource"> | string | null
+  override_reason?: Prisma.StringNullableFilter<"CardSource"> | string | null
   created_at?: Prisma.DateTimeFilter<"CardSource"> | Date | string
 }
 
@@ -750,6 +775,7 @@ export type CardSourceCreateWithoutSourceInput = {
   confidence?: number | null
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: string | null
   created_at?: Date | string
   card: Prisma.CardCreateNestedOneWithoutCard_sourcesInput
   verifier_run?: Prisma.VerifierRunCreateNestedOneWithoutCard_sourcesInput
@@ -766,6 +792,7 @@ export type CardSourceUncheckedCreateWithoutSourceInput = {
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: string | null
+  override_reason?: string | null
   created_at?: Date | string
   human_checks?: Prisma.HumanCheckUncheckedCreateNestedManyWithoutCard_sourceInput
 }
@@ -804,6 +831,7 @@ export type CardSourceCreateWithoutVerifier_runInput = {
   confidence?: number | null
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: string | null
   created_at?: Date | string
   card: Prisma.CardCreateNestedOneWithoutCard_sourcesInput
   source: Prisma.SourceCreateNestedOneWithoutCard_sourcesInput
@@ -820,6 +848,7 @@ export type CardSourceUncheckedCreateWithoutVerifier_runInput = {
   confidence?: number | null
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: string | null
   created_at?: Date | string
   human_checks?: Prisma.HumanCheckUncheckedCreateNestedManyWithoutCard_sourceInput
 }
@@ -858,6 +887,7 @@ export type CardSourceCreateWithoutHuman_checksInput = {
   confidence?: number | null
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: string | null
   created_at?: Date | string
   card: Prisma.CardCreateNestedOneWithoutCard_sourcesInput
   source: Prisma.SourceCreateNestedOneWithoutCard_sourcesInput
@@ -875,6 +905,7 @@ export type CardSourceUncheckedCreateWithoutHuman_checksInput = {
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: string | null
+  override_reason?: string | null
   created_at?: Date | string
 }
 
@@ -902,6 +933,7 @@ export type CardSourceUpdateWithoutHuman_checksInput = {
   confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   card?: Prisma.CardUpdateOneRequiredWithoutCard_sourcesNestedInput
   source?: Prisma.SourceUpdateOneRequiredWithoutCard_sourcesNestedInput
@@ -919,6 +951,7 @@ export type CardSourceUncheckedUpdateWithoutHuman_checksInput = {
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -932,6 +965,7 @@ export type CardSourceCreateManyCardInput = {
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: string | null
+  override_reason?: string | null
   created_at?: Date | string
 }
 
@@ -943,6 +977,7 @@ export type CardSourceUpdateWithoutCardInput = {
   confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   source?: Prisma.SourceUpdateOneRequiredWithoutCard_sourcesNestedInput
   verifier_run?: Prisma.VerifierRunUpdateOneWithoutCard_sourcesNestedInput
@@ -959,6 +994,7 @@ export type CardSourceUncheckedUpdateWithoutCardInput = {
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   human_checks?: Prisma.HumanCheckUncheckedUpdateManyWithoutCard_sourceNestedInput
 }
@@ -973,6 +1009,7 @@ export type CardSourceUncheckedUpdateManyWithoutCardInput = {
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -986,6 +1023,7 @@ export type CardSourceCreateManySourceInput = {
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: string | null
+  override_reason?: string | null
   created_at?: Date | string
 }
 
@@ -997,6 +1035,7 @@ export type CardSourceUpdateWithoutSourceInput = {
   confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   card?: Prisma.CardUpdateOneRequiredWithoutCard_sourcesNestedInput
   verifier_run?: Prisma.VerifierRunUpdateOneWithoutCard_sourcesNestedInput
@@ -1013,6 +1052,7 @@ export type CardSourceUncheckedUpdateWithoutSourceInput = {
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   human_checks?: Prisma.HumanCheckUncheckedUpdateManyWithoutCard_sourceNestedInput
 }
@@ -1027,6 +1067,7 @@ export type CardSourceUncheckedUpdateManyWithoutSourceInput = {
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   verifier_run_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1040,6 +1081,7 @@ export type CardSourceCreateManyVerifier_runInput = {
   confidence?: number | null
   evidence_sentence?: string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: string | null
   created_at?: Date | string
 }
 
@@ -1051,6 +1093,7 @@ export type CardSourceUpdateWithoutVerifier_runInput = {
   confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   card?: Prisma.CardUpdateOneRequiredWithoutCard_sourcesNestedInput
   source?: Prisma.SourceUpdateOneRequiredWithoutCard_sourcesNestedInput
@@ -1067,6 +1110,7 @@ export type CardSourceUncheckedUpdateWithoutVerifier_runInput = {
   confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   human_checks?: Prisma.HumanCheckUncheckedUpdateManyWithoutCard_sourceNestedInput
 }
@@ -1081,6 +1125,7 @@ export type CardSourceUncheckedUpdateManyWithoutVerifier_runInput = {
   confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   evidence_sentence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   flags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  override_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1126,6 +1171,7 @@ export type CardSourceSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   evidence_sentence?: boolean
   flags?: boolean
   verifier_run_id?: boolean
+  override_reason?: boolean
   created_at?: boolean
   card?: boolean | Prisma.CardDefaultArgs<ExtArgs>
   source?: boolean | Prisma.SourceDefaultArgs<ExtArgs>
@@ -1145,6 +1191,7 @@ export type CardSourceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   evidence_sentence?: boolean
   flags?: boolean
   verifier_run_id?: boolean
+  override_reason?: boolean
   created_at?: boolean
   card?: boolean | Prisma.CardDefaultArgs<ExtArgs>
   source?: boolean | Prisma.SourceDefaultArgs<ExtArgs>
@@ -1162,6 +1209,7 @@ export type CardSourceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   evidence_sentence?: boolean
   flags?: boolean
   verifier_run_id?: boolean
+  override_reason?: boolean
   created_at?: boolean
   card?: boolean | Prisma.CardDefaultArgs<ExtArgs>
   source?: boolean | Prisma.SourceDefaultArgs<ExtArgs>
@@ -1179,10 +1227,11 @@ export type CardSourceSelectScalar = {
   evidence_sentence?: boolean
   flags?: boolean
   verifier_run_id?: boolean
+  override_reason?: boolean
   created_at?: boolean
 }
 
-export type CardSourceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "card_id" | "source_id" | "support_label" | "similarity" | "entailment" | "confidence" | "evidence_sentence" | "flags" | "verifier_run_id" | "created_at", ExtArgs["result"]["cardSource"]>
+export type CardSourceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "card_id" | "source_id" | "support_label" | "similarity" | "entailment" | "confidence" | "evidence_sentence" | "flags" | "verifier_run_id" | "override_reason" | "created_at", ExtArgs["result"]["cardSource"]>
 export type CardSourceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   card?: boolean | Prisma.CardDefaultArgs<ExtArgs>
   source?: boolean | Prisma.SourceDefaultArgs<ExtArgs>
@@ -1220,6 +1269,7 @@ export type $CardSourcePayload<ExtArgs extends runtime.Types.Extensions.Internal
     evidence_sentence: string | null
     flags: runtime.JsonValue | null
     verifier_run_id: string | null
+    override_reason: string | null
     created_at: Date
   }, ExtArgs["result"]["cardSource"]>
   composites: {}
@@ -1658,6 +1708,7 @@ export interface CardSourceFieldRefs {
   readonly evidence_sentence: Prisma.FieldRef<"CardSource", 'String'>
   readonly flags: Prisma.FieldRef<"CardSource", 'Json'>
   readonly verifier_run_id: Prisma.FieldRef<"CardSource", 'String'>
+  readonly override_reason: Prisma.FieldRef<"CardSource", 'String'>
   readonly created_at: Prisma.FieldRef<"CardSource", 'DateTime'>
 }
     

@@ -10,6 +10,7 @@ import type {
   ApiDecision,
   ApiIssueGroup,
   ApiJudgeRun,
+  ApiOption,
   ApiProjectDetail,
   ApiSource,
   ApiSpecSection,
@@ -109,9 +110,52 @@ export function useGate(versionId: string | undefined) {
       api.get<{
         blocked: boolean;
         reason: string | null;
-        offenders: { card_id: string; card_title: string; source_title: string }[];
+        offenders: {
+          card_source_id: string;
+          card_id: string;
+          card_title: string;
+          source_title: string;
+        }[];
       }>(`/spec-versions/${versionId}/gate`),
     enabled: Boolean(versionId),
+  });
+}
+
+/**
+ * Bốn đường ra khi verifier gate chặn một cặp (khẳng định, nguồn) — ARCHITECTURE §6.6.
+ * Lấy từ backend chứ **không** khai lại ở đây: nhãn dài, khai hai chỗ là lệch âm thầm.
+ */
+export function useGateOptions(cardSourceId: string | undefined) {
+  return useQuery({
+    queryKey: qk.gateOptions(cardSourceId ?? 'none'),
+    queryFn: () =>
+      api.get<{ question: string; options: ApiOption[] }>(
+        `/card-sources/${cardSourceId}/gate-options`,
+      ),
+    enabled: Boolean(cardSourceId),
+  });
+}
+
+/** Ghi lựa chọn xử lý trích dẫn không được hỗ trợ. Trả `preview` khi có thay đổi spec. */
+export function useGateDecision(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      cardSourceId: string;
+      chosenKey: string;
+      customText: string | null;
+    }) =>
+      api.post<{ decision: { id: string }; preview: PreviewPayload | null }>(
+        `/card-sources/${input.cardSourceId}/gate-decision`,
+        { chosen_key: input.chosenKey, custom_text: input.customText },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.project(projectId) });
+      void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : 'Không lưu được lựa chọn.');
+    },
   });
 }
 
@@ -150,6 +194,11 @@ export function useJobAction(projectId: string) {
     reload,
     busy: start.isPending || view.isRunning,
     run: (path: string, body?: unknown) => start.mutate({ path, body }),
+    /**
+     * Theo dõi một job do endpoint **khác** mở ra — `POST /decisions/:id/apply` trả kèm
+     * `verifyJobId` cho lần kiểm lại chứng cứ ngay sau khi áp dụng.
+     */
+    attach: (id: string | null) => setJobId(id),
   };
 }
 
@@ -188,13 +237,15 @@ export function useApplyDecision(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (decisionId: string) =>
-      api.post<{ version: { id: string; version_no: number } }>(
-        `/decisions/${decisionId}/apply`,
-      ),
+      api.post<{
+        version: { id: string; version_no: number };
+        /** Job kiểm lại chứng cứ do backend mở ngay sau khi áp dụng; `null` nếu không mở được. */
+        verifyJobId: string | null;
+      }>(`/decisions/${decisionId}/apply`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
-      toast.success('Đã tạo phiên bản mới.');
+      toast.success('Đã tạo phiên bản mới. Đang kiểm lại chứng cứ phần vừa sửa…');
     },
     onError: (err) => {
       if (err instanceof ApiError && err.code === 'DECISION_ALREADY_APPLIED') {

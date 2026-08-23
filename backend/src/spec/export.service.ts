@@ -57,7 +57,13 @@ export class ExportService implements OnModuleDestroy {
   async checkGate(specVersionId: string): Promise<{
     blocked: boolean;
     reason: 'NOT_VERIFIED' | 'UNSUPPORTED_CITATION' | null;
-    offenders: { card_title: string; source_title: string; card_id: string }[];
+    offenders: {
+      /** Id của **cặp** (khẳng định, nguồn) — đầu vào của 4 đường ra ở §6.6. */
+      card_source_id: string;
+      card_id: string;
+      card_title: string;
+      source_title: string;
+    }[];
   }> {
     const version = await this.prisma.specVersion.findUniqueOrThrow({
       where: { id: specVersionId },
@@ -79,6 +85,10 @@ export class ExportService implements OnModuleDestroy {
     const bad = await this.prisma.cardSource.findMany({
       where: {
         support_label: 'UNSUPPORTED',
+        // Cặp đã được người dùng giữ lại kèm lý do thì không chặn nữa — người dùng vẫn là
+        // người quyết định cuối cùng (ARCHITECTURE §6.6, nhánh "Other"). Dấu vết không mất:
+        // lý do nằm ở `Decision.custom_text` **và** được in vào file xuất ra.
+        override_reason: null,
         card: {
           spec_version_id: specVersionId,
           type: { in: [...GATED_CARD_TYPES] },
@@ -94,6 +104,7 @@ export class ExportService implements OnModuleDestroy {
       blocked: bad.length > 0,
       reason: bad.length > 0 ? 'UNSUPPORTED_CITATION' : null,
       offenders: bad.map((b) => ({
+        card_source_id: b.id,
         card_id: b.card.id,
         card_title: b.card.title,
         source_title: b.source.title,

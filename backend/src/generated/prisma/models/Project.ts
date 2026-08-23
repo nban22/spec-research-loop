@@ -28,10 +28,12 @@ export type AggregateProject = {
 
 export type ProjectAvgAggregateOutputType = {
   judge_round: number | null
+  judge_rounds_total: number | null
 }
 
 export type ProjectSumAggregateOutputType = {
   judge_round: number | null
+  judge_rounds_total: number | null
 }
 
 export type ProjectMinAggregateOutputType = {
@@ -46,6 +48,7 @@ export type ProjectMinAggregateOutputType = {
   arm: $Enums.Arm | null
   verifier_gate: boolean | null
   judge_round: number | null
+  judge_rounds_total: number | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -62,6 +65,7 @@ export type ProjectMaxAggregateOutputType = {
   arm: $Enums.Arm | null
   verifier_gate: boolean | null
   judge_round: number | null
+  judge_rounds_total: number | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -78,6 +82,7 @@ export type ProjectCountAggregateOutputType = {
   arm: number
   verifier_gate: number
   judge_round: number
+  judge_rounds_total: number
   created_at: number
   updated_at: number
   _all: number
@@ -86,10 +91,12 @@ export type ProjectCountAggregateOutputType = {
 
 export type ProjectAvgAggregateInputType = {
   judge_round?: true
+  judge_rounds_total?: true
 }
 
 export type ProjectSumAggregateInputType = {
   judge_round?: true
+  judge_rounds_total?: true
 }
 
 export type ProjectMinAggregateInputType = {
@@ -104,6 +111,7 @@ export type ProjectMinAggregateInputType = {
   arm?: true
   verifier_gate?: true
   judge_round?: true
+  judge_rounds_total?: true
   created_at?: true
   updated_at?: true
 }
@@ -120,6 +128,7 @@ export type ProjectMaxAggregateInputType = {
   arm?: true
   verifier_gate?: true
   judge_round?: true
+  judge_rounds_total?: true
   created_at?: true
   updated_at?: true
 }
@@ -136,6 +145,7 @@ export type ProjectCountAggregateInputType = {
   arm?: true
   verifier_gate?: true
   judge_round?: true
+  judge_rounds_total?: true
   created_at?: true
   updated_at?: true
   _all?: true
@@ -239,6 +249,7 @@ export type ProjectGroupByOutputType = {
   arm: $Enums.Arm
   verifier_gate: boolean
   judge_round: number
+  judge_rounds_total: number
   created_at: Date
   updated_at: Date
   _count: ProjectCountAggregateOutputType | null
@@ -278,6 +289,7 @@ export type ProjectWhereInput = {
   arm?: Prisma.EnumArmFilter<"Project"> | $Enums.Arm
   verifier_gate?: Prisma.BoolFilter<"Project"> | boolean
   judge_round?: Prisma.IntFilter<"Project"> | number
+  judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   created_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -301,6 +313,7 @@ export type ProjectOrderByWithRelationInput = {
   arm?: Prisma.SortOrder
   verifier_gate?: Prisma.SortOrder
   judge_round?: Prisma.SortOrder
+  judge_rounds_total?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -327,6 +340,7 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   arm?: Prisma.EnumArmFilter<"Project"> | $Enums.Arm
   verifier_gate?: Prisma.BoolFilter<"Project"> | boolean
   judge_round?: Prisma.IntFilter<"Project"> | number
+  judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   created_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -350,6 +364,7 @@ export type ProjectOrderByWithAggregationInput = {
   arm?: Prisma.SortOrder
   verifier_gate?: Prisma.SortOrder
   judge_round?: Prisma.SortOrder
+  judge_rounds_total?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   _count?: Prisma.ProjectCountOrderByAggregateInput
@@ -374,6 +389,7 @@ export type ProjectScalarWhereWithAggregatesInput = {
   arm?: Prisma.EnumArmWithAggregatesFilter<"Project"> | $Enums.Arm
   verifier_gate?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
   judge_round?: Prisma.IntWithAggregatesFilter<"Project"> | number
+  judge_rounds_total?: Prisma.IntWithAggregatesFilter<"Project"> | number
   created_at?: Prisma.DateTimeWithAggregatesFilter<"Project"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"Project"> | Date | string
 }
@@ -389,6 +405,7 @@ export type ProjectCreateInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -412,6 +429,7 @@ export type ProjectUncheckedCreateInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -433,6 +451,7 @@ export type ProjectUpdateInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -456,6 +475,7 @@ export type ProjectUncheckedUpdateInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -478,6 +498,7 @@ export type ProjectCreateManyInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -493,6 +514,7 @@ export type ProjectUpdateManyMutationInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -509,6 +531,7 @@ export type ProjectUncheckedUpdateManyInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -535,12 +558,14 @@ export type ProjectCountOrderByAggregateInput = {
   arm?: Prisma.SortOrder
   verifier_gate?: Prisma.SortOrder
   judge_round?: Prisma.SortOrder
+  judge_rounds_total?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
 
 export type ProjectAvgOrderByAggregateInput = {
   judge_round?: Prisma.SortOrder
+  judge_rounds_total?: Prisma.SortOrder
 }
 
 export type ProjectMaxOrderByAggregateInput = {
@@ -555,6 +580,7 @@ export type ProjectMaxOrderByAggregateInput = {
   arm?: Prisma.SortOrder
   verifier_gate?: Prisma.SortOrder
   judge_round?: Prisma.SortOrder
+  judge_rounds_total?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -571,12 +597,14 @@ export type ProjectMinOrderByAggregateInput = {
   arm?: Prisma.SortOrder
   verifier_gate?: Prisma.SortOrder
   judge_round?: Prisma.SortOrder
+  judge_rounds_total?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
 
 export type ProjectSumOrderByAggregateInput = {
   judge_round?: Prisma.SortOrder
+  judge_rounds_total?: Prisma.SortOrder
 }
 
 export type ProjectScalarRelationFilter = {
@@ -758,6 +786,7 @@ export type ProjectCreateWithoutUserInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionCreateNestedManyWithoutProjectInput
@@ -779,6 +808,7 @@ export type ProjectUncheckedCreateWithoutUserInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -830,6 +860,7 @@ export type ProjectScalarWhereInput = {
   arm?: Prisma.EnumArmFilter<"Project"> | $Enums.Arm
   verifier_gate?: Prisma.BoolFilter<"Project"> | boolean
   judge_round?: Prisma.IntFilter<"Project"> | number
+  judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   created_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Project"> | Date | string
 }
@@ -845,6 +876,7 @@ export type ProjectCreateWithoutSpec_versionsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -867,6 +899,7 @@ export type ProjectUncheckedCreateWithoutSpec_versionsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   sources?: Prisma.SourceUncheckedCreateNestedManyWithoutProjectInput
@@ -903,6 +936,7 @@ export type ProjectUpdateWithoutSpec_versionsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -925,6 +959,7 @@ export type ProjectUncheckedUpdateWithoutSpec_versionsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sources?: Prisma.SourceUncheckedUpdateManyWithoutProjectNestedInput
@@ -945,6 +980,7 @@ export type ProjectCreateWithoutSourcesInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -967,6 +1003,7 @@ export type ProjectUncheckedCreateWithoutSourcesInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1003,6 +1040,7 @@ export type ProjectUpdateWithoutSourcesInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1025,6 +1063,7 @@ export type ProjectUncheckedUpdateWithoutSourcesInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1045,6 +1084,7 @@ export type ProjectCreateWithoutDecisionsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1067,6 +1107,7 @@ export type ProjectUncheckedCreateWithoutDecisionsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1103,6 +1144,7 @@ export type ProjectUpdateWithoutDecisionsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1125,6 +1167,7 @@ export type ProjectUncheckedUpdateWithoutDecisionsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1145,6 +1188,7 @@ export type ProjectCreateWithoutJob_runsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1167,6 +1211,7 @@ export type ProjectUncheckedCreateWithoutJob_runsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1203,6 +1248,7 @@ export type ProjectUpdateWithoutJob_runsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1225,6 +1271,7 @@ export type ProjectUncheckedUpdateWithoutJob_runsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1245,6 +1292,7 @@ export type ProjectCreateWithoutLlm_callsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1267,6 +1315,7 @@ export type ProjectUncheckedCreateWithoutLlm_callsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1303,6 +1352,7 @@ export type ProjectUpdateWithoutLlm_callsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1325,6 +1375,7 @@ export type ProjectUncheckedUpdateWithoutLlm_callsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1345,6 +1396,7 @@ export type ProjectCreateWithoutEval_runsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1367,6 +1419,7 @@ export type ProjectUncheckedCreateWithoutEval_runsInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1403,6 +1456,7 @@ export type ProjectUpdateWithoutEval_runsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1425,6 +1479,7 @@ export type ProjectUncheckedUpdateWithoutEval_runsInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1445,6 +1500,7 @@ export type ProjectCreateManyUserInput = {
   arm?: $Enums.Arm
   verifier_gate?: boolean
   judge_round?: number
+  judge_rounds_total?: number
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -1460,6 +1516,7 @@ export type ProjectUpdateWithoutUserInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUpdateManyWithoutProjectNestedInput
@@ -1481,6 +1538,7 @@ export type ProjectUncheckedUpdateWithoutUserInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1502,6 +1560,7 @@ export type ProjectUncheckedUpdateManyWithoutUserInput = {
   arm?: Prisma.EnumArmFieldUpdateOperationsInput | $Enums.Arm
   verifier_gate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
+  judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1594,6 +1653,7 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   arm?: boolean
   verifier_gate?: boolean
   judge_round?: boolean
+  judge_rounds_total?: boolean
   created_at?: boolean
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1618,6 +1678,7 @@ export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   arm?: boolean
   verifier_gate?: boolean
   judge_round?: boolean
+  judge_rounds_total?: boolean
   created_at?: boolean
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1635,6 +1696,7 @@ export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   arm?: boolean
   verifier_gate?: boolean
   judge_round?: boolean
+  judge_rounds_total?: boolean
   created_at?: boolean
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1652,11 +1714,12 @@ export type ProjectSelectScalar = {
   arm?: boolean
   verifier_gate?: boolean
   judge_round?: boolean
+  judge_rounds_total?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "raw_idea" | "domain" | "step" | "status" | "current_spec_version_id" | "arm" | "verifier_gate" | "judge_round" | "created_at" | "updated_at", ExtArgs["result"]["project"]>
+export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "raw_idea" | "domain" | "step" | "status" | "current_spec_version_id" | "arm" | "verifier_gate" | "judge_round" | "judge_rounds_total" | "created_at" | "updated_at", ExtArgs["result"]["project"]>
 export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   spec_versions?: boolean | Prisma.Project$spec_versionsArgs<ExtArgs>
@@ -1697,6 +1760,7 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     arm: $Enums.Arm
     verifier_gate: boolean
     judge_round: number
+    judge_rounds_total: number
     created_at: Date
     updated_at: Date
   }, ExtArgs["result"]["project"]>
@@ -2140,6 +2204,7 @@ export interface ProjectFieldRefs {
   readonly arm: Prisma.FieldRef<"Project", 'Arm'>
   readonly verifier_gate: Prisma.FieldRef<"Project", 'Boolean'>
   readonly judge_round: Prisma.FieldRef<"Project", 'Int'>
+  readonly judge_rounds_total: Prisma.FieldRef<"Project", 'Int'>
   readonly created_at: Prisma.FieldRef<"Project", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"Project", 'DateTime'>
 }

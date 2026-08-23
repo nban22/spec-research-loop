@@ -51,7 +51,11 @@ export class JudgeService {
       include: { project: true },
     });
     const round = version.project.judge_round + 1;
-    if (round > MAX_JUDGE_ROUNDS) {
+    // Giới hạn đọc từ `judge_rounds_total`, **không** từ `judge_round`: `apply` reset
+    // `judge_round` về 0 cho version mới (bắt buộc, vì `JudgeRun` unique theo
+    // `(spec_version_id, judge_key, round)`), nên đếm bằng nó thì giới hạn
+    // "tối đa 3 vòng mỗi dự án" của ARCHITECTURE §1.2 không bao giờ tới.
+    if (version.project.judge_rounds_total >= MAX_JUDGE_ROUNDS) {
       throw AppError.conflict(
         'JUDGE_ROUND_LIMIT',
         `Đã chạy hết ${MAX_JUDGE_ROUNDS} vòng judge cho dự án này.`,
@@ -197,7 +201,7 @@ export class JudgeService {
     );
     await this.prisma.project.update({
       where: { id: version.project_id },
-      data: { judge_round: round },
+      data: { judge_round: round, judge_rounds_total: { increment: 1 } },
     });
     await this.prisma.specVersion.update({
       where: { id: specVersionId },

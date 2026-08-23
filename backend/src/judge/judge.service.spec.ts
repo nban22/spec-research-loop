@@ -35,7 +35,7 @@ describe('JudgeService', () => {
   it('throws JUDGE_ROUND_LIMIT when round exceeds max allowed', async () => {
     prisma.specVersion.findUniqueOrThrow.mockResolvedValue({
       id: 'v-1',
-      project: { judge_round: 3 },
+      project: { judge_round: 3, judge_rounds_total: 3 },
     });
 
     await expect(service.runRound('v-1')).rejects.toMatchObject({
@@ -43,10 +43,25 @@ describe('JudgeService', () => {
     });
   });
 
+  it('từ chối vòng thứ 4 dù apply đã reset judge_round của version mới', async () => {
+    // Đây đúng hình dạng dữ liệu sau khi `DecisionService.apply` tạo version mới:
+    // `judge_round = 0` (bắt buộc, vì JudgeRun unique theo (version, judge, round))
+    // nhưng dự án đã tiêu hết 3 vòng. Đếm bằng `judge_round` thì chạy được vô hạn.
+    prisma.specVersion.findUniqueOrThrow.mockResolvedValue({
+      id: 'v-4',
+      project: { judge_round: 0, judge_rounds_total: 3 },
+    });
+
+    await expect(service.runRound('v-4')).rejects.toMatchObject({
+      code: 'JUDGE_ROUND_LIMIT',
+    });
+    expect(prisma.judgeRun.count).not.toHaveBeenCalled();
+  });
+
   it('throws JUDGE_ROUND_EXISTS when round runs already exist', async () => {
     prisma.specVersion.findUniqueOrThrow.mockResolvedValue({
       id: 'v-1',
-      project: { judge_round: 0 },
+      project: { judge_round: 0, judge_rounds_total: 0 },
     });
     prisma.judgeRun.count.mockResolvedValue(1);
 
@@ -59,7 +74,7 @@ describe('JudgeService', () => {
     prisma.specVersion.findUniqueOrThrow.mockResolvedValue({
       id: 'v-1',
       project_id: 'p-1',
-      project: { judge_round: 0 },
+      project: { judge_round: 0, judge_rounds_total: 0 },
     });
     prisma.judgeRun.count.mockResolvedValue(0);
     spec.buildSpecJson.mockResolvedValue({ title: 'Spec' });
@@ -91,6 +106,11 @@ describe('JudgeService', () => {
     expect(result.round).toBe(1);
     expect(result.completed.length).toBe(JUDGE_DEFS.length);
     expect(prisma.judgeRun.create).toHaveBeenCalledTimes(JUDGE_DEFS.length);
+    // Hai bộ đếm đi cùng nhau trong một lệnh ghi: vòng-trong-version và vòng-cả-dự-án.
+    expect(prisma.project.update).toHaveBeenCalledWith({
+      where: { id: 'p-1' },
+      data: { judge_round: 1, judge_rounds_total: { increment: 1 } },
+    });
   });
 
   it('listIssueGroups returns sorted issue groups with child issues', async () => {

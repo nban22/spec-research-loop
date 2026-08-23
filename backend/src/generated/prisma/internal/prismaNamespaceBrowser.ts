@@ -127,6 +127,7 @@ export const ProjectScalarFieldEnum = {
   arm: 'arm',
   verifier_gate: 'verifier_gate',
   judge_round: 'judge_round',
+  judge_rounds_total: 'judge_rounds_total',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -200,6 +201,7 @@ export const CardSourceScalarFieldEnum = {
   evidence_sentence: 'evidence_sentence',
   flags: 'flags',
   verifier_run_id: 'verifier_run_id',
+  override_reason: 'override_reason',
   created_at: 'created_at'
 } as const
 

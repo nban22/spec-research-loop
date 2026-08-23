@@ -1,11 +1,13 @@
 /**
  * Tính metric và xuất bảng — deliverable #8.
  *
- *   npx tsx eval/score.ts --batch=<uuid>
+ *   npm run eval:score -- --batch=<uuid>
  *
- * Bốn metric chính (kim-chỉ-nam §7.2) + metric phụ. Kết quả ghi vào `EvalMetric` và
- * `eval/results/`, và `results/` được **commit vào git** để không phải chạy lại batch
- * chỉ để lấy số.
+ * Chạy **sau** `eval:audit`: metric "số issue chặn" đọc từ `AuditorScore` (auditor độc lập),
+ * không từ bảng `Issue` của 5 judge trong app — xem `src/verifier/metrics.ts`.
+ *
+ * Mọi phép tính nằm ở `src/verifier/metrics.ts` để có test (jest chỉ quét `rootDir: src`);
+ * file này chỉ truy vấn rồi gọi.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,6 +15,14 @@ import { titleSimilarity } from '../src/common/text';
 import { SourceClient, type NormalizedSource } from '../src/sources/source.client';
 import { EVAL_DIR, boot, log } from './harness';
 import { DEFAULT_THRESHOLDS } from '../src/verifier/thresholds';
+import {
+  auditorBlockingIssues,
+  citationMetrics,
+  claimedCitationMetrics,
+  jsonValidityByGroup,
+  meanStd,
+  type CitationPair,
+} from '../src/verifier/metrics';
 import type { Arm } from '../src/generated/prisma/enums';
 
 function arg(name: string, fallback = ''): string {
@@ -20,18 +30,51 @@ function arg(name: string, fallback = ''): string {
   return hit ? hit.slice(name.length + 3) : fallback;
 }
 
+/** `null` = **không đo được**, khác hẳn `0` = đo được và bằng không. */
 type Row = {
+  /** Ghi metric theo id của chính lượt chạy — **không** theo chỉ số mảng: lượt bị bỏ qua
+   *  (project chưa có version nào) sẽ làm hai mảng lệch nhau và metric ghi sang lượt khác. */
+  eval_run_id: string;
   arm: Arm;
   idea_id: string;
-  citation_validity: number;
-  unsupported_rate: number;
+  citation_validity: number | null;
+  fabrication_rate: number | null;
+  unsupported_rate: number | null;
+  unsupported_rate_v1: number | null;
   completeness_14: number;
-  issues_major_critical: number;
-  json_validity: number;
-  l4_llm_ratio: number;
+  auditor_blocking_issues: number | null;
+  own_judge_issues_open: number;
+  json_validity: number | null;
+  json_validity_generator: number | null;
+  json_validity_judge: number | null;
+  json_validity_entailment: number | null;
+  l4_llm_ratio: number | null;
+  rounds_run: number | null;
+  decisions_applied: number | null;
   total_tokens: number;
   wall_ms: number;
 };
+
+const METRICS = [
+  'citation_validity',
+  'fabrication_rate',
+  'unsupported_rate',
+  'unsupported_rate_v1',
+  'completeness_14',
+  'auditor_blocking_issues',
+  'own_judge_issues_open',
+  'json_validity',
+  'json_validity_generator',
+  'json_validity_judge',
+  'json_validity_entailment',
+  'l4_llm_ratio',
+  'rounds_run',
+  'decisions_applied',
+  'total_tokens',
+  'wall_ms',
+] as const;
+type MetricKey = (typeof METRICS)[number];
+type ArmSummary = Record<MetricKey, ReturnType<typeof meanStd>>;
 
 async function main() {
   const batchId = arg('batch');
@@ -69,121 +112,149 @@ async function main() {
   }
 
   const rows: Row[] = [];
+  let auditedRuns = 0;
 
   for (const run of runs) {
-    const version = await s.prisma.specVersion.findFirst({
+    const versions = await s.prisma.specVersion.findMany({
       where: { project_id: run.project_id },
-      orderBy: { version_no: 'desc' },
+      orderBy: { version_no: 'asc' },
+      select: { id: true, version_no: true },
     });
-    if (!version) continue;
+    if (versions.length === 0) continue;
+    const firstVersion = versions[0];
+    const lastVersion = versions[versions.length - 1];
 
-    const sections = await s.spec.buildSections(version.id);
+    const sections = await s.spec.buildSections(lastVersion.id);
     const completeness = sections.filter((x) => x.present).length;
 
-    // ── citation validity ────────────────────────────────────────────────
-    // Cùng một định nghĩa cho mọi arm: *tỉ lệ trích dẫn tra ra được ở một provider thật*.
-    // B2/SYS: nguồn vốn đã từ API nên phép đo là nhãn L0 (`SOURCE_NOT_FOUND`).
-    // B1: trích dẫn đến từ trí nhớ của model ⇒ phải đi tra thật, và đó chính là chỗ chênh lệch.
-    let citationValidity: number;
-    let unsupportedRate: number;
+    // ── citation ─────────────────────────────────────────────────────────
+    // Hai arm dùng hai đường đo vì **dữ liệu khác bản chất**, nhưng cả hai đều ra
+    // `fabrication_rate` — con số so trực tiếp được. `unsupported_rate` chỉ có nghĩa khi
+    // tồn tại cặp (khẳng định, abstract thật), nên B1 để `null`.
+    const citation =
+      run.arm === 'B1'
+        ? claimedCitationMetrics(await resolveB1Citations(s, lastVersion.id))
+        : citationMetrics(await pairsOf(s, lastVersion.id));
 
-    const pairs = await s.prisma.cardSource.findMany({
-      where: { card: { spec_version_id: version.id } },
-      select: { support_label: true, flags: true },
+    // Δ theo vòng (ARCHITECTURE §6.7 metric #5): vòng sửa có làm spec sạch hơn không.
+    const unsupportedV1 =
+      run.arm === 'B1'
+        ? null
+        : citationMetrics(await pairsOf(s, firstVersion.id)).unsupported_rate;
+
+    const auditorScores = await s.prisma.auditorScore.findMany({
+      where: { eval_run_id: run.id },
+      select: { severity_counts: true },
     });
+    if (auditorScores.length > 0) auditedRuns += 1;
 
-    if (run.arm === 'B1') {
-      const claimed = await s.prisma.card.findMany({
-        where: { spec_version_id: version.id, type: 'EVIDENCE' },
-        select: { title: true, payload: true },
-      });
-      const memoryCites = claimed.filter(
-        (c) => (c.payload as { from_model_memory?: boolean } | null)?.from_model_memory,
-      );
-      let resolved = 0;
-      for (const c of memoryCites) {
-        const found = await resolveClaimedTitle(s, c.title);
-        if (found) resolved++;
-      }
-      citationValidity = memoryCites.length === 0 ? 0 : resolved / memoryCites.length;
-      // B1 không gắn nguồn thật vào claim ⇒ mọi trích dẫn không tra ra được là không có bằng chứng.
-      unsupportedRate = memoryCites.length === 0 ? 1 : 1 - resolved / memoryCites.length;
-    } else {
-      const total = pairs.length;
-      const l0fail = pairs.filter((p) =>
-        ((p.flags as string[] | null) ?? []).includes('SOURCE_NOT_FOUND'),
-      ).length;
-      citationValidity = total === 0 ? 0 : (total - l0fail) / total;
-      unsupportedRate =
-        total === 0
-          ? 1
-          : pairs.filter((p) => p.support_label === 'UNSUPPORTED').length / total;
-    }
-
-    const issues = await s.prisma.issue.count({
-      where: {
-        judge_run: { spec_version_id: version.id },
-        severity: { in: ['CRITICAL', 'MAJOR'] },
-      },
+    /**
+     * Metric phụ, tên nói rõ nó là gì: issue **của 5 judge trong app** còn để mở.
+     *
+     * Đếm trên **version cuối cùng đã từng được judge**, không phải version cuối cùng: với arm
+     * có vòng sửa, version cuối do lần `apply` sau cùng sinh ra và chưa judge lần nào, nên
+     * đếm ở đó luôn ra 0 — đúng ở những lượt tiêu hết vòng mà issue vẫn còn.
+     */
+    const lastJudged = await s.prisma.judgeRun.findFirst({
+      where: { spec_version: { project_id: run.project_id } },
+      orderBy: [{ spec_version: { version_no: 'desc' } }, { round: 'desc' }],
+      select: { spec_version_id: true },
     });
+    const ownIssues = lastJudged
+      ? await s.prisma.issue.count({
+          where: {
+            judge_run: { spec_version_id: lastJudged.spec_version_id },
+            severity: { in: ['CRITICAL', 'MAJOR'] },
+            // Issue đã được xử (nhóm `RESOLVED`) không còn là "còn để mở".
+            OR: [
+              { issue_group_id: null },
+              { issue_group: { status: 'OPEN' } },
+            ],
+          },
+        })
+      : 0;
 
     const calls = await s.prisma.llmCall.findMany({
       where: { project_id: run.project_id },
       select: { attempts: true, purpose: true },
     });
-    const jsonValidity =
-      calls.length === 0 ? 1 : calls.filter((c) => c.attempts === 1).length / calls.length;
+    const jsonValidity = jsonValidityByGroup(calls);
 
-    const vrun = await s.prisma.verifierRun.findFirst({
-      where: { spec_version_id: version.id },
-      orderBy: { created_at: 'desc' },
+    /**
+     * Cộng **mọi** lần chạy verifier của cả dự án, không chỉ lần cuối của version cuối.
+     * Với arm có vòng sửa, những lần chạy lại là lần chỉ kiểm vài thẻ — lấy đúng lần cuối thì
+     * mẫu số bé xíu và tỉ lệ thành vô nghĩa. Metric này là proxy **chi phí**, nên phải cộng dồn.
+     */
+    const vAgg = await s.prisma.verifierRun.aggregate({
+      where: { spec_version: { project_id: run.project_id } },
+      _sum: { units_total: true, units_l4: true },
     });
-    const l4Ratio = vrun && vrun.units_total > 0 ? vrun.units_l4 / vrun.units_total : 0;
+    const unitsTotal = vAgg._sum.units_total ?? 0;
+    const l4Ratio =
+      unitsTotal > 0 ? (vAgg._sum.units_l4 ?? 0) / unitsTotal : null;
 
-    const row: Row = {
+    const repair = (run.config as { repair?: RepairConfig | null }).repair ?? null;
+
+    rows.push({
+      eval_run_id: run.id,
       arm: run.arm,
       idea_id: run.idea_id,
-      citation_validity: citationValidity,
-      unsupported_rate: unsupportedRate,
+      citation_validity: citation.citation_validity,
+      fabrication_rate: citation.fabrication_rate,
+      unsupported_rate: citation.unsupported_rate,
+      unsupported_rate_v1: unsupportedV1,
       completeness_14: completeness,
-      issues_major_critical: issues,
-      json_validity: jsonValidity,
+      auditor_blocking_issues: auditorBlockingIssues(auditorScores),
+      own_judge_issues_open: ownIssues,
+      json_validity: jsonValidity.all,
+      json_validity_generator: jsonValidity.generator,
+      json_validity_judge: jsonValidity.judge,
+      json_validity_entailment: jsonValidity.entailment,
       l4_llm_ratio: l4Ratio,
+      rounds_run: repair?.rounds_run ?? null,
+      decisions_applied: repair?.decisions_applied ?? null,
       total_tokens: run.total_tokens,
       wall_ms: run.wall_ms,
-    };
-    rows.push(row);
+    });
+  }
 
-    for (const [key, value] of Object.entries(row)) {
-      if (typeof value !== 'number') continue;
-      await s.prisma.evalMetric.upsert({
-        where: { eval_run_id_key: { eval_run_id: run.id, key } },
-        create: { eval_run_id: run.id, key, value },
-        update: { value },
-      });
+  // `EvalMetric.value` là `Float` NOT NULL ⇒ metric không đo được thì **không ghi dòng**.
+  // Ghi 0 vào đó là biến "không biết" thành "bằng không", và bảng sẽ nói sai.
+  for (const row of rows) {
+    /**
+     * **Xoá trước khi ghi.** Chỉ `upsert` thôi thì dòng cũ sống sót: một metric bị đổi tên
+     * (`issues_major_critical` → `auditor_blocking_issues`) hay chuyển thành `null`
+     * (`unsupported_rate` của B1) vẫn nằm nguyên trong bảng với giá trị của bản scorer trước.
+     * Đúng là cái lỗi "không biết bị đọc thành bằng không" mà việc bỏ qua `null` nhằm chặn.
+     */
+    await s.prisma.evalMetric.deleteMany({
+      where: { eval_run_id: row.eval_run_id },
+    });
+    const rowsToWrite = METRICS.flatMap((key) => {
+      const value = row[key];
+      return value === null
+        ? []
+        : [{ eval_run_id: row.eval_run_id, key, value }];
+    });
+    if (rowsToWrite.length > 0) {
+      await s.prisma.evalMetric.createMany({ data: rowsToWrite });
     }
   }
 
-  // ── tổng hợp mean ± std theo arm ──────────────────────────────────────
-  const METRICS = [
-    'citation_validity',
-    'unsupported_rate',
-    'completeness_14',
-    'issues_major_critical',
-    'json_validity',
-    'l4_llm_ratio',
-    'total_tokens',
-    'wall_ms',
-  ] as const;
+  if (auditedRuns === 0) {
+    log(
+      'CẢNH BÁO: chưa có AuditorScore nào cho batch này ⇒ `auditor_blocking_issues` rỗng.\n' +
+        '          Chạy `npm run eval:audit -- --batch=<id>` rồi tính điểm lại.',
+    );
+  }
 
   const arms = [...new Set(rows.map((r) => r.arm))];
-  const summary: Record<string, Record<string, { mean: number; std: number; n: number }>> = {};
+  const summary: Record<string, ArmSummary> = {};
   for (const arm of arms) {
     const subset = rows.filter((r) => r.arm === arm);
-    summary[arm] = {};
+    summary[arm] = {} as ArmSummary;
     for (const m of METRICS) {
-      const values = subset.map((r) => r[m]);
-      summary[arm][m] = { mean: mean(values), std: std(values), n: values.length };
+      summary[arm][m] = meanStd(subset.map((r) => r[m]));
     }
   }
 
@@ -193,19 +264,34 @@ async function main() {
   writeFileSync(
     join(outDir, `${batchId}.json`),
     JSON.stringify(
-      { batch_id: batchId, generated_at: new Date().toISOString(), thresholds: DEFAULT_THRESHOLDS, rows, summary },
+      {
+        batch_id: batchId,
+        generated_at: new Date().toISOString(),
+        thresholds: DEFAULT_THRESHOLDS,
+        audited_runs: auditedRuns,
+        rows,
+        summary,
+      },
       null,
       2,
     ),
   );
 
+  // `n` vào thẳng CSV: `±0.000` không kèm `n` bị đọc thành "phương sai thấp" trong khi
+  // sự thật là "chỉ có một mẫu".
   const csv = [
-    ['metric', ...arms.map((a) => `${a}_mean`), ...arms.map((a) => `${a}_std`)].join(','),
+    [
+      'metric',
+      ...arms.map((a) => `${a}_mean`),
+      ...arms.map((a) => `${a}_std`),
+      ...arms.map((a) => `${a}_n`),
+    ].join(','),
     ...METRICS.map((m) =>
       [
         m,
-        ...arms.map((a) => summary[a][m].mean.toFixed(4)),
-        ...arms.map((a) => summary[a][m].std.toFixed(4)),
+        ...arms.map((a) => fmt(summary[a][m].mean, summary[a][m].n)),
+        ...arms.map((a) => fmt(summary[a][m].std, summary[a][m].n)),
+        ...arms.map((a) => String(summary[a][m].n)),
       ].join(','),
     ),
   ].join('\n');
@@ -214,13 +300,61 @@ async function main() {
   log(`\nBảng tổng hợp (mean ± std, n theo arm):`);
   for (const m of METRICS) {
     const cells = arms
-      .map((a) => `${a}=${summary[a][m].mean.toFixed(3)}±${summary[a][m].std.toFixed(3)}`)
+      .map((a) => {
+        const cell = summary[a][m];
+        return cell.n === 0
+          ? `${a}=n/a`
+          : `${a}=${cell.mean.toFixed(3)}±${cell.std.toFixed(3)}(n=${cell.n})`;
+      })
       .join('  ');
-    log(`  ${m.padEnd(22)} ${cells}`);
+    log(`  ${m.padEnd(24)} ${cells}`);
   }
   log(`\nĐã ghi: eval/results/${batchId}.json và ${batchId}-summary.csv`);
 
   await s.app.close();
+}
+
+type RepairConfig = { rounds_run?: number; decisions_applied?: number };
+
+function fmt(value: number, n: number): string {
+  return n === 0 ? '' : value.toFixed(4);
+}
+
+async function pairsOf(
+  s: Awaited<ReturnType<typeof boot>>,
+  specVersionId: string,
+): Promise<CitationPair[]> {
+  const pairs = await s.prisma.cardSource.findMany({
+    where: { card: { spec_version_id: specVersionId } },
+    select: { support_label: true, flags: true },
+  });
+  return pairs.map((p) => ({
+    support_label: p.support_label,
+    flags: ((p.flags as string[] | null) ?? []),
+  }));
+}
+
+/**
+ * Trích dẫn của B1 nằm ở thẻ `EVIDENCE` mang `payload.from_model_memory`. Đi tra từng tiêu đề
+ * ở provider thật; tỉ lệ tra ra được **chính là** `citation_validity` của arm này.
+ */
+async function resolveB1Citations(
+  s: Awaited<ReturnType<typeof boot>>,
+  specVersionId: string,
+): Promise<{ claimed: number; resolved: number }> {
+  const claimed = await s.prisma.card.findMany({
+    where: { spec_version_id: specVersionId, type: 'EVIDENCE' },
+    select: { title: true, payload: true },
+  });
+  const memoryCites = claimed.filter(
+    (c) => (c.payload as { from_model_memory?: boolean } | null)?.from_model_memory,
+  );
+
+  let resolved = 0;
+  for (const c of memoryCites) {
+    if (await resolveClaimedTitle(s, c.title)) resolved += 1;
+  }
+  return { claimed: memoryCites.length, resolved };
 }
 
 /**
@@ -242,15 +376,6 @@ async function resolveClaimedTitle(
   return candidates.some(
     (c) => titleSimilarity(c.title, title) >= DEFAULT_THRESHOLDS.title_match,
   );
-}
-
-function mean(xs: number[]): number {
-  return xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length;
-}
-function std(xs: number[]): number {
-  if (xs.length < 2) return 0;
-  const m = mean(xs);
-  return Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / (xs.length - 1));
 }
 
 void main();

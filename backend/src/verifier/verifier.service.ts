@@ -69,7 +69,10 @@ export class VerifierService {
         card: {
           spec_version_id: specVersionId,
           type: { in: [...VERIFIABLE_CARD_TYPES] },
-          ...(opts.cardIds?.length ? { id: { in: opts.cardIds } } : {}),
+          // Có mảng ⇒ chỉ kiểm đúng những thẻ đó, **kể cả mảng rỗng** (0 unit).
+          // Trước đây điều kiện là `cardIds?.length`, nên truyền `[]` với ý "không thẻ nào
+          // cần kiểm lại" lại kiểm **toàn bộ** version — ngược hẳn ý gọi.
+          ...(opts.cardIds ? { id: { in: opts.cardIds } } : {}),
         },
       },
       include: { card: true, source: true },

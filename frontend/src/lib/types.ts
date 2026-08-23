@@ -86,6 +86,12 @@ export const STEPS: { step: ProjectStep; no: number; short: string; title: strin
   { step: 'S5', no: 5, short: 'Spec cuối', title: 'Spec cuối & Xuất bản' },
 ];
 
+/**
+ * Khai lại `MAX_JUDGE_ROUNDS` của `backend/src/contracts/enums.ts` — cùng luật với các enum
+ * ở trên: hai project rời, backend là nguồn sự thật, sửa một chỗ thì sửa cả hai.
+ */
+export const MAX_JUDGE_ROUNDS = 3;
+
 export const JUDGE_META: Record<JudgeKey, { name: string; task: string }> = {
   J1: { name: 'Research Gap', task: 'Gap có thật sự được tài liệu hỗ trợ không' },
   J2: { name: 'Contribution', task: 'Đóng góp có mới, rõ, có bị phóng đại không' },
@@ -216,6 +222,8 @@ export type ApiProjectDetail = {
     arm: string;
     verifier_gate: boolean;
     judge_round: number;
+    /** Vòng judge tính cả dự án — bộ đếm chặn ở 3, không reset khi tạo version mới. */
+    judge_rounds_total: number;
     current_spec_version_id: string | null;
     created_at: string;
     updated_at: string;

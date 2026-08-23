@@ -24,7 +24,7 @@ import { EmptyState } from '@/components/states';
 import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
 import { ApiError, api } from '@/lib/api';
-import type { ApiIssueGroup, ApiOption, JudgeKey } from '@/lib/types';
+import { MAX_JUDGE_ROUNDS, type ApiIssueGroup, type ApiOption, type JudgeKey } from '@/lib/types';
 import {
   useApplyDecision,
   useIssueGroups,
@@ -62,7 +62,12 @@ export function Step4({ projectId }: { projectId: string }) {
 
   const groups = groupData?.groups ?? [];
   const runs = runData?.runs ?? [];
-  const round = detail?.project.judge_round ?? 0;
+  /**
+   * Đếm theo **dự án**, không theo version: `judge_round` reset mỗi lần tạo version mới, nên
+   * dùng nó thì nhãn "tối đa 3 vòng cho mỗi dự án" ở dưới là nói sai.
+   */
+  const roundsTotal = detail?.project.judge_rounds_total ?? 0;
+  const roundsExhausted = roundsTotal >= MAX_JUDGE_ROUNDS;
   const hasJudged = runs.length > 0;
 
   const judgeStates = judgeStatesFrom(runs, job.view.isRunning);
@@ -143,16 +148,18 @@ export function Step4({ projectId }: { projectId: string }) {
         action={
           <Button
             size="sm"
-            disabled={job.busy || round >= 3}
+            disabled={job.busy || roundsExhausted}
             onClick={() => job.run(`/spec-versions/${versionId}/judge`)}
           >
-            {round === 0 ? 'Chạy Judge' : `Chạy vòng ${round + 1}`}
+            {roundsTotal === 0 ? 'Chạy Judge' : `Chạy vòng ${roundsTotal + 1}`}
           </Button>
         }
       >
         <JudgePanel states={judgeStates} />
-        {round >= 3 && (
-          <HintBox tone="warn">Đã dùng hết 3 vòng judge cho dự án này.</HintBox>
+        {roundsExhausted && (
+          <HintBox tone="warn">
+            Đã dùng hết {MAX_JUDGE_ROUNDS} vòng judge cho dự án này.
+          </HintBox>
         )}
       </Panel>
 
@@ -252,10 +259,13 @@ export function Step4({ projectId }: { projectId: string }) {
             pending={applyDecision.isPending}
             onConfirm={(id) =>
               applyDecision.mutate(id, {
-                onSuccess: () => {
+                onSuccess: (res) => {
                   setActive(null);
                   setOptions(null);
                   setPreview(null);
+                  // Bám vào job kiểm lại chứng cứ mà backend vừa mở, để thanh tiến độ hiện
+                  // ngay tại bước 4 — đúng thứ hộp thoại xác nhận đã hứa.
+                  if (res.verifyJobId) job.attach(res.verifyJobId);
                   void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
                 },
               })
@@ -308,10 +318,10 @@ export function Step4({ projectId }: { projectId: string }) {
       }
       summaryBar={
         <SummaryBar
-          round={Math.max(1, round)}
+          round={Math.max(1, roundsTotal)}
           nodes={['Judge độc lập', 'Chọn cách sửa', 'Xem diff', 'Xác nhận', 'Hoàn tất']}
           activeIndex={!hasJudged ? 0 : !options ? 1 : !preview ? 2 : 3}
-          hint="Tối đa 3 vòng judge cho mỗi dự án."
+          hint={`Tối đa ${MAX_JUDGE_ROUNDS} vòng judge cho mỗi dự án.`}
         />
       }
     />

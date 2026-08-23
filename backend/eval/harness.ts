@@ -20,6 +20,7 @@ import { SourcesService } from '../src/sources/sources.service';
 import { SpecService } from '../src/spec/spec.service';
 import { VerifierService } from '../src/verifier/verifier.service';
 import { singleShotOutputSchema } from '../src/contracts/llm-io/judge';
+import { runRepairLoop, type RepairStats } from './repair-loop';
 import type { Arm } from '../src/generated/prisma/enums';
 
 export const EVAL_USER_EMAIL = 'eval@local';
@@ -143,6 +144,8 @@ export type ArmResult = {
   specVersionId: string;
   wallMs: number;
   error?: string;
+  /** Chỉ có ở arm chạy vòng sửa — đi vào `EvalRun.config` để báo cáo đọc được. */
+  repair?: RepairStats;
 };
 
 /**
@@ -205,9 +208,21 @@ export async function runArm(
     const current = await s.spec.currentVersionOf(project.id);
     await s.verifier.verifySpecVersion(current.id, { projectId: project.id });
 
-    // Vòng judge chỉ có ở SYS và SYS_NO_VERIFY.
+    /**
+     * Vòng judge **và vòng sửa** chỉ có ở SYS và SYS_NO_VERIFY.
+     *
+     * Chạy đủ vòng sửa, không phải một lượt judge: `B2→SYS` là "đóng góp của vòng judge",
+     * mà judge chỉ nêu vấn đề — không sửa gì thì không có gì để đo.
+     */
     if (arm === 'SYS' || arm === 'SYS_NO_VERIFY') {
-      await s.judge.runRound(current.id);
+      const repair = await runRepairLoop(s, project.id, arm);
+      const final = await s.spec.currentVersionOf(project.id);
+      return {
+        projectId: project.id,
+        specVersionId: final.id,
+        wallMs: Date.now() - t0,
+        repair,
+      };
     }
 
     const final = await s.spec.currentVersionOf(project.id);

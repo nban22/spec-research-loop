@@ -197,7 +197,13 @@ model Project {
   current_spec_version_id String?
   arm                     Arm           @default(SYS)
   verifier_gate           Boolean       @default(true)
+  // Vòng judge **trong version hiện tại** — reset khi apply quyết định, vì
+  // `JudgeRun` unique theo `(spec_version_id, judge_key, round)`.
   judge_round             Int           @default(0)
+  // Vòng judge **tính cả dự án** — không bao giờ reset. Đây mới là bộ đếm chặn
+  // ở `MAX_JUDGE_ROUNDS` (ARCHITECTURE §1.2 "tối đa 3 vòng judge cho mỗi project").
+  // Trước khi có cột này, `apply` reset `judge_round = 0` nên giới hạn không bao giờ tới.
+  judge_rounds_total      Int           @default(0)
   created_at              DateTime      @default(now())
   updated_at              DateTime      @updatedAt
 
@@ -310,6 +316,10 @@ model CardSource {
   evidence_sentence String?
   flags             Json?
   verifier_run_id   String?
+  // Người dùng chọn "Other" ở verifier gate: giữ nguyên trích dẫn dù bị gắn `UNSUPPORTED`,
+  // kèm lý do bắt buộc (ARCHITECTURE §6.6). Gate bỏ qua cặp có lý do, và file xuất ra
+  // **đánh dấu** nó — đó là chỗ khác nhau giữa *bỏ qua có ghi nhận* và *không kiểm*.
+  override_reason   String?
   created_at        DateTime      @default(now())
 
   card         Card         @relation(fields: [card_id], references: [id], onDelete: Cascade)

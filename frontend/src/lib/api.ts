@@ -117,6 +117,8 @@ export const qk = {
   judgeRuns: (id: string) => ['spec-versions', id, 'judge-runs'] as const,
   verification: (id: string) => ['spec-versions', id, 'verification'] as const,
   gate: (id: string) => ['spec-versions', id, 'gate'] as const,
+  gateOptions: (cardSourceId: string) =>
+    ['card-sources', cardSourceId, 'gate-options'] as const,
   diff: (id: string, against?: string) => ['spec-versions', id, 'diff', against] as const,
   job: (id: string) => ['jobs', id] as const,
 };
