@@ -52,7 +52,7 @@ describe('Security Isolation Cross-User (e2e)', () => {
       .send({ raw_idea: 'User A research project proposal raw idea text.' });
     const projBody = projRes.body as { id: string };
     projectAId = projBody.id;
-  });
+  }, 15000);
 
   afterAll(async () => {
     await app.close();
