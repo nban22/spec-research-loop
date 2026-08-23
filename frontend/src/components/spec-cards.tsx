@@ -129,11 +129,15 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
     type,
     items: shown.filter((c) => c.type === type),
     all: cards.filter((c) => c.type === type),
-  })).filter((g) => g.all.length > 0);
+  })).filter((g) => (filter === 'ALL' ? g.all.length > 0 : g.items.length > 0));
 
-  const openByDefault = groups
-    .filter((g) => g.all.some((c) => NEEDS_ATTENTION.includes(c.status)))
-    .map((g) => g.type);
+  const activeKeys = groups.map((g) => g.type);
+  const openByDefault =
+    filter === 'ALL'
+      ? groups
+          .filter((g) => g.all.some((c) => NEEDS_ATTENTION.includes(c.status)))
+          .map((g) => g.type)
+      : activeKeys;
 
   const counts = CARD_STATUSES.map((s) => ({
     status: s,
@@ -164,29 +168,38 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
         ))}
       </div>
 
-      <Accordion type="multiple" defaultValue={openByDefault} className="space-y-2">
-        {groups.map((g) => (
-          <AccordionItem
-            key={g.type}
-            value={g.type}
-            className="border-hairline bg-surface rounded-lg border px-3"
-          >
-            <AccordionTrigger className="py-2.5 text-sm">
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="text-ink-1 font-medium">{CARD_TYPE_LABEL[g.type]}</span>
-                <span className="text-ink-3 text-xs">({g.all.length})</span>
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 pb-3">
-              {g.items.length === 0 ? (
-                <p className="text-ink-4 text-xs">Không có thẻ nào khớp bộ lọc.</p>
-              ) : (
-                g.items.map((c) => <SpecCard key={c.id} card={c} />)
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      {groups.length === 0 ? (
+        <div className="border-hairline bg-surface rounded-lg border p-4 text-center">
+          <p className="text-ink-3 text-xs">Không có thẻ nào khớp bộ lọc.</p>
+        </div>
+      ) : (
+        <Accordion
+          key={filter}
+          type="multiple"
+          defaultValue={openByDefault}
+          className="space-y-2"
+        >
+          {groups.map((g) => (
+            <AccordionItem
+              key={g.type}
+              value={g.type}
+              className="border-hairline bg-surface rounded-lg border px-3"
+            >
+              <AccordionTrigger className="py-2.5 text-sm">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="text-ink-1 font-medium">{CARD_TYPE_LABEL[g.type]}</span>
+                  <span className="text-ink-3 text-xs">({g.items.length})</span>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-2 pb-3">
+                {g.items.map((c) => (
+                  <SpecCard key={c.id} card={c} />
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
     </div>
   );
 }
