@@ -194,6 +194,30 @@ export class DecisionService {
           resulting_spec_version_id: decision.spec_version_id,
         },
       });
+
+      // Tự động chuyển bước project.step sang bước tiếp theo khi đã trả lời hết câu hỏi của bước hiện tại.
+      const pendingCount = await this.prisma.decision.count({
+        where: {
+          project_id: projectId,
+          step: decision.step,
+          applied: false,
+        },
+      });
+      if (pendingCount === 0) {
+        const nextStepMap: Record<string, ProjectStep> = {
+          S1: 'S2',
+          S2: 'S3',
+          S3: 'S4',
+          S4: 'S5',
+        };
+        const nextStep = nextStepMap[decision.step];
+        if (nextStep) {
+          await this.prisma.project.update({
+            where: { id: projectId },
+            data: { step: nextStep },
+          });
+        }
+      }
     }
 
     return { decision: await this.get(decision.id), preview };
@@ -383,6 +407,7 @@ export class DecisionService {
             })),
           });
         }
+
         if (parent.experiment_plan) {
           await tx.experimentPlan.create({
             data: {
