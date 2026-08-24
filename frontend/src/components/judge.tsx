@@ -53,15 +53,15 @@ function JudgeCard({ judgeKey, state }: { judgeKey: JudgeKey; state: JudgeState 
       )}
     >
       <div className="flex items-center gap-2">
-        <span className="text-ink-3 text-xs font-semibold">{judgeKey}</span>
-        <span className="text-ink-1 min-w-0 flex-1 truncate text-sm font-medium">
+        <span className="text-ink-3 shrink-0 text-xs font-semibold">{judgeKey}</span>
+        <span className="text-ink-1 min-w-0 flex-1 break-words text-sm font-medium leading-tight">
           {meta.name}
         </span>
         {state === 'running' && (
-          <Loader2 className="text-brand-ink size-4 animate-spin" aria-hidden />
+          <Loader2 className="text-brand-ink size-4 shrink-0 animate-spin" aria-hidden />
         )}
-        {state === 'done' && <CircleCheck className="text-ok-ink size-4" aria-hidden />}
-        {state === 'failed' && <CircleX className="text-danger-ink size-4" aria-hidden />}
+        {state === 'done' && <CircleCheck className="text-ok-ink size-4 shrink-0" aria-hidden />}
+        {state === 'failed' && <CircleX className="text-danger-ink size-4 shrink-0" aria-hidden />}
       </div>
       {/* Dãy chấm trạng thái bám SSE — chính nó **là** tiến độ, không cần thanh thứ hai (§5.5). */}
       <div className="mt-2 flex gap-1" aria-hidden>
