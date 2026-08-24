@@ -205,8 +205,8 @@ export function IssueTable({
           <TableHeader>
             <TableRow>
               <TableHead className="w-24">Mức độ</TableHead>
-              <TableHead className="whitespace-normal min-w-[200px]">Vấn đề</TableHead>
-              <TableHead className="w-[35%] whitespace-normal">Lý do</TableHead>
+              <TableHead className="whitespace-normal">Vấn đề</TableHead>
+              <TableHead className="whitespace-normal">Lý do</TableHead>
               <TableHead className="w-16 text-center">Judge</TableHead>
               <TableHead className="w-16 text-center">Thao tác</TableHead>
             </TableRow>
