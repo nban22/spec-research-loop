@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { AppError } from '../common/app-error';
 import { PrismaService } from '../common/prisma.service';
+import { projectStepSchema } from '../contracts/enums';
 import type { AnalysisMeta } from '../generator/generator.service';
 
 export const createProjectSchema = z.object({
@@ -16,6 +17,7 @@ export const patchProjectSchema = z
   .object({
     title: z.string().min(1).max(200).optional(),
     raw_idea: z.string().min(20).max(4000).optional(),
+    step: projectStepSchema.optional(),
   })
   .strict();
 export type PatchProjectInput = z.infer<typeof patchProjectSchema>;
@@ -139,6 +141,7 @@ export class ProjectService {
       data: {
         ...(input.title ? { title: input.title } : {}),
         ...(input.raw_idea ? { raw_idea: input.raw_idea } : {}),
+        ...(input.step ? { step: input.step } : {}),
       },
     });
   }

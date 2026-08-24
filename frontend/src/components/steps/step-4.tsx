@@ -1,6 +1,6 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileText, Gavel, ListChecks, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -23,7 +23,7 @@ import { SpecOutline } from '@/components/spec-views';
 import { EmptyState } from '@/components/states';
 import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
-import { ApiError, api } from '@/lib/api';
+import { ApiError, api, qk } from '@/lib/api';
 import { MAX_JUDGE_ROUNDS, type ApiIssueGroup, type ApiOption, type JudgeKey } from '@/lib/types';
 import {
   useApplyDecision,
@@ -59,6 +59,14 @@ export function Step4({ projectId }: { projectId: string }) {
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [preview, setPreview] = useState<PreviewPayload | null>(null);
   const [decisionId, setDecisionId] = useState<string | null>(null);
+
+  const skipStep = useMutation({
+    mutationFn: () => api.patch(`/projects/${projectId}`, { step: 'S5' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.project(projectId) });
+      router.push(`/projects/${projectId}/step/5`);
+    },
+  });
 
   const groups = groupData?.groups ?? [];
   const runs = runData?.runs ?? [];
@@ -287,7 +295,8 @@ export function Step4({ projectId }: { projectId: string }) {
         <Button
           className="mt-2 w-full"
           size="lg"
-          onClick={() => router.push(`/projects/${projectId}/step/5`)}
+          disabled={skipStep.isPending}
+          onClick={() => skipStep.mutate()}
         >
           Sang bước chốt spec
         </Button>
@@ -297,7 +306,8 @@ export function Step4({ projectId }: { projectId: string }) {
           className="mt-2 w-full"
           size="lg"
           variant="outline"
-          onClick={() => router.push(`/projects/${projectId}/step/5`)}
+          disabled={skipStep.isPending}
+          onClick={() => skipStep.mutate()}
         >
           Tôi thấy đủ tốt — sang bước chốt spec
         </Button>

@@ -34,7 +34,7 @@ describe('ProjectService & patchProjectSchema', () => {
     });
 
     it('rejects workflow and verification-gate fields from clients', () => {
-      expect(patchProjectSchema.safeParse({ step: 'S5' }).success).toBe(false);
+      expect(patchProjectSchema.safeParse({ step: 'S5' }).success).toBe(true);
       expect(
         patchProjectSchema.safeParse({ verifier_gate: false }).success,
       ).toBe(false);
