@@ -3,6 +3,13 @@
 import { CircleCheck, CircleX, Loader2, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -144,11 +151,37 @@ export function ConsensusMeter({
  */
 export function DisagreementNote({ group }: { group: ApiIssueGroup }) {
   if (group.agreement_count > 1 || group.judges_completed <= 1) return null;
+  const keys = group.judge_keys;
   return (
     <p className="border-neutral-line bg-neutral-soft text-neutral-strong rounded-md border px-2.5 py-1.5 text-xs">
-      Ý kiến thiểu số: chỉ {group.judge_keys.join(', ')} nêu vấn đề này, {group.judges_completed - 1}{' '}
-      judge còn lại không nhắc tới. Cân nhắc trước khi sửa.
+      Ý kiến thiểu số: chỉ {keys.join(', ')} nêu vấn đề này, {5 - keys.length} judge còn lại không nhắc tới. Cân nhắc trước khi sửa.
     </p>
+  );
+}
+
+function ReasonCell({ reason }: { reason: string }) {
+  if (!reason || reason.length < 150) {
+    return <span>{reason}</span>;
+  }
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="text-left text-ink-2 hover:text-ink-1 transition-colors w-full focus:outline-none cursor-pointer">
+          <span className="line-clamp-3">{reason}</span>
+          <span className="text-brand-strong text-[10px] font-medium uppercase tracking-wider mt-1 inline-block hover:underline">
+            Đọc thêm
+          </span>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Lý do chi tiết</DialogTitle>
+        </DialogHeader>
+        <div className="text-sm text-ink-2 leading-relaxed whitespace-pre-wrap mt-2">
+          {reason}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -172,10 +205,10 @@ export function IssueTable({
           <TableHeader>
             <TableRow>
               <TableHead className="w-24">Mức độ</TableHead>
-              <TableHead>Vấn đề</TableHead>
-              <TableHead className="w-[30%]">Lý do</TableHead>
-              <TableHead className="w-28">Judge</TableHead>
-              <TableHead className="w-28">Thao tác</TableHead>
+              <TableHead className="whitespace-normal min-w-[200px]">Vấn đề</TableHead>
+              <TableHead className="w-[35%] whitespace-normal">Lý do</TableHead>
+              <TableHead className="w-16 text-center">Judge</TableHead>
+              <TableHead className="w-16 text-center">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -184,20 +217,20 @@ export function IssueTable({
                 <TableCell className="align-top">
                   <SeverityBadge severity={g.max_severity} />
                 </TableCell>
-                <TableCell className="text-ink-1 align-top text-xs font-medium">
+                <TableCell className="text-ink-1 align-top text-xs font-medium whitespace-normal">
                   {g.canonical_title}
                   <DisagreementNote group={g} />
                 </TableCell>
-                <TableCell className="text-ink-2 align-top text-xs">
-                  {g.issues[0]?.reason}
+                <TableCell className="text-ink-2 align-top text-xs whitespace-normal">
+                  <ReasonCell reason={g.issues[0]?.reason ?? ''} />
                 </TableCell>
-                <TableCell className="align-top">
+                <TableCell className="align-top text-center">
                   <JudgeTracePill keys={g.judge_keys} />
                   <p className="text-ink-3 mt-1 text-[11px]">
                     {g.agreement_count}/{g.judges_completed}
                   </p>
                 </TableCell>
-                <TableCell className="align-top">
+                <TableCell className="align-top text-center">
                   <Button size="sm" variant="outline" onClick={() => onPick(g)}>
                     Xử lý
                   </Button>
