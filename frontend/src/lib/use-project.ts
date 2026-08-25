@@ -33,6 +33,14 @@ export function useCards(versionId: string | undefined) {
   });
 }
 
+export function useRelatedWork(versionId?: string) {
+  return useQuery({
+    queryKey: ['spec-versions', versionId, 'related-work'],
+    queryFn: () => api.get<any[]>(`/spec-versions/${versionId}/related-work`),
+    enabled: !!versionId,
+  });
+}
+
 export function useSections(versionId: string | undefined) {
   return useQuery({
     queryKey: qk.version(versionId ?? 'none'),
