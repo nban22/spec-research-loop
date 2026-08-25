@@ -12,6 +12,7 @@ import type {
   ApiJudgeRun,
   ApiOption,
   ApiProjectDetail,
+  ApiRelatedWorkRow,
   ApiSource,
   ApiSpecSection,
   SupportLabel,
@@ -36,7 +37,7 @@ export function useCards(versionId: string | undefined) {
 export function useRelatedWork(versionId?: string) {
   return useQuery({
     queryKey: ['spec-versions', versionId, 'related-work'],
-    queryFn: () => api.get<any[]>(`/spec-versions/${versionId}/related-work`),
+    queryFn: () => api.get<ApiRelatedWorkRow[]>(`/spec-versions/${versionId}/related-work`),
     enabled: !!versionId,
   });
 }
