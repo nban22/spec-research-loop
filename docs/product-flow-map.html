@@ -170,6 +170,44 @@
   ol.steps li::marker{color:var(--accent);font-weight:750;font-size:11.5px}
   ol.steps li.on{color:var(--accent);font-weight:600}
 
+  /* ── tab đối chiếu 16 chức năng ── */
+  .reqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
+  .reqcard{
+    border:1px solid var(--line);border-left:4px solid #0f9a63;border-radius:10px;
+    background:var(--panel-2);padding:10px 12px;box-shadow:0 1px 2px rgba(20,30,50,.06);
+  }
+  .reqcard.partial{border-left-color:#c07c00;background:#fffdf6}
+  .reqhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .reqno{
+    flex:none;width:24px;height:24px;border-radius:999px;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:750;
+    font-variant-numeric:tabular-nums;
+  }
+  .reqname{font-weight:640;font-size:13px;flex:1;min-width:0}
+  .reqstate{
+    flex:none;font-size:9.5px;font-weight:750;letter-spacing:.6px;padding:2px 7px;border-radius:999px;
+    background:#e6f5ec;color:#0d6b46;
+  }
+  .reqstate.partial{background:#fdf0d5;color:#8a5b00}
+  .reqhow{font-size:11.8px;color:var(--fg-dim);margin:7px 0 6px;line-height:1.5}
+  .reqnodes{font-size:11.5px;color:var(--fg-dim);margin-bottom:6px}
+  .reqnodes b,.reqproof b,.reqgap b{
+    display:inline-block;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--fg-mute);font-weight:700;margin-right:4px;
+  }
+  .reqnode{
+    font:inherit;font-size:11px;cursor:pointer;margin:2px 4px 2px 0;padding:2px 8px;
+    border:1px solid var(--line);border-radius:999px;background:#f2f5fa;color:var(--fg-dim);
+  }
+  .reqnode:hover{border-color:var(--accent);color:var(--accent)}
+  .reqproof{font-size:11.5px;color:var(--fg-dim);margin:0 0 6px;line-height:1.5}
+  .reqgap{
+    font-size:11.5px;line-height:1.5;color:#8a4b00;background:#fff5e0;
+    border:1px solid #f2d9a8;border-radius:6px;padding:6px 8px;margin:0 0 6px;
+  }
+  .chip.req{background:#eef3ff;border-color:#c9d8ff;color:#26406e;font-weight:600}
+  .chip.req.partial{background:#fdf0d5;border-color:#f2d9a8;color:#8a5b00}
+
   .staticnote{
     font-size:12px;line-height:1.6;color:var(--fg-dim);background:#f8fafc;
     border:1px solid var(--line);border-radius:10px;padding:12px 14px;
@@ -220,6 +258,93 @@ const TABS = [
   {id:'projects', label:'Dự án',             route:'/projects',  hint:'Tab nặng nhất — danh sách dự án và trọn wizard 5 bước.'},
   {id:'versions', label:'Lịch sử phiên bản', route:'/versions',  hint:'Chọn dự án rồi so hai phiên bản bất kỳ + đọc lịch sử quyết định.'},
   {id:'help',     label:'Trợ giúp',          route:'/help',      hint:'Một màn tĩnh, không gọi API nào.'},
+  {id:'reqs',     label:'16 chức năng',      route:'—',          hint:'Đối chiếu từng chức năng bắt buộc của đề với nhóm component đáp ứng nó.'},
+];
+
+/* ───────────── 16 CHỨC NĂNG BẮT BUỘC — bảng đối chiếu ─────────────
+   status: 'ok' đủ · 'partial' còn hở. `nodes` trỏ tới node thật ở các tab trên. */
+const REQS = [
+{no:1, name:'Nhập ý tưởng nghiên cứu', status:'ok', nodes:['h-idea','h-home'],
+ how:'Ô nhập cỡ lớn ở trang chủ, dùng lại ở bước 1 để sửa ý tưởng. Chặn dưới 20 ký tự ở cả giao diện lẫn zod phía API.',
+ files:['frontend/src/components/idea-input.tsx:35','backend/src/project/project.service.ts:8'],
+ proof:'Chạy thật: tạo được dự án từ ý tưởng RAG pháp luật tiếng Việt.'},
+
+{no:2, name:'Diễn giải lại ý tưởng', status:'ok', nodes:['p-s1','p-api-gen'],
+ how:'Khối "Cách hệ thống đang hiểu ý tưởng" + mức chắc chắn HIGH/MEDIUM/LOW; người dùng xác nhận hoặc sửa lại rồi phân tích lại.',
+ files:['frontend/src/components/steps/step-1.tsx:79','prompts/generator.md'],
+ proof:'Chạy thật: ra bản diễn giải tiếng Việt kèm mức chắc chắn "Thấp".'},
+
+{no:3, name:'Phân rã problem · gap · claim · contribution · evidence', status:'ok', nodes:['p-s1'],
+ how:'Bảng thẻ 8 loại × 6 trạng thái, lọc được theo trạng thái. Đủ 8 loại: PROBLEM · RESEARCH_QUESTION · GAP · CONTRIBUTION · CLAIM · EVIDENCE · CONSTRAINT · OPEN_QUESTION.',
+ files:['backend/src/contracts/enums.ts:6','frontend/src/components/spec-cards.tsx (CardBoard)'],
+ proof:'Chạy thật: 14 thẻ — 10 Đề xuất · 2 Còn thiếu · 1 Chưa rõ nghĩa · 1 Không có nguồn.'},
+
+{no:4, name:'Tìm kiếm và quản lý nguồn', status:'partial', nodes:['p-s2','p-ext'],
+ how:'Sửa/xoá từ khoá, tìm nguồn thật, 4 bộ lọc ưu tiên, xem chi tiết từng nguồn.',
+ files:['frontend/src/components/steps/step-2.tsx:80','backend/src/sources/source.client.ts'],
+ proof:'Chạy thật: gom 23 nguồn từ OpenAlex + Semantic Scholar.',
+ gap:'Backend đã có <code>DELETE /projects/:id/sources/:sourceId</code> nhưng <b>giao diện chưa có nút xoá nguồn</b>. Chữ "quản lý" vì thế mới đạt một nửa. Vá ~30 phút.'},
+
+{no:5, name:'Tạo bảng related work', status:'ok', nodes:['p-s2'],
+ how:'Bảng 5 cột: Nghiên cứu · Đã làm gì · Loại feedback · Điểm còn thiếu · Nguồn. Dựng từ paper đã nằm trong kho, không phải từ trí nhớ mô hình.',
+ files:['frontend/src/components/sources.tsx (RelatedWorkTable)','prompts/generator_related_work.md'],
+ proof:'Chạy thật: job related-work DONE sau khi có nguồn.'},
+
+{no:6, name:'Phát hiện ambiguity và conflict', status:'partial', nodes:['p-s1'],
+ how:'Generator gán trạng thái AMBIGUOUS và CONFLICT cho thẻ; giao diện lọc được theo hai trạng thái đó.',
+ files:['prompts/generator.md:45,47','frontend/src/components/spec-cards.tsx'],
+ proof:'Chạy thật: có 1 thẻ trạng thái "Chưa rõ nghĩa".',
+ gap:'Cột <code>Card.conflict_with_card_id</code> — thứ ARCHITECTURE §2.4 mô tả là "cặp thẻ mâu thuẫn trỏ về nhau" — <b>chưa dòng code nào ghi</b>. Thẻ hiện chip "Mâu thuẫn" mà không nói mâu thuẫn với thẻ nào. Vá ~2,5 giờ.'},
+
+{no:7, name:'Lựa chọn có giải thích, ví dụ và Other', status:'ok', nodes:['p-user','p-s1','p-s3','p-s4','p-s5'],
+ how:'Mọi câu hỏi đều A/B/C + "Khác — tôi tự mô tả", kèm giải thích và ví dụ; phương án được gợi ý mang nhãn GỢI Ý.',
+ files:['frontend/src/components/option-list.tsx:59','backend/src/decision/decision.service.ts:180'],
+ proof:'"Other" được chèn ở <b>hai tầng độc lập</b> — giao diện tự thêm nếu mô hình quên sinh, backend cũng tự thêm. Chọn Other mà bỏ trống lý do thì bị chặn.'},
+
+{no:8, name:'Lưu quyết định người dùng', status:'ok', nodes:['p-api-decision','v-log'],
+ how:'Bảng Decision ghi thời điểm · bước · câu hỏi · toàn bộ phương án đã hiện · lựa chọn · lý do · người quyết.',
+ files:['backend/prisma/schema.prisma (Decision)','frontend/src/app/(app)/projects/[id]/versions/page.tsx:164'],
+ proof:'Phương án được <b>chụp lại</b> vào bản ghi, nên prompt đổi về sau thì lịch sử cũ vẫn đọc đúng thứ người dùng đã thấy. Quyết định huỷ giữa chừng vẫn còn vết "chưa áp dụng".'},
+
+{no:9, name:'Sinh kế hoạch thí nghiệm', status:'ok', nodes:['p-s3'],
+ how:'Danh sách TN1…TNn, mỗi thí nghiệm gắn với ít nhất một khẳng định. Nút bị khoá tới khi có claim.',
+ files:['backend/prisma/schema.prisma (ExperimentPlan)','prompts/generator_experiment.md'],
+ proof:'Chạy thật: job experiment-plan DONE.'},
+
+{no:10, name:'Ước lượng tài nguyên', status:'ok', nodes:['p-s3'],
+ how:'VRAM · giờ chạy · token · chi phí · có vừa RTX 3090 không, kèm <b>đề xuất giảm quy mô</b> khi vượt. Công thức thuần, 0 lời gọi mô hình.',
+ files:['backend/src/estimator/estimator.service.ts:60','backend/src/estimator/estimator.service.ts:119 (downscale)'],
+ proof:'Có cả <code>fits_rtx3090</code> lẫn <code>downscale_suggestion</code>; nhãn GỢI Ý đảo chiều theo kết quả.'},
+
+{no:11, name:'Tạo research spec', status:'ok', nodes:['p-s5','p-api-gen'],
+ how:'Dựng đúng 14 mục từ thẻ + kế hoạch thí nghiệm + ước lượng + lịch sử quyết định. Mục rỗng bị đánh dấu — đó chính là chỉ số completeness của báo cáo đánh giá.',
+ files:['backend/src/contracts/spec.ts:7 (SPEC_SECTIONS)','backend/src/spec/spec.service.ts:97 (buildSections)'],
+ proof:'<code>SPEC_SECTIONS</code> đếm ra <b>đúng 14 mục</b>.'},
+
+{no:12, name:'Chạy nhiều Judge độc lập', status:'ok', nodes:['p-s4','p-api-judge'],
+ how:'5 lời gọi song song, context sạch, không truyền output judge này sang judge kia. Đầu vào dựng đúng một lần rồi băm.',
+ files:['backend/src/judge/judge.service.ts:70','backend/src/judge/judge-independence.spec.ts'],
+ proof:'Đọc thẳng từ DB: 5 lượt · <b>1</b> input_digest chung · <b>5</b> raw_output khác nhau · lệch thời điểm bắt đầu <b>6ms</b>.'},
+
+{no:13, name:'Tổng hợp điểm đồng thuận và bất đồng', status:'ok', nodes:['p-s4','p-api-judge'],
+ how:'Gộp issue thành nhóm bằng luật, hiện tỉ lệ đồng thuận N/M và ghi chú riêng cho ý kiến thiểu số.',
+ files:['backend/src/judge/issue-grouping.ts','frontend/src/components/judge.tsx:120 (ConsensusMeter) · :152 (DisagreementNote)'],
+ proof:'Có <b>cả hai</b> vế: ConsensusMeter cho đồng thuận, DisagreementNote hiện khi chỉ một judge nêu. Mẫu số là số judge đã xong, không phải hằng số 5.'},
+
+{no:14, name:'Cho người dùng quyết định sửa đổi', status:'ok', nodes:['p-s4','p-api-decision'],
+ how:'Chọn vấn đề → sinh A/B/C/Other riêng cho vấn đề đó → xem bản nháp thay đổi → hộp thoại xác nhận → phiên bản mới.',
+ files:['frontend/src/components/steps/step-4.tsx:89','backend/src/decision/decision.service.ts (record/apply)'],
+ proof:'Tách bước ghi khỏi bước áp dụng là cố ý — nó tạo điểm dừng "xem diff rồi mới cam kết", và huỷ vẫn để lại vết.'},
+
+{no:15, name:'Quản lý version và hiển thị diff', status:'ok', nodes:['v-timeline','v-diff'],
+ how:'Mỗi quyết định sinh một phiên bản mới thay vì sửa đè; so được hai phiên bản bất kỳ.',
+ files:['backend/src/spec/spec.controller.ts:123 (diff)','frontend/src/components/diff-view.tsx'],
+ proof:'Diff là hàm thuần của hai phiên bản, tính lúc đọc chứ không lưu. Phiên bản từ v2 trở đi bắt buộc có quyết định cha.'},
+
+{no:16, name:'Xuất bản spec cuối cùng', status:'ok', nodes:['p-s5'],
+ how:'Xuất Markdown và PDF từ cùng một phiên bản, bị chặn khi còn trích dẫn không được hỗ trợ.',
+ files:['backend/src/spec/export.service.ts:104','backend/src/spec/export.service.ts:213 (renderPdf)'],
+ proof:'Hai đường xuất <b>độc lập</b>: Chromium chết thì Markdown vẫn xuất được. Chỉ lưu checksum, không lưu nội dung file.'},
 ];
 
 const ZONES = [
@@ -737,6 +862,9 @@ let TAB = 'projects', SEL = null, STEP = null;
 function tabNodes(){ return NODES.filter(n => n.tab === TAB); }
 function tabEdges(){ return EDGES.filter(e => e.tab === TAB); }
 function nodeById(id){ return NODES.find(n => n.id === id); }
+/** Chức năng bắt buộc nào được node này đáp ứng — suy ra từ REQS, không khai trùng ở hai chỗ. */
+function reqsOfNode(id){ return REQS.filter(r => r.nodes.includes(id)); }
+function tabOfNode(id){ return nodeById(id)?.tab; }
 
 function renderTabs(){
   $('#tabs').innerHTML = TABS.map(t =>
@@ -746,7 +874,41 @@ function renderTabs(){
   });
 }
 
+function renderReqs(){
+  const rows = REQS.map(r => {
+    const links = r.nodes.map(id => {
+      const n = nodeById(id);
+      return n ? `<button class="reqnode" data-goto="${id}">${n.name}</button>` : '';
+    }).join('');
+    return `<div class="reqcard ${r.status}">
+      <div class="reqhead">
+        <span class="reqno">${r.no}</span>
+        <span class="reqname">${r.name}</span>
+        <span class="reqstate ${r.status}">${r.status === 'ok' ? 'ĐỦ' : 'CÒN HỞ'}</span>
+      </div>
+      <p class="reqhow">${r.how}</p>
+      <div class="reqnodes"><b>Nhóm component</b> ${links}</div>
+      <p class="reqproof"><b>Bằng chứng</b> ${r.proof}</p>
+      ${r.gap ? `<p class="reqgap"><b>Còn thiếu</b> ${r.gap}</p>` : ''}
+      <ul class="files">${r.files.map(f => `<li>${f}</li>`).join('')}</ul>
+    </div>`;
+  }).join('');
+  const ok = REQS.filter(r => r.status === 'ok').length;
+  $('#zones').innerHTML = `
+    <div class="routebar"><b>Đối chiếu:</b> 16 chức năng bắt buộc của đề ↔ nhóm component đáp ứng ·
+      <b>${ok}/16 đủ</b>, ${16 - ok} còn hở · bấm tên component để nhảy tới đúng node trên bản đồ.</div>
+    <div class="reqgrid">${rows}</div>`;
+  $('#zones').querySelectorAll('[data-goto]').forEach(b => b.onclick = () => {
+    const id = b.dataset.goto;
+    TAB = tabOfNode(id); SEL = id; STEP = null;
+    renderTabs(); renderCanvas(); paint(); requestAnimationFrame(drawEdges);
+  });
+  $('#edges').innerHTML = '';
+  renderPanel();
+}
+
 function renderCanvas(){
+  if(TAB === 'reqs'){ renderReqs(); return; }
   const meta = TABS.find(t => t.id === TAB);
   const used = ZONES.filter(z => tabNodes().some(n => n.zone === z.id));
   const html = [`<div class="routebar"><b>Route:</b> <code>${meta.route}</code> · ${meta.hint}</div>`];
@@ -851,6 +1013,8 @@ function renderPanel(){
       ${STEP !== null ? `<div class="crumb"><span class="cb">${STEP}</span>
         <span class="ct">Đang xem từ bước ${STEP} của trình tự.</span>
         <button class="cx" id="crumbClear" title="Bỏ neo bước">✕</button></div>` : ''}
+      ${reqsOfNode(SEL).length ? `<h3>Đáp ứng chức năng bắt buộc</h3><div class="chips">${
+        reqsOfNode(SEL).map(r => `<span class="chip req ${r.status==='partial'?'partial':''}">#${r.no} ${r.name}${r.status==='partial'?' · còn hở':''}</span>`).join('')}</div>` : ''}
       <h3>Mục đích</h3><p>${n.purpose}</p>
       ${n.tech.length ? `<h3>Techstack</h3><div class="chips">${
         n.tech.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
