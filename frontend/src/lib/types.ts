@@ -148,6 +148,18 @@ export type ApiOption = {
   recommended?: boolean;
 };
 
+export interface ApiRelatedWorkRow {
+  id: string;
+  spec_version_id: string;
+  source_id: string;
+  what_done: string;
+  feedback_type: string;
+  what_missing: string;
+  order_index: number;
+  created_at: string;
+  source: ApiSource;
+}
+
 export type ApiDecision = {
   id: string;
   step: ProjectStep;
