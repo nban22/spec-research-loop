@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpecResearch Loop — Bản đồ luồng sản phẩm</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#ffffff; --line:#dfe4ec;
+    --fg:#1a2029; --fg-dim:#4c5768; --fg-mute:#7a8697;
+    --accent:#2f6bff;
+    --c-ui:#8b45d0; --c-http:#0d8f95; --c-sse:#c07c00; --c-db:#8892a3;
+    --c-llm:#dd4436; --c-ext:#0f9a63; --c-local:#2f6bff;
+    --z-user:#dfe5f2; --z-screen:#dee6fb; --z-api:#e0efdc; --z-infra:#ece5f3;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--fg);
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  header{
+    padding:12px 18px; border-bottom:1px solid var(--line); background:var(--panel);
+    display:flex; flex-wrap:wrap; gap:14px; align-items:center;
+  }
+  header h1{font-size:16px;margin:0;font-weight:650;letter-spacing:.2px}
+  header .hint{color:var(--fg-mute);font-size:12px}
+  .tabs{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .tab{
+    padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:transparent;
+    color:var(--fg-dim);cursor:pointer;font-size:12.5px;font-family:inherit;
+  }
+  .tab:hover{border-color:var(--accent);color:var(--fg)}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+  main{flex:1;display:flex;min-height:0}
+  #canvasWrap{flex:1;overflow:auto;position:relative;padding:18px 18px 60px}
+  #edges{position:absolute;inset:0;pointer-events:none;overflow:visible}
+
+  .routebar{
+    display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px;
+    font-size:11.5px;color:var(--fg-mute);
+  }
+  .routebar code{font-size:11px}
+
+  .zone{
+    position:relative;margin-bottom:14px;border:1px solid var(--line);border-radius:12px;
+    padding:26px 12px 12px;background:rgba(255,255,255,.55);
+  }
+  .zone > .zlabel{
+    position:absolute;top:6px;left:12px;font-size:10.5px;letter-spacing:1.4px;
+    text-transform:uppercase;color:var(--fg-mute);font-weight:700;
+    background:var(--bg);padding:0 5px;border-radius:4px;
+  }
+  .row{display:flex;flex-wrap:wrap;gap:10px}
+
+  .node{
+    position:relative;min-width:178px;max-width:238px;flex:1 1 178px;
+    border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;
+    background:var(--panel-2);box-shadow:0 1px 2px rgba(20,30,50,.06);
+    transition:transform .12s,border-color .12s,box-shadow .12s,opacity .15s;
+    font-family:inherit;text-align:left;color:inherit;
+  }
+  .node:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .node.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(47,107,255,.28)}
+  .node.dim{opacity:.34}
+  .node .nm{font-weight:640;font-size:13px;line-height:1.3}
+  .node .sb{color:var(--fg-mute);font-size:11px;margin-top:3px}
+  .node .badge{
+    display:inline-block;margin-top:6px;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;
+    padding:1px 6px;border-radius:4px;background:rgba(20,30,50,.07);color:var(--fg-dim);
+  }
+  .z-user   .node{background:color-mix(in srgb,var(--z-user) 62%,var(--panel-2))}
+  .z-screen .node{background:color-mix(in srgb,var(--z-screen) 62%,var(--panel-2))}
+  .z-api    .node{background:color-mix(in srgb,var(--z-api) 62%,var(--panel-2))}
+  .z-infra  .node{background:color-mix(in srgb,var(--z-infra) 62%,var(--panel-2))}
+
+  path.edge{fill:none;stroke-width:1.6;opacity:.42;transition:opacity .15s,stroke-width .15s}
+  path.edge.hi{opacity:1;stroke-width:2.6}
+  path.edge.off{opacity:.07}
+  .elabel{font-size:10px;font-weight:600;fill:var(--fg-dim);paint-order:stroke;stroke:#fff;stroke-width:4.5px;stroke-linejoin:round}
+  .elabel.off{opacity:0}
+
+  aside{
+    width:412px;flex:none;border-left:1px solid var(--line);background:var(--panel);
+    overflow:auto;padding:16px 18px 40px;
+  }
+  aside h2{font-size:15.5px;margin:0 0 2px}
+  aside .sub{color:var(--fg-mute);font-size:12px;margin-bottom:12px}
+  aside h3{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--fg-mute);
+    margin:18px 0 7px;border-top:1px solid var(--line);padding-top:11px;
+  }
+  aside h3:first-of-type{border-top:0;padding-top:0}
+  aside p{margin:0 0 8px;color:var(--fg-dim)}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-size:11px;padding:2px 8px;border-radius:999px;background:#f2f5fa;border:1px solid var(--line);color:var(--fg-dim)}
+  .chip.infra{background:#f3eefa;border-color:#e0d5f0;color:#5b3d86}
+
+  ul.calls{list-style:none;margin:0;padding:0}
+  ul.calls li{
+    padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;
+    background:#f8fafc;cursor:pointer;
+  }
+  ul.calls li:hover{border-color:var(--accent)}
+  ul.calls li.hit{border-color:var(--accent);background:#eef3ff;box-shadow:0 0 0 3px rgba(47,107,255,.12)}
+  ul.calls .who{font-weight:620;font-size:12.5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+  .stepno{
+    display:inline-block;flex:none;font-size:10px;font-weight:750;letter-spacing:.3px;
+    padding:1px 6px;border-radius:999px;font-variant-numeric:tabular-nums;
+    background:var(--accent);color:#fff;
+  }
+  .stepno.none{background:#eef0f4;color:var(--fg-mute);font-weight:600}
+
+  .crumb{
+    display:flex;align-items:flex-start;gap:8px;margin:10px 0 2px;
+    padding:8px 10px;border-radius:8px;background:#eef3ff;border:1px solid #c9d8ff;
+  }
+  .crumb .cb{
+    flex:none;font-size:10.5px;font-weight:750;padding:2px 7px;border-radius:999px;
+    background:var(--accent);color:#fff;font-variant-numeric:tabular-nums;
+  }
+  .crumb .ct{font-size:11.5px;color:#26406e;line-height:1.45}
+  .crumb .cx{flex:none;margin-left:auto;border:0;background:transparent;cursor:pointer;color:#5b76a8;font-size:13px;padding:2px 4px;border-radius:4px}
+  .crumb .cx:hover{background:#dbe5fb;color:#26406e}
+
+  .stephint{font-size:11.5px;color:var(--fg-mute);margin:0 0 8px;line-height:1.5}
+  ul.calls .rpcline{margin-top:5px;display:flex;align-items:baseline;gap:2px;flex-wrap:wrap}
+  ul.calls .rpcline code{font-size:11px;color:#1d4ed8;word-break:break-word}
+  ul.calls .kv{font-size:11.5px;color:var(--fg-dim);margin-top:5px;line-height:1.45}
+  ul.calls .kv b{
+    display:inline-block;min-width:64px;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--fg-mute);font-weight:700;vertical-align:top;
+  }
+  ul.calls .args,ul.calls .resp,ul.calls .path{
+    display:block;margin-top:2px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    border-radius:6px;padding:5px 7px;word-break:break-word;font-size:10.5px;
+  }
+  ul.calls .args{color:#334155;background:#eef2f8;border:1px solid var(--line)}
+  ul.calls .resp{color:#22543d;background:#eaf5ee;border:1px solid #c5e3d1}
+  ul.calls .path{color:var(--fg-mute);font-size:10px;background:transparent;padding:2px 0;word-break:break-all}
+  ul.calls .path .arrow{color:var(--accent);font-weight:700}
+  .proto{
+    display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    padding:1px 6px;border-radius:4px;margin-right:6px;color:#fff;
+  }
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:#1d4ed8}
+  .files{list-style:none;margin:0;padding:0}
+  .files li{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.8px;color:var(--fg-mute);margin-bottom:4px;word-break:break-all}
+
+  ul.cases{list-style:none;margin:0;padding:0}
+  ul.cases li{
+    font-size:11.8px;line-height:1.5;color:var(--fg-dim);
+    padding:6px 9px;border-radius:7px;margin-bottom:5px;
+    background:#fbfcfe;border:1px solid var(--line);border-left:3px solid var(--c-ui);
+  }
+  ul.cases li.err{border-left-color:#dd4436;background:#fff6f5}
+  ul.cases li.ok{border-left-color:#0f9a63;background:#f4fbf7}
+  ul.cases li b{color:var(--fg);font-weight:640}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:11px;color:var(--fg-mute);margin-top:14px}
+  .legend .lg{display:flex;gap:5px;align-items:center}
+  .legend .sw{width:16px;height:3px;border-radius:2px}
+
+  ol.steps{margin:0;padding-left:22px;color:var(--fg-dim);font-variant-numeric:tabular-nums}
+  ol.steps li{margin-bottom:7px;cursor:pointer}
+  ol.steps li:hover{color:var(--accent)}
+  ol.steps li::marker{color:var(--accent);font-weight:750;font-size:11.5px}
+  ol.steps li.on{color:var(--accent);font-weight:600}
+
+  .staticnote{
+    font-size:12px;line-height:1.6;color:var(--fg-dim);background:#f8fafc;
+    border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+  }
+  @media (max-width:1080px){
+    body{overflow:auto}
+    main{flex-direction:column}
+    aside{width:auto;border-left:0;border-top:1px solid var(--line)}
+    #canvasWrap{overflow:visible}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SpecResearch Loop — Bản đồ luồng sản phẩm</h1>
+  <span class="hint">4 tab = 4 mục trên thanh điều hướng · click 1 node hoặc 1 bước để xem thiết kế kỹ thuật</span>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<main>
+  <div id="canvasWrap">
+    <svg id="edges"></svg>
+    <div id="zones"></div>
+  </div>
+  <aside id="panel"></aside>
+</main>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   DỮ LIỆU — trích từ source thật của repo spec-research-loop.
+   Node = màn hình / khối UI / hành động của người dùng (góc nhìn sản phẩm).
+   Edge = một thao tác, hoặc lời gọi mà thao tác đó kích hoạt.
+   ═══════════════════════════════════════════════════════════════════ */
+
+const KIND = {
+  ui:    {label:'Thao tác trong trình duyệt', color:'var(--c-ui)'},
+  http:  {label:'HTTP qua proxy /api/*',      color:'var(--c-http)'},
+  sse:   {label:'Job nền + SSE',              color:'var(--c-sse)'},
+  db:    {label:'PostgreSQL (Prisma)',        color:'var(--c-db)'},
+  llm:   {label:'DeepSeek',                   color:'var(--c-llm)'},
+  ext:   {label:'API học thuật bên thứ 3',    color:'var(--c-ext)'},
+  local: {label:'Tính tại chỗ (0 token)',     color:'var(--c-local)'},
+};
+
+const TABS = [
+  {id:'home',     label:'Trang chủ',         route:'/',          hint:'Điểm vào của app: đăng nhập, nhập ý tưởng thô, mở dự án mới.'},
+  {id:'projects', label:'Dự án',             route:'/projects',  hint:'Tab nặng nhất — danh sách dự án và trọn wizard 5 bước.'},
+  {id:'versions', label:'Lịch sử phiên bản', route:'/versions',  hint:'Chọn dự án rồi so hai phiên bản bất kỳ + đọc lịch sử quyết định.'},
+  {id:'help',     label:'Trợ giúp',          route:'/help',      hint:'Một màn tĩnh, không gọi API nào.'},
+];
+
+const ZONES = [
+  {id:'user',   label:'Người dùng — thao tác'},
+  {id:'screen', label:'Màn hình & khối UI — Next.js 16 / React 19'},
+  {id:'api',    label:'API — NestJS 11'},
+  {id:'infra',  label:'Hạ tầng & dịch vụ ngoài'},
+];
+
+/* ─────────────────────────── NODES ─────────────────────────── */
+const NODES = [
+/* ══ TAB: TRANG CHỦ ══ */
+{id:'h-visitor', tab:'home', zone:'user', name:'Người truy cập', sub:'đã hoặc chưa đăng nhập', badge:'actor',
+ purpose:'Mọi route trừ /login và /register đều nằm sau JwtAuthGuard. Chưa có cookie hợp lệ thì API trả 401 và giao diện đưa về trang đăng nhập.',
+ tech:['Cookie httpOnly','SameSite=Lax'], infra:[], files:[],
+ cases:[
+  {t:'ok', s:'<b>Đã đăng nhập</b> — vào thẳng trang chủ, thấy ô nhập ý tưởng.'},
+  {t:'', s:'<b>Chưa đăng nhập</b> — mọi lời gọi API trả <code>401 UNAUTHENTICATED</code>, giao diện chuyển sang <code>/login</code>.'},
+  {t:'', s:'<b>Access token hết hạn</b> (mặc định 15 phút) — <code>lib/api.ts</code> tự gọi <code>/auth/refresh</code> rồi thử lại đúng một lần; người dùng không thấy gì.'},
+  {t:'err', s:'<b>Refresh token cũng hết hạn</b> — về <code>/login</code>, phải đăng nhập lại.'},
+ ]},
+
+{id:'h-auth', tab:'home', zone:'screen', name:'Đăng nhập / Đăng ký', sub:'/login · /register', badge:'route công khai',
+ purpose:'Hai màn duy nhất không cần token. Có cùng một form, khác nhau ở chỗ đăng ký thêm ô tên hiển thị. Đây là điều kiện để có "dự án của tôi" — mọi truy vấn về sau đều kèm user_id lấy từ token.',
+ tech:['Next.js App Router','react-hook-form','zod'],
+ infra:['PostgreSQL · User','PostgreSQL · RefreshToken'],
+ files:['frontend/src/app/(auth)/login/page.tsx','frontend/src/app/(auth)/register/page.tsx','frontend/src/components/auth-form.tsx'],
+ cases:[
+  {t:'ok', s:'<b>Đăng ký thành công</b> — nhận 2 cookie httpOnly (access + refresh), vào thẳng trang chủ.'},
+  {t:'err', s:'<b>Email đã dùng</b> → <code>409 EMAIL_ALREADY_USED</code>.'},
+  {t:'err', s:'<b>Sai email hoặc mật khẩu</b> → <code>401 INVALID_CREDENTIALS</code> — không nói sai ở vế nào.'},
+  {t:'', s:'<b>Bỏ trống ô</b> — zod chặn ngay tại giao diện, không gửi request.'},
+ ]},
+
+{id:'h-nav', tab:'home', zone:'screen', name:'TopNav', sub:'4 mục + menu người dùng', badge:'toàn cục',
+ purpose:'Thanh điều hướng có mặt ở mọi màn trong nhóm (app): Trang chủ · Dự án · Lịch sử phiên bản · Trợ giúp, cộng menu người dùng có nút đăng xuất. Mục đang đứng được tô nền.',
+ tech:['Next.js Link','usePathname','TanStack Query'],
+ infra:['PostgreSQL · RefreshToken (thu hồi khi đăng xuất)'],
+ files:['frontend/src/components/top-nav.tsx:30 (NAV)','backend/src/auth/auth.controller.ts:69 (logout)'],
+ cases:[
+  {t:'', s:'<b>Đăng xuất</b> — thu hồi refresh token trong DB rồi xoá cookie. Mở lại tab cũ cũng không vào được.'},
+  {t:'', s:'<b>Trên mobile</b> — nav thu vào Sheet trượt từ cạnh.'},
+ ]},
+
+{id:'h-home', tab:'home', zone:'screen', name:'Trang chủ', sub:'/ — (app)/page.tsx', badge:'route',
+ purpose:'Điểm vào của toàn app. Một ô nhập ý tưởng cỡ lớn, dưới đó là tối đa 3 dự án gần đây để quay lại nhanh.',
+ tech:['Client Component','TanStack Query'],
+ infra:['PostgreSQL · Project'],
+ files:['frontend/src/app/(app)/page.tsx:12','frontend/src/components/project-card.tsx:27'],
+ cases:[
+  {t:'', s:'<b>Chưa có dự án nào</b> — khối "Dự án gần đây" <b>không hiện</b> (điều kiện <code>recent.length > 0</code>), màn hình chỉ còn ô nhập ý tưởng.'},
+  {t:'', s:'<b>Đã có dự án</b> — hiện 3 dự án mới nhất + link "Xem tất cả" sang <code>/projects</code>.'},
+ ]},
+
+{id:'h-idea', tab:'home', zone:'screen', name:'Ô nhập ý tưởng', sub:'IdeaInput variant="create"', badge:'chức năng 1',
+ purpose:'Chức năng bắt buộc số 1 của đề — nhập ý tưởng nghiên cứu thô. Cùng một component được tái dụng ở bước 1 với variant="inline" để sửa lại ý tưởng.',
+ tech:['React state','TanStack Mutation','zod (phía API)'],
+ infra:['PostgreSQL · Project','PostgreSQL · SpecVersion'],
+ files:['frontend/src/components/idea-input.tsx:35','backend/src/project/project.service.ts:41 (create)','backend/src/project/project.service.ts:8 (createProjectSchema)'],
+ cases:[
+  {t:'', s:'<b>Dưới 20 ký tự</b> — nút "Phân tích ý tưởng" bị khoá, hiện dòng nhắc. Backend cũng chặn bằng zod nên gọi thẳng API cũng không lọt.'},
+  {t:'ok', s:'<b>Đủ dài</b> — tạo <code>Project</code> + <code>SpecVersion v1</code> trong một lượt, rồi chuyển sang <code>/projects/:id/step/1</code>.'},
+  {t:'', s:'<b>Tiêu đề dự án</b> lấy tự động từ dòng đầu của ý tưởng, cắt còn 120 ký tự.'},
+  {t:'err', s:'<b>API lỗi</b> — hiện ErrorState ngay dưới ô nhập, chữ đã gõ được giữ nguyên.'},
+ ]},
+
+{id:'h-api-auth', tab:'home', zone:'api', name:'auth', sub:'register · login · refresh · logout · me', badge:'NestJS',
+ purpose:'Cấp và thu hồi phiên. Mật khẩu băm bcrypt; refresh token lưu dưới dạng hash nên đăng xuất thu hồi được thật, không chỉ xoá cookie phía trình duyệt.',
+ tech:['NestJS','Passport JWT','bcryptjs','zod'],
+ infra:['PostgreSQL · User','PostgreSQL · RefreshToken'],
+ files:['backend/src/auth/auth.controller.ts','backend/src/auth/auth.service.ts','backend/src/auth/jwt-auth.guard.ts','backend/src/common/cookies.ts'],
+ cases:[
+  {t:'', s:'<b>Tài nguyên của người khác</b> luôn trả <b>404</b> chứ không 403 — 403 sẽ vô tình xác nhận rằng tài nguyên đó tồn tại.'},
+ ]},
+
+{id:'h-api-project', tab:'home', zone:'api', name:'project', sub:'POST /projects', badge:'NestJS',
+ purpose:'Tạo dự án và phiên bản đầu tiên. Mọi truy vấn về sau đều kèm user_id lấy từ token, không bao giờ nhận owner_id từ body.',
+ tech:['NestJS','Prisma','zod'],
+ infra:['PostgreSQL · Project','PostgreSQL · SpecVersion'],
+ files:['backend/src/project/project.controller.ts:49','backend/src/project/project.service.ts:41'],
+ cases:[
+  {t:'', s:'<code>SpecVersion v1</code> được tạo ngay, nhãn "Bản nháp đầu tiên" — nên dự án mới đã có sẵn một phiên bản để so về sau.'},
+ ]},
+
+{id:'h-db', tab:'home', zone:'infra', name:'PostgreSQL (Neon)', sub:'User · RefreshToken · Project · SpecVersion', badge:'store',
+ purpose:'Nguồn sự thật duy nhất. Truy cập qua Prisma 7; client sinh vào backend/src/generated/prisma.',
+ tech:['PostgreSQL','Prisma 7','@prisma/adapter-pg'],
+ infra:[], files:['backend/prisma/schema.prisma','backend/src/common/prisma.service.ts'],
+ cases:[]},
+
+/* ══ TAB: DỰ ÁN ══ */
+{id:'p-user', tab:'projects', zone:'user', name:'Người dùng', sub:'người quyết định ở mọi bước', badge:'actor',
+ purpose:'Yêu cầu xuyên suốt của đề: không bước nào tự chốt. Ràng buộc này được cưỡng chế ở tầng dữ liệu — từ phiên bản 2 trở đi, SpecVersion.created_by_decision_id phải trỏ về một Decision có thật.',
+ tech:[], infra:['PostgreSQL · Decision'], files:[],
+ cases:[
+  {t:'ok', s:'<b>Mọi câu hỏi đều có phương án "Khác — tôi tự mô tả"</b>, và giao diện tự chèn nó nếu mô hình quên sinh ra.'},
+  {t:'err', s:'<b>Chọn "Khác" mà bỏ trống lý do</b> → nút khoá từ giao diện; gọi thẳng API thì nhận <code>422 OTHER_REASON_REQUIRED</code>.'},
+ ]},
+
+{id:'p-list', tab:'projects', zone:'screen', name:'Danh sách dự án', sub:'/projects', badge:'route',
+ purpose:'Tab "Dự án". Lưới card 1 cột mobile · 2 tablet · 3 desktop. Mỗi card là một dự án kèm bước đang đứng.',
+ tech:['TanStack Query','Tailwind v4'],
+ infra:['PostgreSQL · Project (+ đếm SpecVersion, Decision)'],
+ files:['frontend/src/app/(app)/projects/page.tsx:11','frontend/src/components/project-card.tsx:27','backend/src/project/project.service.ts:65 (list)'],
+ cases:[
+  {t:'', s:'<b>Đang tải</b> — khung xương 3 dòng.'},
+  {t:'', s:'<b>Chưa có dự án</b> — trạng thái rỗng + nút "Nhập ý tưởng đầu tiên" dẫn về <code>/</code>.'},
+  {t:'', s:'<b>Có dự án</b> — mỗi card hiện: tiêu đề · ý tưởng gốc · <b>Bước n/5</b> · trạng thái (Nháp / Đang làm / Đã chốt) · số phiên bản · số quyết định · sửa lần cuối.'},
+  {t:'ok', s:'<b>Bấm card</b> → về <b>đúng bước đang dở</b> (<code>/step/{project.step}</code>), không phải luôn về bước 1.'},
+  {t:'', s:'Nút "Dự án mới" ở góc phải luôn dẫn về trang chủ.'},
+ ]},
+
+{id:'p-stepper', tab:'projects', zone:'screen', name:'Stepper 5 bước', sub:'khoá nhảy cóc — 2 lớp', badge:'điều hướng',
+ purpose:'Thanh 5 bước dính ngay dưới TopNav ở cả 5 màn. Đây là chỗ chặn người dùng nhảy tới bước chưa tới — và nó chặn ở hai lớp độc lập.',
+ tech:['Next.js router','Sheet (mobile)'],
+ infra:['PostgreSQL · Project.step'],
+ files:['frontend/src/components/stepper.tsx:34 (go)','frontend/src/app/(app)/projects/[id]/step/[step]/page.tsx:35 (clamp)'],
+ cases:[
+  {t:'', s:'<b>Lớp 1 — nút</b>: bước có số lớn hơn bước đã tới bị vô hiệu hoá, con trỏ đổi thành cấm.'},
+  {t:'', s:'<b>Lớp 2 — URL</b>: gõ tay <code>/step/5</code> khi dự án mới ở S2 vẫn <b>render S2</b>, vì <code>visibleStepNo = min(requested, reached)</code>.'},
+  {t:'ok', s:'<b>Lùi lại thì tự do</b> — xem lại bước 1, 2 bất cứ lúc nào.'},
+  {t:'', s:'<b>Trên mobile</b> — thu thành dãy chấm + "Bước 3/5", bấm mở Sheet chọn bước.'},
+ ]},
+
+{id:'p-s1', tab:'projects', zone:'screen', name:'B1 · Nhập ý tưởng & Làm rõ', sub:'diễn giải · thẻ · câu hỏi', badge:'chức năng 2·3·6·7',
+ purpose:'Diễn giải lại ý tưởng để người dùng xác nhận hệ thống hiểu đúng, phân rã thành thẻ 8 loại × 6 trạng thái, và hỏi 2–4 câu làm rõ.',
+ tech:['TanStack Query','SSE','DeepSeek'],
+ infra:['PostgreSQL · Card','PostgreSQL · Decision','PostgreSQL · SpecVersion.meta','PostgreSQL · LlmCall'],
+ files:['frontend/src/components/steps/step-1.tsx:32','frontend/src/components/spec-cards.tsx (CardBoard)','backend/src/generator/generator.service.ts (analyze)','prompts/generator.md'],
+ cases:[
+  {t:'', s:'<b>Chưa phân tích</b> — cột giữa là trạng thái rỗng, cột phải trống.'},
+  {t:'', s:'<b>Bấm "Phân tích ý tưởng"</b> → mở job nền, thanh tiến độ chạy bằng SSE.'},
+  {t:'', s:'<b>Sửa lại ý tưởng rồi phân tích lần nữa</b> — bộ thẻ cũ bị <b>xoá và ghi lại</b>, không cộng dồn.'},
+  {t:'', s:'<b>Mức chắc chắn</b> HIGH / MEDIUM / LOW đổi tông hộp gợi ý; LOW khuyên viết lại ý tưởng cho cụ thể rồi phân tích lại.'},
+  {t:'', s:'<b>Bảng thẻ</b> lọc được theo 6 trạng thái: Đã xác nhận · Đề xuất · Còn thiếu · Chưa rõ nghĩa · Không có nguồn · Mâu thuẫn.'},
+  {t:'', s:'<b>Mỗi câu hỏi làm rõ</b> có A/B/C + Khác; phương án được gợi ý mang nhãn GỢI Ý.'},
+  {t:'ok', s:'<b>Trả lời hết câu hỏi</b> — backend tự đẩy <code>project.step</code> sang S2, giao diện hiện nút "Sang bước tiếp theo".'},
+ ]},
+
+{id:'p-s2', tab:'projects', zone:'screen', name:'B2 · Nghiên cứu & Research Gap', sub:'nguồn thật · bảng · gap', badge:'chức năng 4·5',
+ purpose:'Tìm tài liệu thật rồi mới cho mô hình đọc abstract. Thứ tự này là cả thiết kế của bước: bảng nghiên cứu liên quan được điền từ paper đã nằm trong kho, không phải từ trí nhớ của mô hình.',
+ tech:['TanStack Query','SSE','DeepSeek','Semantic Scholar','OpenAlex'],
+ infra:['PostgreSQL · Source','PostgreSQL · RelatedWorkRow','PostgreSQL · Card (GAP)','PostgreSQL · Decision'],
+ files:['frontend/src/components/steps/step-2.tsx:40','frontend/src/components/sources.tsx','backend/src/sources/sources.service.ts','backend/src/sources/source.client.ts','prompts/generator_related_work.md','prompts/generator_gap.md'],
+ cases:[
+  {t:'', s:'<b>Từ khoá</b> mặc định lấy từ phân tích ở B1, <b>sửa và xoá được</b>; hết từ khoá thì nút tìm bị khoá.'},
+  {t:'', s:'<b>4 bộ lọc nguồn ưu tiên</b>: có nơi công bố · có DOI · từ 2020 · có abstract. Lọc <b>phía trình duyệt</b>, không gọi lại API.'},
+  {t:'err', s:'<b>Bấm "Dựng nhận xét" khi chưa có nguồn</b> → job thất bại với <code>NO_SOURCES_YET</code>.'},
+  {t:'', s:'<b>Semantic Scholar trả 429</b> → ghi log "Provider có lỗi bộ phận" rồi <b>tự chuyển sang OpenAlex</b>, job vẫn xong. <i>Đã kiểm chứng khi chạy thật.</i>'},
+  {t:'err', s:'<b>Cả hai nhà cung cấp cùng hỏng</b> — bước này dừng lại, hệ thống không được phép tự nghĩ ra paper.'},
+  {t:'', s:'<b>Gap</b> phải trả lời đủ 4 câu hỏi của đề; không được viện lý do "chưa thấy paper nào giống".'},
+  {t:'', s:'<b>Câu hỏi chọn hướng</b> A/B/C + Khác, trả lời xong mới hiện nút sang bước 3.'},
+ ]},
+
+{id:'p-s3', tab:'projects', zone:'screen', name:'B3 · Contribution & Thí nghiệm', sub:'claim 5 trường · ước lượng', badge:'chức năng 9·10',
+ purpose:'Sinh đóng góp, thẻ Claim–Evidence 5 trường (có "điều kiện bác bỏ"), kế hoạch thí nghiệm, rồi ước lượng tài nguyên bằng công thức thuần.',
+ tech:['TanStack Query','DeepSeek','công thức thuần (0 LLM)'],
+ infra:['PostgreSQL · Card (CONTRIBUTION, CLAIM)','PostgreSQL · ExperimentPlan','PostgreSQL · ResourceEstimate'],
+ files:['frontend/src/components/steps/step-3.tsx:27','backend/src/estimator/estimator.service.ts:60','prompts/generator_contribution.md','prompts/generator_experiment.md'],
+ cases:[
+  {t:'', s:'<b>Nút "Dựng kế hoạch thí nghiệm" bị khoá</b> tới khi có ít nhất một khẳng định.'},
+  {t:'', s:'<b>Ước lượng</b> ra VRAM · giờ chạy · token · chi phí, và có vừa RTX 3090 hay không. Không gọi mô hình nào.'},
+  {t:'ok', s:'<b>Vừa RTX 3090</b> → phương án <b>A "Duyệt kế hoạch"</b> mang nhãn GỢI Ý.'},
+  {t:'err', s:'<b>Vượt RTX 3090</b> → nhãn GỢI Ý <b>đảo sang B "Giảm quy mô theo đề xuất"</b>, kèm hộp cảnh báo. Phần ví dụ của B lấy thẳng lý do giảm quy mô nên nói đúng con số cần cắt.'},
+  {t:'', s:'<b>Khối quyết định này được thêm so với mockup</b> — mockup để cột phải thuần thông báo, nghĩa là bước tự chốt, trái với yêu cầu của đề.'},
+  {t:'ok', s:'<b>Chốt xong</b> → tự chuyển sang bước 4.'},
+ ]},
+
+{id:'p-s4', tab:'projects', zone:'screen', name:'B4 · Judge độc lập & Sửa spec', sub:'vòng lặp, tối đa 3 vòng', badge:'chức năng 12·13·14·15',
+ purpose:'5 Judge chấm độc lập, gộp thành nhóm vấn đề có mức độ và trace về judge nào nêu, rồi người dùng chọn cách sửa. Mỗi lần áp dụng sinh một phiên bản mới thay vì sửa đè.',
+ tech:['TanStack Query','SSE','DeepSeek','jsdiff'],
+ infra:['PostgreSQL · JudgeRun','PostgreSQL · Issue','PostgreSQL · IssueGroup','PostgreSQL · Decision','PostgreSQL · SpecVersion'],
+ files:['frontend/src/components/steps/step-4.tsx:45','backend/src/judge/judge.service.ts:45 (runRound)','backend/src/judge/issue-grouping.ts','backend/src/decision/decision.service.ts (record/apply)','prompts/judge_gap.md · judge_contribution.md · judge_experiment.md · judge_evidence.md · judge_readiness.md'],
+ cases:[
+  {t:'', s:'<b>Nút đổi nhãn theo số vòng</b>: "Chạy Judge" ở vòng đầu, "Chạy vòng N+1" sau đó. Bộ đếm đọc <code>judge_rounds_total</code> (cấp dự án) chứ không phải <code>judge_round</code> (cấp phiên bản, bị reset mỗi lần tạo phiên bản mới).'},
+  {t:'err', s:'<b>Hết 3 vòng</b> → nút tắt + cảnh báo "Đã dùng hết 3 vòng judge cho dự án này".'},
+  {t:'err', s:'<b>Dưới 3/5 judge chạy được</b> → <code>JUDGE_QUORUM_NOT_MET</code>: khái niệm "đồng thuận" mất nghĩa, phải chạy lại. Judge lỗi vẫn được ghi lại thành bản ghi thất bại.'},
+  {t:'', s:'<b>Bảng bằng chứng độc lập</b> luôn hiện sau khi judge chạy: cùng <code>input_digest</code>, khác <code>sha(raw_output)</code>, thời điểm bắt đầu chênh dưới 1 giây.'},
+  {t:'', s:'<b>Chọn một vấn đề</b> → sinh riêng A/B/C + Khác cho vấn đề đó → xem bản nháp thay đổi → hộp thoại xác nhận → phiên bản mới.'},
+  {t:'ok', s:'<b>Sau khi xác nhận</b> — backend tự mở job kiểm lại chứng cứ trên <b>đúng phần bị đụng</b>, thanh tiến độ hiện ngay tại bước 4.'},
+  {t:'err', s:'<b>Đang có job kiểm chứng cứ khác chạy</b> → trả <code>verifyJobId: null</code>, ghi log cảnh báo, <b>apply vẫn thành công</b>. Người dùng bấm "Chạy lại kiểm chứng cứ" ở bước 5. <i>Đã gặp thật khi chạy.</i>'},
+  {t:'err', s:'<b>Bấm xác nhận hai lần</b> → <code>409 DECISION_ALREADY_APPLIED</code>, hiện thông báo dạng tin tức chứ không phải lỗi.'},
+  {t:'err', s:'<b>Hai tab cùng áp dụng</b> trên một phiên bản cha → <code>409 VERSION_CONFLICT</code>.'},
+  {t:'', s:'<b>Hai lối ra</b>: "Sang bước chốt spec" khi hết vấn đề, hoặc "Tôi thấy đủ tốt — sang bước chốt spec" khi vẫn còn.'},
+ ]},
+
+{id:'p-s5', tab:'projects', zone:'screen', name:'B5 · Spec cuối & Xuất bản', sub:'gate 4 đường ra · MD/PDF', badge:'chức năng 11·16',
+ purpose:'Bảng kiểm 14 mục, kết quả kiểm chứng cứ, và cổng chặn xuất bản. Đây là chỗ bộ kiểm chứng cứ thôi làm biển báo và trở thành một cơ chế thật.',
+ tech:['TanStack Query','Puppeteer','Markdown'],
+ infra:['PostgreSQL · CardSource','PostgreSQL · VerifierRun','PostgreSQL · ExportArtifact','Chromium (Puppeteer)'],
+ files:['frontend/src/components/steps/step-5.tsx:36','backend/src/spec/export.service.ts:57 (checkGate)','backend/src/decision/decision.service.ts (GATE_OPTIONS, gateDecision)','backend/src/spec/spec.service.ts (buildSections)'],
+ cases:[
+  {t:'err', s:'<b>Chưa kiểm lần nào</b> → <code>NOT_VERIFIED</code>, chặn xuất bản. Đây là fail-closed có chủ ý: chưa kiểm thì không được coi là đã kiểm.'},
+  {t:'err', s:'<b>Còn trích dẫn bị bác</b> → <code>UNSUPPORTED_CITATION</code> kèm danh sách cặp.'},
+  {t:'', s:'<b>A · Tìm nguồn khác</b> — chỉ ghi nhận ý định, không đổi spec; cặp bị đẩy vào hàng đợi hoãn để cặp sau tới lượt.'},
+  {t:'', s:'<b>B · Sửa khẳng định</b> — gọi mô hình thu hẹp khẳng định cho khớp điều nguồn thật sự nói.'},
+  {t:'ok', s:'<b>C · Hạ xuống câu hỏi mở</b> (được gợi ý) — dựng bản nháp <b>bằng luật, 0 token</b>. <i>Đo thật: 2 giây.</i>'},
+  {t:'', s:'<b>Khác · Giữ nguyên kèm lý do</b> — ghi <code>override_reason</code>, cổng thôi chặn, và <b>file xuất ra mang dấu</b> <code>[kept by user despite UNSUPPORTED: …]</code>. Đó là khác nhau giữa bỏ qua có ghi nhận và không kiểm.'},
+  {t:'', s:'<b>Hoãn hết mọi cặp</b> — hiện gợi ý "Đang chờ bạn tìm nguồn khác" + nút "Xử lại các trích dẫn đã hoãn".'},
+  {t:'err', s:'<b>Chromium không khởi động được</b> → <code>PDF_ENGINE_UNAVAILABLE</code>, nhưng <b>Markdown vẫn xuất được</b> — hai đường xuất bản độc lập.'},
+  {t:'', s:'<b>Trên mobile</b> — thanh xuất bản dính đáy màn hình.'},
+ ]},
+
+{id:'p-api-gen', tab:'projects', zone:'api', name:'generator', sub:'analyze · related-work · gap · contributions · experiment', badge:'NestJS',
+ purpose:'Mọi bước sinh nội dung. Đọc prompt từ thư mục prompts/ chứ không nhúng chuỗi trong code, và ghi lại prompt_hash để chứng minh prompt nộp đúng là prompt đã chạy.',
+ tech:['NestJS','zod','DeepSeek','PromptLoaderService'],
+ infra:['PostgreSQL · Card','PostgreSQL · RelatedWorkRow','PostgreSQL · LlmCall','prompts/*.md'],
+ files:['backend/src/generator/generator.service.ts','backend/src/prompts/prompt-loader.service.ts:37 (resolvePromptDir)','backend/src/llm/llm.service.ts (completeJson)'],
+ cases:[
+  {t:'', s:'<b>Output không khớp schema</b> — thử lại tối đa 3 lần, mỗi lần đính lỗi zod vào lượt sau. Số lần thử được ghi lại thành chỉ số JSON validity.'},
+  {t:'err', s:'<b>Sai thư mục prompts/</b> — app vẫn khởi động, <code>/health</code> vẫn xanh, nhưng mọi lời gọi mô hình ném ENOENT. Dòng log "Thư mục prompt: …" lúc khởi động là để kiểm chính chỗ này.'},
+ ]},
+
+{id:'p-api-jobs', tab:'projects', zone:'api', name:'jobs + SSE', sub:'tiến độ thời gian thực', badge:'NestJS',
+ purpose:'Mọi endpoint gọi mô hình đều trả jobId ngay thay vì bắt chờ. Sự kiện ghi xuống DB với số thứ tự tăng dần nên F5 giữa chừng vẫn phát lại được.',
+ tech:['NestJS','RxJS','Server-Sent Events'],
+ infra:['PostgreSQL · JobRun','PostgreSQL · JobEvent'],
+ files:['backend/src/jobs/jobs.service.ts:26 (create)','backend/src/jobs/jobs.service.ts:166 (stream)','frontend/src/lib/use-job.ts'],
+ cases:[
+  {t:'err', s:'<b>Job cùng loại đang chạy cho dự án</b> → <code>409 JOB_ALREADY_RUNNING</code> kèm jobId đang chạy.'},
+  {t:'', s:'<b>F5 giữa chừng</b> — trình duyệt gửi <code>Last-Event-ID</code>, server phát lại từ sự kiện tiếp theo.'},
+  {t:'', s:'<b>Không có nút huỷ job</b> — job dài nhất khoảng 90 giây, thêm cơ chế huỷ là thêm một trạng thái phải xử.'},
+ ]},
+
+{id:'p-api-verifier', tab:'projects', zone:'api', name:'verifier', sub:'5 tầng, rẻ trước đắt sau', badge:'cơ chế mới',
+ purpose:'Với mỗi cặp (khẳng định, nguồn), gắn nhãn SUPPORTED / WEAK / UNSUPPORTED. Ba tầng đầu chặn phần lớn lỗi mà không tốn token nào; mô hình chỉ chạm vùng xám.',
+ tech:['NestJS','@xenova/transformers (all-MiniLM-L6-v2)','DeepSeek','Crossref','DataCite'],
+ infra:['PostgreSQL · CardSource','PostgreSQL · VerifierRun','Model embedding chạy CPU tại chỗ'],
+ files:['backend/src/verifier/verifier.service.ts:51','backend/src/verifier/thresholds.ts','backend/src/verifier/numeric-guard.ts','backend/src/verifier/embedder.service.ts','prompts/verifier_entailment.md'],
+ cases:[
+  {t:'', s:'<b>L0 — nguồn có tồn tại không</b> (rule, 0 token): thiếu mã của nhà cung cấp → UNSUPPORTED ngay.'},
+  {t:'', s:'<b>DOI tra không ra</b> — hỏi cả Crossref lẫn DataCite; chỉ hạ độ tin cậy bằng cờ <code>DOI_UNVERIFIED</code>, <b>không</b> kết luận là bịa, vì nguồn có hai bằng chứng tồn tại độc lập.'},
+  {t:'', s:'<b>L2 — đối chiếu con số</b>: số trong khẳng định không có trong abstract → trần nhãn hạ xuống WEAK bất kể tầng sau nói gì. Đây là dạng bịa hay gặp nhất mà embedding không bắt được.'},
+  {t:'', s:'<b>L3 — embedding tại chỗ</b>: so theo từng câu của abstract, chạy CPU nên hoàn toàn tái lập được.'},
+  {t:'', s:'<b>L4b — chống bịa trích dẫn</b>: câu trích dẫn mô hình đưa ra phải là chuỗi con có thật của abstract, không thì ép về NOT_ENTAILED.'},
+  {t:'err', s:'<b>Không nạp được model embedding</b> → fail-closed, hạ nhãn về WEAK kèm cờ, không im lặng cho qua.'},
+ ]},
+
+{id:'p-api-judge', tab:'projects', zone:'api', name:'judge', sub:'5 lời gọi song song, context sạch', badge:'ràng buộc đề',
+ purpose:'Đề yêu cầu các Judge phải chấm riêng trước khi thấy nhận xét của nhau. Đầu vào được dựng đúng một lần rồi băm, và cùng một chuỗi đó đưa cho cả 5 — đó là bằng chứng kỹ thuật đọc thẳng từ dữ liệu.',
+ tech:['NestJS','Promise.allSettled','DeepSeek','sha256'],
+ infra:['PostgreSQL · JudgeRun','PostgreSQL · Issue','PostgreSQL · IssueGroup'],
+ files:['backend/src/judge/judge.service.ts:70 (input_digest)','backend/src/judge/judge.service.ts:86 (allSettled)','backend/src/judge/issue-grouping.ts','backend/src/judge/judge-independence.spec.ts'],
+ cases:[
+  {t:'', s:'<b>Một judge lỗi</b> — dùng <code>allSettled</code> nên bốn kết quả kia không bị rơi; chúng đã tốn tiền thật và đã xong.'},
+  {t:'', s:'<b>Gộp vấn đề bằng luật</b>, không bằng mô hình — để chạy lại ra đúng con số đồng thuận cũ.'},
+  {t:'', s:'<b>Mẫu số của đồng thuận</b> là số judge <b>đã xong</b>, không phải hằng số 5.'},
+ ]},
+
+{id:'p-api-decision', tab:'projects', zone:'api', name:'decision', sub:'options · record · apply · gate', badge:'chức năng 8',
+ purpose:'Ghi mọi lựa chọn kèm thời điểm, câu hỏi, phương án đã hiện và lý do. Tách bước ghi khỏi bước áp dụng là cố ý: nó tạo ra điểm dừng "xem diff rồi mới cam kết", và huỷ vẫn để lại dấu vết.',
+ tech:['NestJS','Prisma transaction','zod','DeepSeek (nhánh sinh bản nháp)'],
+ infra:['PostgreSQL · Decision','PostgreSQL · SpecVersion','PostgreSQL · Card','PostgreSQL · CardSource'],
+ files:['backend/src/decision/decision.service.ts (record/apply/gateDecision)','backend/src/decision/decision.service.ts (applyChanges — lineage thẻ)','backend/src/decision/decision.controller.ts (startRevalidation)','prompts/generator_options.md · generator_revise.md'],
+ cases:[
+  {t:'', s:'<b>Phương án đã hiện được chụp lại</b> vào bản ghi — prompt đổi ở tuần sau thì lịch sử cũ vẫn đọc đúng thứ người dùng đã thấy.'},
+  {t:'', s:'<b>Huỷ ở màn xem diff</b> — bản ghi vẫn còn với trạng thái "chưa áp dụng".'},
+  {t:'ok', s:'<b>Thẻ bị đổi tiêu đề vẫn giữ được nguồn</b> — nối lại theo phả hệ thẻ chứ không theo tiêu đề trùng khớp.'},
+  {t:'', s:'<b>Thẻ không bị đụng</b> giữ nguyên nhãn kiểm chứng cứ; <b>thẻ bị sửa</b> trả nhãn về WEAK và vào danh sách cần kiểm lại.'},
+ ]},
+
+{id:'p-db', tab:'projects', zone:'infra', name:'PostgreSQL (Neon)', sub:'20 bảng · nguồn sự thật', badge:'store',
+ purpose:'Card + Decision + SpecVersion là ba bảng phủ được chức năng lưu quyết định, quản lý phiên bản, và mục 14 của bản đặc tả.',
+ tech:['PostgreSQL','Prisma 7'],
+ infra:[],
+ files:['backend/prisma/schema.prisma','backend/prisma/migrations/'],
+ cases:[
+  {t:'', s:'<code>Source.retrieved_from</code> <b>không có giá trị LLM</b> — kiểu dữ liệu là chỗ chặn việc mô hình bịa paper, không phải lời dặn trong prompt.'},
+  {t:'', s:'<code>UNIQUE(project_id, version_no)</code> đóng vai khoá lạc quan cho tình huống hai tab cùng áp dụng.'},
+ ]},
+
+{id:'p-llm', tab:'projects', zone:'infra', name:'DeepSeek', sub:'v4-pro · v4-flash', badge:'3rd-party',
+ purpose:'Nhà cung cấp mô hình duy nhất. Mọi lời gọi đi qua đúng một cửa để usage và prompt_hash luôn được ghi — đó là dữ liệu bắt buộc của báo cáo đánh giá.',
+ tech:['OpenAI SDK','JSON mode','temperature 0'],
+ infra:['PostgreSQL · LlmCall'],
+ files:['backend/src/llm/deepseek.provider.ts:39','backend/src/llm/llm.service.ts'],
+ cases:[
+  {t:'', s:'<b>temperature 0 cho mọi lời gọi</b> — mức tái lập tốt nhất có được; DeepSeek không có tham số seed nên phần còn lại phải ghi thành hạn chế trong báo cáo.'},
+  {t:'', s:'<b>Đo thật</b>: mỗi lời gọi mất khoảng 75–85 giây; một dự án đi hết 5 bước tốn khoảng 15–25 lời gọi.'},
+ ]},
+
+{id:'p-ext', tab:'projects', zone:'infra', name:'API học thuật', sub:'Semantic Scholar · OpenAlex · Crossref · DataCite', badge:'3rd-party',
+ purpose:'Nguồn duy nhất của paper. Semantic Scholar đi trước, OpenAlex đỡ khi bị chặn nhịp; Crossref và DataCite chỉ dùng để tra DOI ở tầng L0.',
+ tech:['HTTPS','polite pool (OPENALEX_MAILTO)'],
+ infra:['PostgreSQL · Source (lưu cả nguyên văn phản hồi API)'],
+ files:['backend/src/sources/source.client.ts','backend/src/sources/sources.service.ts'],
+ cases:[
+  {t:'', s:'<b>Có API key Semantic Scholar</b> — nhịp ổn định 1 request/giây; không key thì dùng pool chung.'},
+  {t:'', s:'<b>Đo thật</b>: 429 xảy ra ngay cả khi có key; hệ thống chuyển sang OpenAlex và vẫn gom được 23 nguồn.'},
+  {t:'', s:'<b>Nguyên văn phản hồi API được lưu lại</b> để chứng minh nguồn có thật khi bảo vệ đồ án.'},
+ ]},
+
+/* ══ TAB: LỊCH SỬ PHIÊN BẢN ══ */
+{id:'v-user', tab:'versions', zone:'user', name:'Người dùng', sub:'muốn biết đã đổi gì', badge:'actor',
+ purpose:'Mục nav này là toàn cục, nhưng phiên bản thì thuộc về một dự án — nên luồng có đúng hai chặng: chọn dự án, rồi mới xem lịch sử.',
+ tech:[], infra:[], files:[], cases:[]},
+
+{id:'v-index', tab:'versions', zone:'screen', name:'Chọn dự án', sub:'/versions', badge:'route',
+ purpose:'Bước trung gian bắt buộc. Dùng lại đúng component card của tab Dự án, nhưng bấm vào thì đi tới trang lịch sử chứ không vào wizard.',
+ tech:['TanStack Query'],
+ infra:['PostgreSQL · Project'],
+ files:['frontend/src/app/(app)/versions/page.tsx:13','frontend/src/components/project-card.tsx'],
+ cases:[
+  {t:'', s:'<b>Chưa có dự án nào</b> — trạng thái rỗng dẫn về trang chủ.'},
+ ]},
+
+{id:'v-timeline', tab:'versions', zone:'screen', name:'Danh sách phiên bản', sub:'VersionTimeline', badge:'chức năng 15',
+ purpose:'Mỗi phiên bản là bất biến. Dòng cuối mỗi thẻ nói rõ nó sinh ra từ đâu — đó là cách kiểm bằng mắt rằng không có phiên bản nào tự mọc ra.',
+ tech:['TanStack Query'],
+ infra:['PostgreSQL · SpecVersion (+ đếm Card, JudgeRun, ExportArtifact)'],
+ files:['frontend/src/app/(app)/projects/[id]/versions/page.tsx:60','backend/src/project/project.service.ts:154 (versions)'],
+ cases:[
+  {t:'', s:'Mỗi dòng hiện: <code>v{n}</code> · trạng thái · nhãn · số thẻ / lượt judge / lần xuất · thời điểm.'},
+  {t:'ok', s:'<b>"Sinh ra từ một quyết định của bạn"</b> — phiên bản từ v2 trở đi.'},
+  {t:'', s:'<b>"Phiên bản gốc"</b> — chỉ v1 mới không có quyết định cha.'},
+ ]},
+
+{id:'v-diff', tab:'versions', zone:'screen', name:'So sánh hai phiên bản', sub:'DiffView + 2 ô chọn', badge:'chức năng 15',
+ purpose:'Diff là hàm thuần của hai phiên bản, tính lúc đọc chứ không lưu — lưu lại chỉ tạo thêm một chỗ để dữ liệu lệch nhau.',
+ tech:['react-diff-viewer-continued','jsdiff (phía API)'],
+ infra:['PostgreSQL · SpecVersion','PostgreSQL · Card'],
+ files:['frontend/src/components/diff-view.tsx','backend/src/spec/spec.controller.ts:123 (diff)'],
+ cases:[
+  {t:'', s:'<b>Mặc định so hai bản mới nhất</b>, đổi được bằng hai ô chọn Từ / Đến.'},
+  {t:'', s:'<b>Dưới hai phiên bản</b> — trạng thái rỗng chỉ đường: áp dụng một quyết định ở bước 4 để tạo phiên bản thứ hai.'},
+  {t:'', s:'<b>Chọn trùng một phiên bản</b> ở cả hai ô — không render diff.'},
+ ]},
+
+{id:'v-log', tab:'versions', zone:'screen', name:'Lịch sử quyết định', sub:'DecisionLog', badge:'chức năng 8 · mục 14',
+ purpose:'Đúng mục 14 của bản đặc tả: mọi lựa chọn kèm thời điểm, bước, người quyết, câu hỏi, phương án đã chọn và lý do.',
+ tech:['TanStack Query'],
+ infra:['PostgreSQL · Decision'],
+ files:['frontend/src/app/(app)/projects/[id]/versions/page.tsx:164','backend/src/decision/decision.service.ts (list)'],
+ cases:[
+  {t:'', s:'<b>Phân biệt người quyết</b>: "bạn" hay "kịch bản" — kịch bản là chính sách tự động dùng khi chạy bộ đánh giá.'},
+  {t:'', s:'<b>Quyết định chưa áp dụng</b> được đánh dấu riêng — người dùng xem diff rồi huỷ thì vết vẫn còn.'},
+  {t:'', s:'<b>Chọn "Khác"</b> — hiện nguyên văn lý do thay cho nhãn phương án.'},
+ ]},
+
+{id:'v-db', tab:'versions', zone:'infra', name:'PostgreSQL', sub:'SpecVersion · Card · Decision', badge:'store',
+ purpose:'Phiên bản mới chép thẻ sang thay vì trỏ chung, vì phiên bản phải bất biến thì diff và truy vết mới có nghĩa.',
+ tech:['PostgreSQL','Prisma 7'], infra:[],
+ files:['backend/prisma/schema.prisma (SpecVersion.parent_version_id, created_by_decision_id)'],
+ cases:[]},
+
+/* ══ TAB: TRỢ GIÚP ══ */
+{id:'hp-user', tab:'help', zone:'user', name:'Người dùng', sub:'muốn hiểu hệ thống làm gì', badge:'actor',
+ purpose:'Trang này trả lời bốn câu hay bị hỏi nhất, không có thao tác nào ngoài đọc.',
+ tech:[], infra:[], files:[], cases:[]},
+
+{id:'hp-page', tab:'help', zone:'screen', name:'Trang Trợ giúp', sub:'/help — Server Component', badge:'tĩnh',
+ purpose:'Có trong thanh điều hướng của mockup nhưng không nằm trong 16 chức năng bắt buộc, nên giữ đúng một màn và không mở rộng. Là Server Component: không state, không query, không gọi API.',
+ tech:['Next.js Server Component','Tailwind v4'],
+ infra:[],
+ files:['frontend/src/app/(app)/help/page.tsx:8'],
+ cases:[
+  {t:'', s:'<b>Không gọi API nào</b> — mở được kể cả khi backend chết.'},
+  {t:'', s:'<b>Không có nhánh rẽ</b> — nội dung như nhau với mọi người dùng.'},
+ ]},
+
+{id:'hp-p1', tab:'help', zone:'screen', name:'Hệ thống làm gì', sub:'panel 1', badge:'nội dung',
+ purpose:'Tóm tắt toàn luồng trong một đoạn: diễn giải lại → phân rã thẻ → tìm tài liệu thật → rút khoảng trống → dựng kế hoạch thí nghiệm → 5 Judge phản biện → bản đặc tả 14 mục.',
+ tech:[], infra:[], files:['frontend/src/app/(app)/help/page.tsx:13'], cases:[]},
+
+{id:'hp-p2', tab:'help', zone:'screen', name:'Vì sao trích dẫn có nhãn', sub:'panel 2', badge:'nội dung',
+ purpose:'Giải thích cho người dùng vì sao bị chặn xuất bản: mọi nguồn đến từ API thật, mỗi cặp được đối chiếu abstract rồi gắn nhãn, và còn nhãn UNSUPPORTED thì chưa xuất bản được — đó là chủ ý, không phải lỗi.',
+ tech:[], infra:[], files:['frontend/src/app/(app)/help/page.tsx:22'], cases:[]},
+
+{id:'hp-p3', tab:'help', zone:'screen', name:'Bạn là người quyết định', sub:'panel 3', badge:'nội dung',
+ purpose:'Nêu rõ ba điều: không bước nào tự chốt, mọi câu hỏi đều có phương án "Khác", và mọi lựa chọn đều được ghi lại vào mục 14 của bản đặc tả.',
+ tech:[], infra:[], files:['frontend/src/app/(app)/help/page.tsx:32'], cases:[]},
+
+{id:'hp-p4', tab:'help', zone:'screen', name:'Phiên bản và lịch sử', sub:'panel 4', badge:'nội dung',
+ purpose:'Giải thích mô hình phiên bản bất biến và giới hạn 3 vòng Judge cho mỗi dự án.',
+ tech:[], infra:[], files:['frontend/src/app/(app)/help/page.tsx:40'], cases:[]},
+];
+
+/* ─────────────────────────── EDGES ─────────────────────────── */
+const EDGES = [
+/* TAB home */
+{tab:'home', f:'h-visitor', t:'h-auth', k:'ui', st:'1', act:'Mở app khi chưa có phiên hợp lệ',
+ api:'JwtAuthGuard chặn → 401 → chuyển hướng', why:'Có sở hữu dữ liệu thì mới có "dự án của tôi".',
+ resp:'màn hình đăng nhập', src:'frontend/src/lib/api.ts', dst:'frontend/src/app/(auth)/login/page.tsx'},
+{tab:'home', f:'h-auth', t:'h-api-auth', k:'http', st:'2', act:'Gửi email + mật khẩu',
+ api:'POST /api/auth/register · POST /api/auth/login', why:'Cấp access + refresh token.',
+ resp:'{ user } + 2 cookie httpOnly', src:'auth-form.tsx', dst:'auth.controller.ts:34/45'},
+{tab:'home', f:'h-api-auth', t:'h-db', k:'db', st:'3', act:'Ghi người dùng và phiên',
+ api:'INSERT User (bcrypt cost 10) · INSERT RefreshToken (lưu hash)', why:'Lưu hash chứ không lưu token để đăng xuất thu hồi được thật.',
+ resp:'user id', src:'auth.service.ts', dst:'PostgreSQL'},
+{tab:'home', f:'h-auth', t:'h-home', k:'ui', st:'4', act:'Vào trang chủ sau khi có cookie',
+ api:'router.push("/")', why:'Cookie httpOnly nên JavaScript không đọc được — đó là chủ ý.',
+ resp:'trang chủ', src:'auth-form.tsx', dst:'(app)/page.tsx'},
+{tab:'home', f:'h-home', t:'h-api-project', k:'http', st:'5', act:'Đọc danh sách để hiện "Dự án gần đây"',
+ api:'GET /api/projects', why:'Quay lại dự án đang dở chỉ bằng một cú bấm.',
+ resp:'{ projects[] } — lấy 3 cái đầu', src:'(app)/page.tsx:13', dst:'project.controller.ts:57'},
+{tab:'home', f:'h-home', t:'h-idea', k:'ui', st:'6', act:'Gõ ý tưởng nghiên cứu thô',
+ api:'state cục bộ, chưa gọi API', why:'Chức năng 1 của đề.',
+ resp:'nút mở khoá khi đủ 20 ký tự', src:'idea-input.tsx:49', dst:'idea-input.tsx:103'},
+{tab:'home', f:'h-idea', t:'h-api-project', k:'http', st:'7', act:'Bấm "Phân tích ý tưởng"',
+ api:'POST /api/projects { raw_idea }', why:'Mở dự án mới.',
+ resp:'{ project }', src:'idea-input.tsx:53', dst:'project.controller.ts:49'},
+{tab:'home', f:'h-api-project', t:'h-db', k:'db', st:'8', act:'Tạo dự án và phiên bản đầu',
+ api:'INSERT Project · INSERT SpecVersion (version_no = 1)', why:'Dự án mới đã có sẵn một phiên bản để so về sau.',
+ resp:'project.current_spec_version_id', src:'project.service.ts:41', dst:'PostgreSQL'},
+{tab:'home', f:'h-api-project', t:'h-nav', k:'ui', st:'9', act:'Chuyển sang bước 1 của dự án vừa tạo',
+ api:'router.push("/projects/:id/step/1")', why:'Vào thẳng việc, không bắt bấm thêm.',
+ resp:'màn bước 1', src:'idea-input.tsx:55', dst:'step/[step]/page.tsx'},
+{tab:'home', f:'h-nav', t:'h-api-auth', k:'http', st:'10', act:'Đăng xuất từ menu người dùng',
+ api:'POST /api/auth/logout', why:'Thu hồi refresh token trong DB, không chỉ xoá cookie.',
+ resp:'204', src:'top-nav.tsx', dst:'auth.controller.ts:69'},
+
+/* TAB projects */
+{tab:'projects', f:'p-user', t:'p-list', k:'ui', st:'1', act:'Mở tab "Dự án"',
+ api:'GET /api/projects', why:'Danh sách kèm bước đang đứng và số quyết định đã ghi.',
+ resp:'{ projects[] }', src:'projects/page.tsx:12', dst:'project.service.ts:65'},
+{tab:'projects', f:'p-list', t:'p-stepper', k:'ui', st:'2', act:'Bấm một card',
+ api:'router.push("/projects/:id/step/{project.step}")', why:'Quay lại đúng chỗ đang dở.',
+ resp:'wizard tại bước đã lưu', src:'project-card.tsx:31', dst:'stepper.tsx'},
+{tab:'projects', f:'p-stepper', t:'p-s1', k:'ui', st:'3', act:'Đứng ở bước 1',
+ api:'visibleStepNo = min(URL, project.step)', why:'URL không phải nguồn sự thật; bước đã tới mới là.',
+ resp:'render B1', src:'step/[step]/page.tsx:35', dst:'steps/step-1.tsx'},
+{tab:'projects', f:'p-s1', t:'p-api-gen', k:'sse', st:'4', act:'Bấm "Phân tích ý tưởng"',
+ api:'POST /api/projects/:id/analyze → { jobId } → EventSource', why:'Diễn giải lại + phân rã thẻ + sinh câu hỏi làm rõ.',
+ resp:'job.progress → job.done', src:'step-1.tsx:53', dst:'project.controller.ts:84'},
+{tab:'projects', f:'p-api-gen', t:'p-llm', k:'llm', st:'5', act:'Gọi mô hình sinh nội dung',
+ api:'chat.completions.create — JSON mode, temperature 0', why:'Bản đặc tả là dữ liệu có cấu trúc, không phải văn bản tự do.',
+ resp:'JSON đã qua zod; sai schema thì thử lại tối đa 3 lần', src:'llm.service.ts', dst:'deepseek.provider.ts:42'},
+{tab:'projects', f:'p-s1', t:'p-api-decision', k:'http', st:'6', act:'Trả lời câu hỏi làm rõ (A/B/C/Khác)',
+ api:'POST /api/decisions', why:'Chức năng 8 — lưu quyết định người dùng.',
+ resp:'{ decision } · hết câu hỏi thì tự đẩy sang S2', src:'step-1.tsx:131', dst:'decision.controller.ts:62'},
+{tab:'projects', f:'p-s1', t:'p-s2', k:'ui', st:'7', act:'Sang bước 2',
+ api:'router.push(".../step/2")', why:'Điểm dừng 1 — người dùng xác nhận rồi mới đi tiếp.',
+ resp:'render B2', src:'step-1.tsx:148', dst:'steps/step-2.tsx'},
+{tab:'projects', f:'p-s2', t:'p-ext', k:'ext', st:'8', act:'Bấm "Tìm nguồn thật"',
+ api:'POST /api/projects/:id/sources/search { queries[] }', why:'Nguồn phải có thật — đây là cửa duy nhất paper vào được hệ thống.',
+ resp:'{ jobId } · lưu Source kèm nguyên văn phản hồi API', src:'step-2.tsx:87', dst:'source.client.ts'},
+{tab:'projects', f:'p-s2', t:'p-api-gen', k:'sse', st:'9', act:'"Dựng nhận xét" rồi "Rút research gap"',
+ api:'POST /api/projects/:id/related-work · POST /api/projects/:id/gap', why:'Mô hình chỉ đọc abstract của paper đã nằm trong kho.',
+ resp:'RelatedWorkRow · Card kiểu GAP + câu hỏi chọn hướng', src:'step-2.tsx:135/142', dst:'generator.service.ts'},
+{tab:'projects', f:'p-s2', t:'p-s3', k:'ui', st:'10', act:'Chọn hướng gap rồi sang bước 3',
+ api:'POST /api/decisions → router.push(".../step/3")', why:'Điểm dừng 2.',
+ resp:'render B3', src:'step-2.tsx:198', dst:'steps/step-3.tsx'},
+{tab:'projects', f:'p-s3', t:'p-api-gen', k:'sse', st:'11', act:'Sinh contribution, claim, kế hoạch thí nghiệm',
+ api:'POST /api/projects/:id/contributions · /experiment-plan', why:'Claim–Evidence 5 trường, gồm cả "điều kiện bác bỏ".',
+ resp:'Card CONTRIBUTION/CLAIM · ExperimentPlan · ResourceEstimate', src:'step-3.tsx:102/110', dst:'generator.service.ts'},
+{tab:'projects', f:'p-s3', t:'p-s4', k:'ui', st:'12', act:'Duyệt kế hoạch hoặc giảm quy mô',
+ api:'POST /api/decisions → tự sang bước 4', why:'Điểm dừng 3 — nếu thiếu khối này thì bước 3 tự chốt.',
+ resp:'render B4', src:'step-3.tsx:186', dst:'steps/step-4.tsx'},
+{tab:'projects', f:'p-s4', t:'p-api-verifier', k:'sse', st:'13', act:'Chạy kiểm chứng cứ',
+ api:'POST /api/spec-versions/:id/verify', why:'Gắn nhãn từng cặp (khẳng định, nguồn) trước khi judge chấm.',
+ resp:'CardSource.support_label + VerifierRun', src:'step-5.tsx:107 · decision.controller.ts', dst:'verifier.service.ts:51'},
+{tab:'projects', f:'p-s4', t:'p-api-judge', k:'sse', st:'14', act:'Bấm "Chạy Judge"',
+ api:'POST /api/spec-versions/:id/judge → 5 lời gọi song song', why:'Đề yêu cầu các Judge chấm riêng trước khi thấy nhận xét của nhau.',
+ resp:'5 JudgeRun cùng input_digest, khác raw_output', src:'step-4.tsx:160', dst:'judge.service.ts:86'},
+{tab:'projects', f:'p-api-judge', t:'p-db', k:'db', st:'15', act:'Ghi bằng chứng độc lập + gộp vấn đề',
+ api:'INSERT JudgeRun ×5 · Issue · IssueGroup (gộp bằng luật)', why:'Con số đồng thuận đi vào báo cáo nên phải cố định, không đổi mỗi lần F5.',
+ resp:'IssueGroup.agreement_count / judges_completed', src:'judge.service.ts:256', dst:'PostgreSQL'},
+{tab:'projects', f:'p-s4', t:'p-api-decision', k:'http', st:'16', act:'Chọn một vấn đề → chọn cách sửa → xem bản nháp',
+ api:'POST /api/issue-groups/:id/options · POST /api/decisions', why:'Chức năng 7 và 14 — lựa chọn có giải thích, ví dụ và "Khác".',
+ resp:'{ options[] } rồi { decision, preview }', src:'step-4.tsx:96/111', dst:'decision.service.ts'},
+{tab:'projects', f:'p-api-decision', t:'p-db', k:'db', st:'17', act:'Xác nhận → tạo phiên bản mới',
+ api:'transaction: INSERT SpecVersion · createMany Card · createMany CardSource', why:'Phiên bản bất biến thì diff và truy vết mới có nghĩa.',
+ resp:'{ version, verifyJobId }', src:'decision.service.ts (apply)', dst:'PostgreSQL'},
+{tab:'projects', f:'p-api-decision', t:'p-api-verifier', k:'sse', st:'18', act:'Tự kiểm lại phần vừa sửa',
+ api:'jobs.create("VERIFY") với cardIds = thẻ bị đụng', why:'Đề Bước 10 đòi "chạy lại verifier liên quan" — chỉ phần liên quan, không kiểm lại toàn bộ.',
+ resp:'verifyJobId · null nếu đang có job cùng loại', src:'decision.controller.ts (startRevalidation)', dst:'verifier.service.ts'},
+{tab:'projects', f:'p-s4', t:'p-s5', k:'ui', st:'19', act:'Sang bước chốt spec',
+ api:'PATCH /api/projects/:id { step: "S5" }', why:'Điểm dừng 4 — chốt bản cuối cần một màn sạch, không lẫn với đang sửa.',
+ resp:'render B5', src:'step-4.tsx:64', dst:'steps/step-5.tsx'},
+{tab:'projects', f:'p-s5', t:'p-api-verifier', k:'http', st:'20', act:'Đọc kết quả kiểm chứng cứ + kiểm cổng',
+ api:'GET /api/spec-versions/:id/verification · /gate', why:'Cho người dùng thấy vì sao bị chặn, kèm đúng cặp gây chặn.',
+ resp:'{ blocked, reason, offenders[] }', src:'step-5.tsx:44', dst:'export.service.ts:57'},
+{tab:'projects', f:'p-s5', t:'p-api-decision', k:'http', st:'21', act:'Chọn 1 trong 4 đường ra của cổng',
+ api:'GET /api/card-sources/:id/gate-options · POST /api/card-sources/:id/gate-decision', why:'Gắn nhãn thôi chưa phải cơ chế; chặn kèm đường ra mới là.',
+ resp:'nhánh C dựng bản nháp bằng luật, 0 token', src:'step-5.tsx', dst:'decision.service.ts (gateDecision)'},
+{tab:'projects', f:'p-s5', t:'p-db', k:'db', st:'22', act:'Xuất Markdown hoặc PDF',
+ api:'POST /api/spec-versions/:id/export?format=md|pdf', why:'Chức năng 16. Chỉ lưu checksum, không lưu nội dung file — file sinh lại được từ phiên bản bất biến.',
+ resp:'{ artifactId } hoặc 409 EXPORT_BLOCKED_*', src:'step-5.tsx:63', dst:'export.service.ts:104'},
+
+/* TAB versions */
+{tab:'versions', f:'v-user', t:'v-index', k:'ui', st:'1', act:'Mở mục "Lịch sử phiên bản" trên nav',
+ api:'GET /api/projects', why:'Nav là toàn cục nhưng phiên bản thuộc về một dự án — cần một bước chọn.',
+ resp:'lưới card dự án', src:'top-nav.tsx:33', dst:'versions/page.tsx:13'},
+{tab:'versions', f:'v-index', t:'v-timeline', k:'ui', st:'2', act:'Chọn một dự án',
+ api:'GET /api/projects/:id/versions', why:'Lịch sử thật nằm ở trang của từng dự án.',
+ resp:'{ versions[] } kèm số thẻ / lượt judge / lần xuất', src:'versions/page.tsx', dst:'project.service.ts:154'},
+{tab:'versions', f:'v-timeline', t:'v-diff', k:'http', st:'3', act:'Chọn hai phiên bản để so',
+ api:'GET /api/spec-versions/:id/diff?against=<id>', why:'Diff là hàm thuần của hai phiên bản, tính lúc đọc chứ không lưu.',
+ resp:'{ hunks[] } render bằng react-diff-viewer', src:'versions/page.tsx:124', dst:'spec.controller.ts:123'},
+{tab:'versions', f:'v-timeline', t:'v-log', k:'http', st:'4', act:'Đọc lịch sử quyết định',
+ api:'GET /api/projects/:id/decisions', why:'Mục 14 của bản đặc tả — mọi lựa chọn kèm thời điểm và lý do.',
+ resp:'{ decisions[] } · phân biệt "bạn" và "kịch bản"', src:'use-project.ts (useDecisionLog)', dst:'decision.service.ts (list)'},
+{tab:'versions', f:'v-diff', t:'v-db', k:'db', st:'5', act:'Đọc hai phiên bản để dựng diff',
+ api:'SELECT SpecVersion + Card của cả hai bản', why:'Thẻ được chép sang phiên bản mới nên hai bản luôn đọc độc lập được.',
+ resp:'markdown hai bên', src:'spec.service.ts (buildMarkdown)', dst:'PostgreSQL'},
+
+/* TAB help */
+{tab:'help', f:'hp-user', t:'hp-page', k:'ui', st:'1', act:'Bấm "Trợ giúp" trên nav',
+ api:'không gọi API nào', why:'Server Component tĩnh — mở được kể cả khi backend chết.',
+ resp:'4 panel nội dung', src:'top-nav.tsx:34', dst:'help/page.tsx:8'},
+{tab:'help', f:'hp-page', t:'hp-p1', k:'ui', st:'2', act:'Đọc "Hệ thống làm gì"',
+ api:'nội dung tĩnh', why:'Tóm tắt toàn luồng trong một đoạn.', resp:'—', src:'help/page.tsx:13', dst:'—'},
+{tab:'help', f:'hp-page', t:'hp-p2', k:'ui', st:'3', act:'Đọc "Vì sao trích dẫn có nhãn"',
+ api:'nội dung tĩnh', why:'Giải thích vì sao bị chặn xuất bản — chủ ý, không phải lỗi.', resp:'—', src:'help/page.tsx:22', dst:'—'},
+{tab:'help', f:'hp-page', t:'hp-p3', k:'ui', st:'4', act:'Đọc "Bạn là người quyết định"',
+ api:'nội dung tĩnh', why:'Nêu rõ không bước nào tự chốt.', resp:'—', src:'help/page.tsx:32', dst:'—'},
+{tab:'help', f:'hp-page', t:'hp-p4', k:'ui', st:'5', act:'Đọc "Phiên bản và lịch sử"',
+ api:'nội dung tĩnh', why:'Giải thích phiên bản bất biến và giới hạn 3 vòng judge.', resp:'—', src:'help/page.tsx:40', dst:'—'},
+];
+
+/* ═══════════════════════ RENDER ═══════════════════════ */
+const $ = (s) => document.querySelector(s);
+let TAB = 'projects', SEL = null, STEP = null;
+
+function tabNodes(){ return NODES.filter(n => n.tab === TAB); }
+function tabEdges(){ return EDGES.filter(e => e.tab === TAB); }
+function nodeById(id){ return NODES.find(n => n.id === id); }
+
+function renderTabs(){
+  $('#tabs').innerHTML = TABS.map(t =>
+    `<button class="tab ${t.id===TAB?'on':''}" data-tab="${t.id}">${t.label}</button>`).join('');
+  $('#tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => {
+    TAB = b.dataset.tab; SEL = null; STEP = null; renderAll();
+  });
+}
+
+function renderCanvas(){
+  const meta = TABS.find(t => t.id === TAB);
+  const used = ZONES.filter(z => tabNodes().some(n => n.zone === z.id));
+  const html = [`<div class="routebar"><b>Route:</b> <code>${meta.route}</code> · ${meta.hint}</div>`];
+  for(const z of used){
+    const inZone = tabNodes().filter(n => n.zone === z.id);
+    html.push(`<div class="zone z-${z.id}"><span class="zlabel">${z.label}</span><div class="row">` +
+      inZone.map(n => `<button class="node" data-id="${n.id}">
+        <div class="nm">${n.name}</div><div class="sb">${n.sub}</div>
+        ${n.badge?`<span class="badge">${n.badge}</span>`:''}</button>`).join('') +
+      `</div></div>`);
+  }
+  html.push(`<div class="legend">` + Object.entries(KIND).map(([k,v]) =>
+    `<span class="lg"><span class="sw" style="background:${v.color}"></span>${v.label}</span>`).join('') + `</div>`);
+  $('#zones').innerHTML = html.join('');
+  $('#zones').querySelectorAll('.node').forEach(b => b.onclick = () => {
+    SEL = (SEL === b.dataset.id) ? null : b.dataset.id; STEP = null; paint();
+  });
+}
+
+/** Vẽ đường nối giữa hai node theo vị trí thật trong DOM. */
+function drawEdges(){
+  const svg = $('#edges'), wrap = $('#canvasWrap');
+  const base = wrap.getBoundingClientRect();
+  svg.setAttribute('width', wrap.scrollWidth);
+  svg.setAttribute('height', wrap.scrollHeight);
+  const parts = [];
+  tabEdges().forEach((e, i) => {
+    const a = $(`.node[data-id="${e.f}"]`), b = $(`.node[data-id="${e.t}"]`);
+    if(!a || !b) return;
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    const x1 = ra.left - base.left + wrap.scrollLeft + ra.width/2;
+    const y1 = ra.top  - base.top  + wrap.scrollTop  + ra.height;
+    const x2 = rb.left - base.left + wrap.scrollLeft + rb.width/2;
+    const y2 = rb.top  - base.top  + wrap.scrollTop;
+    const my = (y1 + y2) / 2;
+    parts.push(`<path class="edge" id="ed${i}" d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" stroke="${KIND[e.k].color}"/>`);
+    parts.push(`<text class="elabel" id="el${i}" x="${(x1+x2)/2}" y="${my-3}" text-anchor="middle">${e.st}</text>`);
+  });
+  svg.innerHTML = parts.join('');
+  paintEdges();
+}
+
+function paintEdges(){
+  tabEdges().forEach((e, i) => {
+    const p = $(`#ed${i}`), l = $(`#el${i}`);
+    if(!p) return;
+    const touched = SEL ? (e.f === SEL || e.t === SEL) : true;
+    const isStep  = STEP !== null && e.st === STEP;
+    p.classList.toggle('hi', isStep || (SEL && touched));
+    p.classList.toggle('off', (SEL && !touched) || (STEP !== null && !isStep));
+    if(l) l.classList.toggle('off', (SEL && !touched) || (STEP !== null && !isStep));
+  });
+}
+
+function paint(){
+  $('#zones').querySelectorAll('.node').forEach(b => {
+    const id = b.dataset.id;
+    const touched = SEL ? (id === SEL || tabEdges().some(e =>
+      (e.f === SEL && e.t === id) || (e.t === SEL && e.f === id))) : true;
+    b.classList.toggle('sel', id === SEL);
+    b.classList.toggle('dim', !!SEL && !touched);
+  });
+  paintEdges();
+  renderPanel();
+}
+
+function callLi(e, hit){
+  const i = tabEdges().indexOf(e);
+  return `<li data-step="${e.st}" class="${hit?'hit':''}">
+    <div class="who"><span class="stepno">${e.st}</span>
+      <span class="proto" style="background:${KIND[e.k].color}">${e.k}</span>
+      ${nodeById(e.f)?.name ?? e.f} → ${nodeById(e.t)?.name ?? e.t}</div>
+    <div class="rpcline"><code>${e.api}</code></div>
+    <div class="kv"><b>Thao tác</b> ${e.act}</div>
+    <div class="kv"><b>Mục đích</b> ${e.why}</div>
+    <div class="kv"><b>Kết quả</b><span class="resp">${e.resp}</span></div>
+    <div class="path">${e.src} <span class="arrow">→</span> ${e.dst}</div>
+  </li>`;
+}
+
+function renderPanel(){
+  const meta = TABS.find(t => t.id === TAB);
+  const p = $('#panel');
+
+  if(!SEL){
+    const steps = tabEdges();
+    p.innerHTML = `<h2>${meta.label}</h2>
+      <div class="sub"><code>${meta.route}</code></div>
+      <p>${meta.hint}</p>
+      <h3>Trình tự thao tác</h3>
+      <p class="stephint">Bấm một bước để soi đúng đường nối đó, hoặc bấm một node để xem thiết kế kỹ thuật.</p>
+      <ol class="steps">${steps.map(e =>
+        `<li data-step="${e.st}" class="${STEP===e.st?'on':''}">${e.act}</li>`).join('')}</ol>
+      ${STEP !== null ? `<h3>Bước ${STEP}</h3><ul class="calls">${
+        steps.filter(e => e.st === STEP).map(e => callLi(e, true)).join('')}</ul>` : ''}`;
+  } else {
+    const n = nodeById(SEL);
+    const ins  = tabEdges().filter(e => e.t === SEL);
+    const outs = tabEdges().filter(e => e.f === SEL);
+    p.innerHTML = `<h2>${n.name}</h2>
+      <div class="sub">${n.sub}${n.badge?` · ${n.badge}`:''}</div>
+      ${STEP !== null ? `<div class="crumb"><span class="cb">${STEP}</span>
+        <span class="ct">Đang xem từ bước ${STEP} của trình tự.</span>
+        <button class="cx" id="crumbClear" title="Bỏ neo bước">✕</button></div>` : ''}
+      <h3>Mục đích</h3><p>${n.purpose}</p>
+      ${n.tech.length ? `<h3>Techstack</h3><div class="chips">${
+        n.tech.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
+      ${n.infra.length ? `<h3>Hạ tầng chạm tới</h3><div class="chips">${
+        n.infra.map(t => `<span class="chip infra">${t}</span>`).join('')}</div>` : ''}
+      ${n.cases.length ? `<h3>Trường hợp thao tác</h3><ul class="cases">${
+        n.cases.map(c => `<li class="${c.t}">${c.s}</li>`).join('')}</ul>` : ''}
+      ${outs.length ? `<h3>Gọi ra</h3><ul class="calls">${
+        outs.map(e => callLi(e, e.st === STEP)).join('')}</ul>` : ''}
+      ${ins.length ? `<h3>Được gọi từ</h3><ul class="calls">${
+        ins.map(e => callLi(e, e.st === STEP)).join('')}</ul>` : ''}
+      ${n.files.length ? `<h3>File liên quan</h3><ul class="files">${
+        n.files.map(f => `<li>${f}</li>`).join('')}</ul>` : ''}`;
+  }
+
+  p.querySelectorAll('[data-step]').forEach(el => el.onclick = () => {
+    STEP = (STEP === el.dataset.step) ? null : el.dataset.step;
+    paint();
+  });
+  const cc = $('#crumbClear');
+  if(cc) cc.onclick = (ev) => { ev.stopPropagation(); STEP = null; paint(); };
+}
+
+function renderAll(){
+  renderTabs(); renderCanvas(); paint();
+  requestAnimationFrame(drawEdges);
+}
+
+window.addEventListener('resize', () => requestAnimationFrame(drawEdges));
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape'){ SEL = null; STEP = null; paint(); }
+});
+renderAll();
+</script>
+</body>
+</html>
