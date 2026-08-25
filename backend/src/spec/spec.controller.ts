@@ -63,6 +63,16 @@ export class SpecController {
     };
   }
 
+  @Get('spec-versions/:id/related-work')
+  async relatedWork(@Param('id') id: string, @UserId() userId: string) {
+    await this.spec.assertVersionOwned(id, userId);
+    return this.prisma.relatedWorkRow.findMany({
+      where: { spec_version_id: id },
+      include: { source: true },
+      orderBy: { order_index: 'asc' },
+    });
+  }
+
   @Get('spec-versions/:id/cards')
   async cards(
     @Param('id') id: string,

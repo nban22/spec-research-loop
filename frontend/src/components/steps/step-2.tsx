@@ -21,6 +21,7 @@ import {
   usePendingDecisions,
   useProject,
   useSources,
+  useRelatedWork,
 } from '@/lib/use-project';
 
 const FILTERS = [
@@ -45,6 +46,7 @@ export function Step2({ projectId }: { projectId: string }) {
   const { data: sourceData, isLoading: loadingSources } = useSources(projectId);
   const { data: cardData } = useCards(versionId);
   const { data: pendingData } = usePendingDecisions(projectId);
+  const { data: relatedWorkData } = useRelatedWork(versionId);
   const job = useJobAction(projectId);
   const answer = useAnswerDecision(projectId);
 
@@ -67,13 +69,16 @@ export function Step2({ projectId }: { projectId: string }) {
 
   const gaps = (cardData?.cards ?? []).filter((c) => c.type === 'GAP');
   const pending = (pendingData?.decisions ?? []).filter((d) => d.step === 'S2');
-  const relatedRows = sources.slice(0, 12).map((s) => ({
-    id: s.id,
-    source: s,
-    what_done: s.abstract?.slice(0, 220) ?? 'Không có abstract từ provider.',
-    feedback_type: s.venue ? 'Đã công bố' : 'Bản tiền ấn',
-    what_missing: '—',
-  }));
+  
+  const relatedRows = relatedWorkData?.length
+    ? relatedWorkData
+    : sources.slice(0, 12).map((s) => ({
+        id: s.id,
+        source: s,
+        what_done: s.abstract?.slice(0, 220) ?? 'Không có abstract từ provider.',
+        feedback_type: s.venue ? 'Đã công bố' : 'Bản tiền ấn',
+        what_missing: '—',
+      }));
 
   const context = (
     <>
