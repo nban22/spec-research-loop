@@ -993,6 +993,23 @@ function renderPanel(){
   const meta = TABS.find(t => t.id === TAB);
   const p = $('#panel');
 
+  if(TAB === 'reqs' && !SEL){
+    const partial = REQS.filter(r => r.status === 'partial');
+    p.innerHTML = `<h2>Đối chiếu 16 chức năng</h2>
+      <div class="sub">Chức năng bắt buộc của đề ↔ nhóm component đáp ứng</div>
+      <p>Mỗi thẻ bên trái là một chức năng: cách hệ thống đáp ứng nó, nhóm component nào gánh,
+      bằng chứng, và file liên quan. Bấm tên component để nhảy thẳng tới node đó trên bản đồ luồng.</p>
+      <h3>Tổng kết</h3>
+      <p><b>${REQS.length - partial.length}/16 đủ</b> · ${partial.length} còn hở.
+      Không chức năng nào trống hoàn toàn.</p>
+      ${partial.length ? `<h3>Hai chỗ còn hở</h3><ul class="cases">${
+        partial.map(r => `<li class="err"><b>#${r.no} ${r.name}</b><br>${r.gap}</li>`).join('')}</ul>` : ''}
+      <h3>Đọc bảng này thế nào</h3>
+      <p class="stephint">Viền xanh = đủ · viền vàng = còn hở. Phần "Bằng chứng" ưu tiên số liệu
+      đọc thẳng từ dữ liệu thật hoặc từ source, không phải mô tả ý định.</p>`;
+    return;
+  }
+
   if(!SEL){
     const steps = tabEdges();
     p.innerHTML = `<h2>${meta.label}</h2>
