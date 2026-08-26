@@ -1,7 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { CardBoard } from './spec-cards';
 import type { ApiCard } from '@/lib/types';
+import { useUiStore } from '@/stores/ui-store';
 
 const mockCards: ApiCard[] = [
   {
@@ -33,6 +34,12 @@ const mockCards: ApiCard[] = [
 ];
 
 describe('CardBoard Component', () => {
+  // Bộ lọc sống ở store toàn cục nên nó **không** tự reset giữa các test —
+  // quên dòng này là test sau ăn bộ lọc của test trước.
+  beforeEach(() => {
+    useUiStore.setState({ cardFilter: 'ALL' });
+  });
+
   it('renders all cards when ALL filter is active', () => {
     render(<CardBoard cards={mockCards} />);
     expect(screen.getByText('Problem statement card')).toBeDefined();
@@ -46,6 +53,19 @@ describe('CardBoard Component', () => {
     fireEvent.click(unsupportedBtn);
 
     // Only the group containing UNSUPPORTED cards should be visible
+    expect(screen.getByText('Claim card unsupported')).toBeDefined();
+    expect(screen.queryByText('Problem statement card')).toBeNull();
+  });
+
+  // Lý do bộ lọc nằm ở store: đổi bước trên stepper làm `CardBoard` unmount.
+  it('giữ bộ lọc sau khi unmount rồi mount lại', () => {
+    const first = render(<CardBoard cards={mockCards} />);
+    fireEvent.click(screen.getByText('Không có nguồn (1)'));
+    expect(screen.queryByText('Problem statement card')).toBeNull();
+
+    first.unmount();
+    render(<CardBoard cards={mockCards} />);
+
     expect(screen.getByText('Claim card unsupported')).toBeDefined();
     expect(screen.queryByText('Problem statement card')).toBeNull();
   });

@@ -7,42 +7,26 @@ import type { CardStatus } from '@/lib/types';
  *
  * Bước đang đứng **không** nằm ở đây: nó ở URL (`/projects/:id/step/N`), để F5 về đúng chỗ
  * và link gửi được (SYSTEM_DESIGN_ANALYSIS S7 · F.4).
+ *
+ * Luật vào store: **chỉ** state UI mà người dùng thấy được là "mất" khi component unmount.
+ * State chỉ sống trong một màn hình và chết cùng nó thì để `useState` — đưa vào đây là tạo
+ * một field không ai đọc. Bốn field từng khai ở đây (`sheetStage`, `navOpen`, `stepPickerOpen`,
+ * `activeIssueGroupId`) đã bị gỡ vì đúng lý do đó: `<Sheet>` của shadcn tự quản trạng thái mở
+ * (`top-nav.tsx`), còn issue đang xử lý sống ở `useState` của `step-4.tsx` rồi truyền xuống
+ * `judge.tsx` qua prop `activeId`.
  */
-export type SheetStage = 'peek' | 'half' | 'full';
-
 type UiState = {
-  /** Nấc của `DecisionSheet` — ba nấc, không bao giờ đóng hẳn (§6.3). */
-  sheetStage: SheetStage;
-  setSheetStage: (s: SheetStage) => void;
-
-  navOpen: boolean;
-  setNavOpen: (v: boolean) => void;
-
-  stepPickerOpen: boolean;
-  setStepPickerOpen: (v: boolean) => void;
-
-  /** Bộ lọc bảng thẻ ở `CardBoard`. */
+  /**
+   * Bộ lọc bảng thẻ ở `CardBoard` (`components/spec-cards.tsx`).
+   *
+   * Ở store chứ không ở `useState` vì `CardBoard` unmount mỗi lần đổi bước trên stepper —
+   * để local thì người dùng lọc "Còn thiếu", đi xem bước 2, quay lại là mất bộ lọc.
+   */
   cardFilter: CardStatus | 'ALL';
   setCardFilter: (v: CardStatus | 'ALL') => void;
-
-  /** Nhóm issue đang được xử lý ở B4. */
-  activeIssueGroupId: string | null;
-  setActiveIssueGroupId: (v: string | null) => void;
 };
 
 export const useUiStore = create<UiState>((set) => ({
-  sheetStage: 'peek',
-  setSheetStage: (sheetStage) => set({ sheetStage }),
-
-  navOpen: false,
-  setNavOpen: (navOpen) => set({ navOpen }),
-
-  stepPickerOpen: false,
-  setStepPickerOpen: (stepPickerOpen) => set({ stepPickerOpen }),
-
   cardFilter: 'ALL',
   setCardFilter: (cardFilter) => set({ cardFilter }),
-
-  activeIssueGroupId: null,
-  setActiveIssueGroupId: (activeIssueGroupId) => set({ activeIssueGroupId }),
 }));

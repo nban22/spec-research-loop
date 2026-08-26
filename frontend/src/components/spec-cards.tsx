@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -17,6 +16,7 @@ import {
 } from '@/lib/types';
 import { CARD_STATUS_BAR, CARD_STATUS_STYLE } from '@/lib/status-style';
 import { cn } from '@/lib/utils';
+import { useUiStore } from '@/stores/ui-store';
 import { StatusChip } from './status-chip';
 import { SupportTag } from './support-tag';
 
@@ -122,7 +122,10 @@ const FIELD_LABEL: Record<string, string> = {
 const NEEDS_ATTENTION: CardStatus[] = ['MISSING', 'AMBIGUOUS', 'CONFLICT', 'UNSUPPORTED'];
 
 export function CardBoard({ cards }: { cards: ApiCard[] }) {
-  const [filter, setFilter] = useState<CardStatus | 'ALL'>('ALL');
+  // Bộ lọc ở `useUiStore` chứ không ở `useState`: `CardBoard` unmount mỗi lần đổi bước trên
+  // stepper, để local thì lọc xong đi xem bước khác rồi quay lại là mất bộ lọc (§6.9).
+  const filter = useUiStore((s) => s.cardFilter);
+  const setFilter = useUiStore((s) => s.setCardFilter);
   const shown = filter === 'ALL' ? cards : cards.filter((c) => c.status === filter);
 
   const groups = CARD_TYPES.map((type) => ({
