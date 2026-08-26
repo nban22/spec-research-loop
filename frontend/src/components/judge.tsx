@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleCheck, CircleX, Loader2, Scale } from 'lucide-react';
+import { CircleCheck, CircleX, Loader2, Scale, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,9 +17,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { JUDGE_META, type ApiIssueGroup, type JudgeKey } from '@/lib/types';
+import {
+  JUDGE_META,
+  type ApiIssueGroup,
+  type ApiSource,
+  type JudgeKey,
+} from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { SeverityBadge } from './severity-badge';
+import { SourceChip } from './sources';
 
 export type JudgeState = 'idle' | 'running' | 'done' | 'failed';
 
@@ -105,9 +111,12 @@ export function JudgePanel({ states }: { states: Record<JudgeKey, JudgeState> })
           <JudgeCard key={k} judgeKey={k} state={states[k]} />
         ))}
       </ul>
-      <p className="text-ink-3 bg-sunken flex items-center gap-2 rounded-md px-3 py-2 text-xs">
-        <Scale className="size-3.5 shrink-0" aria-hidden />
-        Các Judge đánh giá độc lập, không xem nhận xét của nhau.
+      <p className="text-ink-3 bg-sunken flex items-start gap-2 rounded-md px-3 py-2 text-xs">
+        <Scale className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+        <span>
+          Các Judge đánh giá độc lập, không xem nhận xét của nhau. Mỗi Judge phụ trách một khía
+          cạnh riêng, nên phần lớn vấn đề chỉ do một Judge nêu — đó là bình thường.
+        </span>
       </p>
     </div>
   );
@@ -116,6 +125,9 @@ export function JudgePanel({ states }: { states: Record<JudgeKey, JudgeState> })
 /**
  * Nửa **đồng thuận** của chức năng 13. Mẫu số là **số judge chạy xong**, không phải hằng số 5 —
  * judge lỗi phải nói thẳng ra (SYSTEM_DESIGN_ANALYSIS C3 · F.7).
+ *
+ * `agreement` là mức đồng thuận **cao nhất trong cả bảng**, không phải của một nhóm cụ thể:
+ * thanh này đứng trên toàn bộ `IssueTable` nên nó phải nói về toàn bộ bảng.
  */
 export function ConsensusMeter({
   agreement,
@@ -131,7 +143,7 @@ export function ConsensusMeter({
     <div className="space-y-1">
       <p className="text-ink-2 text-xs">
         <span className="text-ink-1 font-semibold">
-          {agreement}/{completed} judge đồng ý
+          Đồng thuận cao nhất: {agreement}/{completed} judge
         </span>
         {failedKeys.length > 0 && (
           <span className="text-warn-strong"> ({failedKeys.join(', ')} lỗi)</span>
@@ -148,40 +160,154 @@ export function ConsensusMeter({
  * Nửa **bất đồng** của chức năng 13 — phần mockup không vẽ và dễ quên nhất
  * (DESIGN_SYSTEM §5.3, §8). Bất đồng là **thông tin để cân nhắc**, không phải lỗi ⇒ dùng họ
  * `neutral`, không dùng `warn`.
+ *
+ * Hai luật của câu chữ ở đây:
+ *
+ * 1. Mẫu số là `judges_completed`, **không** phải hằng số 5 — một judge lỗi thì mẫu số là 4,
+ *    và cột "Judge" ngay bên cạnh đã hiện `agreement_count/judges_completed` rồi; hai con số
+ *    trong cùng một hàng không được nói khác nhau.
+ * 2. **Không** được suy ra "các judge kia đã xem và thấy ổn". Năm judge phụ trách năm khía cạnh
+ *    rời nhau và prompt cấm lấn sân (`prompts/judge_*.md`, khối `## USER`), nên `1/n` là trạng
+ *    thái *bình thường*. Nói ngược lại là đẩy người dùng nghi ngờ đúng judge có thẩm quyền.
  */
 export function DisagreementNote({ group }: { group: ApiIssueGroup }) {
   if (group.agreement_count > 1 || group.judges_completed <= 1) return null;
-  const keys = group.judge_keys;
+  const key = group.judge_keys[0];
+  const meta = key ? JUDGE_META[key] : null;
+  const others = group.judges_completed - group.agreement_count;
   return (
     <p className="border-neutral-line bg-neutral-soft text-neutral-strong rounded-md border px-2.5 py-1.5 text-xs">
-      Ý kiến thiểu số: chỉ {keys.join(', ')} nêu vấn đề này, {5 - keys.length} judge còn lại không nhắc tới. Cân nhắc trước khi sửa.
+      Chỉ <span className="font-medium">{key}</span>
+      {meta ? ` (${meta.name} — ${meta.task.toLowerCase()})` : ''} nêu vấn đề này. {others} judge
+      còn lại phụ trách khía cạnh khác của spec, nên việc họ không nhắc tới{' '}
+      <span className="font-medium">không</span> có nghĩa là đã xem và thấy ổn.
     </p>
   );
 }
 
-function ReasonCell({ reason }: { reason: string }) {
-  if (!reason || reason.length < 150) {
-    return <span>{reason}</span>;
+/**
+ * Judge viết `source_id` **rút gọn 8 ký tự đầu** trong `reason` — `sources_json` gửi đi mang UUID
+ * đầy đủ, model tự cắt khi viết văn ("Source 57eea209 reports results for…"). Tra ngược để người
+ * dùng mở được abstract mà đối chiếu: phần lớn issue của một vòng judge là *"abstract không nói
+ * điều card nói"*, và không đọc được abstract thì không quyết được gì.
+ */
+const SOURCE_REF = /\b[0-9a-f]{8}\b/g;
+
+function indexByPrefix(sources: ApiSource[]): Map<string, ApiSource> {
+  const index = new Map<string, ApiSource>();
+  for (const s of sources) index.set(s.id.slice(0, 8).toLowerCase(), s);
+  return index;
+}
+
+/** Trả về nguồn tra ra được, **và cả id tra không ra** — cái sau tự nó là một phát hiện. */
+function referencedSources(reason: string, sources: ApiSource[]) {
+  const index = indexByPrefix(sources);
+  const found = new Map<string, ApiSource>();
+  const missing = new Set<string>();
+  for (const token of reason.match(SOURCE_REF) ?? []) {
+    const hit = index.get(token.toLowerCase());
+    if (hit) found.set(hit.id, hit);
+    // Chuỗi 8 chữ số thuần (năm, ngày `20260826`) cũng khớp regex — đòi ít nhất một chữ cái
+    // hex để không báo nhầm chúng là id lạ.
+    else if (/[a-f]/.test(token)) missing.add(token);
   }
+  return { found: [...found.values()], missing: [...missing] };
+}
+
+/**
+ * Chip nguồn đặt **ngoài** vùng bấm của `Đọc thêm`: đoạn `line-clamp-3` đã là một `<button>`,
+ * nhét chip vào trong là button lồng button. Dùng lại `SourceChip` — Dialog của nó có abstract,
+ * DOI kèm trạng thái tra cứu và nút mở nguồn gốc, đúng thứ cần để đối chiếu.
+ */
+function SourceRefList({ found, missing }: { found: ApiSource[]; missing: string[] }) {
+  if (found.length === 0 && missing.length === 0) return null;
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button className="text-left text-ink-2 hover:text-ink-1 transition-colors w-full focus:outline-none cursor-pointer">
-          <span className="line-clamp-3">{reason}</span>
-          <span className="text-brand-strong text-[10px] font-medium uppercase tracking-wider mt-1 inline-block hover:underline">
-            Đọc thêm
+    <div className="mt-1.5 space-y-1">
+      <p className="text-ink-4 text-[11px]">Nguồn judge đối chiếu:</p>
+      <div className="flex flex-wrap gap-1">
+        {found.map((s) => (
+          <SourceChip key={s.id} source={s} />
+        ))}
+        {/* Id judge nhắc tới mà kho nguồn của dự án không có: nói thẳng ra thay vì hiện nguyên
+            văn như thể nó có thật. */}
+        {missing.map((id) => (
+          <span
+            key={id}
+            className="border-warn-line bg-warn-soft text-warn-strong inline-flex items-center gap-1 rounded-sm border px-2 py-1 font-mono text-xs"
+          >
+            <TriangleAlert className="size-3 shrink-0" aria-hidden />
+            {id} · không có trong kho nguồn
           </span>
-        </button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Lý do chi tiết</DialogTitle>
-        </DialogHeader>
-        <div className="text-sm text-ink-2 leading-relaxed whitespace-pre-wrap mt-2">
-          {reason}
-        </div>
-      </DialogContent>
-    </Dialog>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Trong Dialog `Đọc thêm` thì link **thẳng ra ngoài**, không mở Dialog thứ hai. */
+function LinkedReason({ reason, sources }: { reason: string; sources: ApiSource[] }) {
+  const index = indexByPrefix(sources);
+  const parts = reason.split(SOURCE_REF);
+  const tokens = reason.match(SOURCE_REF) ?? [];
+
+  return (
+    <div className="text-ink-2 mt-2 text-sm leading-relaxed whitespace-pre-wrap">
+      {parts.map((part, i) => {
+        const token = tokens[i];
+        const hit = token ? index.get(token.toLowerCase()) : undefined;
+        const href = hit?.url ?? (hit?.doi ? `https://doi.org/${hit.doi}` : null);
+        return (
+          <span key={i}>
+            {part}
+            {token &&
+              (href ? (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-strong font-mono underline underline-offset-2"
+                >
+                  {token}
+                </a>
+              ) : (
+                <span className="font-mono">{token}</span>
+              ))}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function ReasonCell({ reason, sources }: { reason: string; sources: ApiSource[] }) {
+  const { found, missing } = referencedSources(reason ?? '', sources);
+  const body =
+    !reason || reason.length < 150 ? (
+      <span>{reason}</span>
+    ) : (
+      <Dialog>
+        <DialogTrigger asChild>
+          <button className="text-ink-2 hover:text-ink-1 w-full cursor-pointer text-left transition-colors focus:outline-none">
+            <span className="line-clamp-3">{reason}</span>
+            <span className="text-brand-strong mt-1 inline-block text-[10px] font-medium tracking-wider uppercase hover:underline">
+              Đọc thêm
+            </span>
+          </button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Lý do chi tiết</DialogTitle>
+          </DialogHeader>
+          <LinkedReason reason={reason} sources={sources} />
+        </DialogContent>
+      </Dialog>
+    );
+
+  return (
+    <>
+      {body}
+      <SourceRefList found={found} missing={missing} />
+    </>
   );
 }
 
@@ -191,10 +317,13 @@ function ReasonCell({ reason }: { reason: string }) {
  */
 export function IssueTable({
   groups,
+  sources,
   onPick,
   activeId,
 }: {
   groups: ApiIssueGroup[];
+  /** Kho nguồn của dự án — để tra ngược `source_id` rút gọn mà judge viết trong `reason`. */
+  sources: ApiSource[];
   onPick: (g: ApiIssueGroup) => void;
   activeId?: string | null;
 }) {
@@ -222,7 +351,7 @@ export function IssueTable({
                   <DisagreementNote group={g} />
                 </TableCell>
                 <TableCell className="text-ink-2 align-top text-xs whitespace-normal">
-                  <ReasonCell reason={g.issues[0]?.reason ?? ''} />
+                  <ReasonCell reason={g.issues[0]?.reason ?? ''} sources={sources} />
                 </TableCell>
                 <TableCell className="align-top text-center">
                   <JudgeTracePill keys={g.judge_keys} />
@@ -256,7 +385,9 @@ export function IssueTable({
                 {g.canonical_title}
               </p>
             </div>
-            <p className="text-ink-2 text-xs">{g.issues[0]?.reason}</p>
+            <div className="text-ink-2 text-xs">
+              <ReasonCell reason={g.issues[0]?.reason ?? ''} sources={sources} />
+            </div>
             <DisagreementNote group={g} />
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
