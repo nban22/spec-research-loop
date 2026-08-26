@@ -32,6 +32,7 @@ import {
   useJudgeRuns,
   useProject,
   useSections,
+  useSources,
   type PreviewPayload,
 } from '@/lib/use-project';
 
@@ -51,6 +52,9 @@ export function Step4({ projectId }: { projectId: string }) {
   const { data: sectionData } = useSections(versionId);
   const { data: groupData } = useIssueGroups(versionId);
   const { data: runData } = useJudgeRuns(versionId);
+  /* Cùng `queryKey` với B2 nên lấy từ cache — không thêm round-trip. Dùng để tra ngược
+     `source_id` rút gọn mà judge viết trong `reason`. */
+  const { data: sourceData } = useSources(projectId);
   const job = useJobAction(projectId);
   const applyDecision = useApplyDecision(projectId);
 
@@ -185,11 +189,16 @@ export function Step4({ projectId }: { projectId: string }) {
         ) : (
           <>
             <ConsensusMeter
-              agreement={groups[0]?.agreement_count ?? 0}
+              agreement={Math.max(0, ...groups.map((g) => g.agreement_count))}
               completed={completed}
               failedKeys={failedKeys}
             />
-            <IssueTable groups={groups} onPick={pickIssue} activeId={active?.id} />
+            <IssueTable
+              groups={groups}
+              sources={sourceData?.sources ?? []}
+              onPick={pickIssue}
+              activeId={active?.id}
+            />
           </>
         )}
       </Panel>
