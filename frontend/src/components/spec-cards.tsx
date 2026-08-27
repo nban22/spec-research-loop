@@ -36,12 +36,22 @@ export function SpecCard({ card }: { card: ApiCard }) {
   return (
     <article
       className={cn(
-        'relative overflow-hidden rounded-lg border pl-3',
-        missing ? 'border-hairline bg-sunken border-dashed' : 'border-hairline bg-surface',
+        'group/card relative overflow-hidden rounded-lg border pl-3',
+        'ease-out-quart transition-[border-color,box-shadow] duration-150',
+        'hover:shadow-card',
+        missing
+          ? 'border-hairline bg-sunken hover:border-neutral-line border-dashed'
+          : 'border-hairline bg-surface hover:border-brand-line',
       )}
     >
+      {/* Vạch màu dày thêm 1px khi rê chuột — tín hiệu "thẻ này đang được nhắm" mà không
+          cần đổi màu nền, vì nền là tài sản của trạng thái (§3.7). */}
       <span
-        className={cn('absolute inset-y-0 left-0 w-1', CARD_STATUS_BAR[card.status])}
+        className={cn(
+          'absolute inset-y-0 left-0 w-1 group-hover/card:w-1.5',
+          'ease-out-quart transition-[width] duration-150',
+          CARD_STATUS_BAR[card.status],
+        )}
         aria-hidden
       />
       <div className="space-y-2 px-3 py-2.5">
@@ -155,6 +165,7 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
           size="sm"
           variant={filter === 'ALL' ? 'default' : 'outline'}
           onClick={() => setFilter('ALL')}
+          className="ease-out-quart tabular-nums transition-all duration-150"
         >
           Tất cả ({cards.length})
         </Button>
@@ -165,6 +176,7 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
             variant={filter === status ? 'default' : 'outline'}
             disabled={n === 0}
             onClick={() => setFilter(status)}
+            className="ease-out-quart tabular-nums transition-all duration-150"
           >
             {CARD_STATUS_STYLE[status].label} ({n})
           </Button>
@@ -182,16 +194,21 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
           defaultValue={openByDefault}
           className="space-y-2"
         >
-          {groups.map((g) => (
+          {groups.map((g, i) => (
             <AccordionItem
               key={g.type}
               value={g.type}
-              className="border-hairline bg-surface rounded-lg border px-3"
+              /* So le 40ms theo thứ tự đọc; trần 6 nhóm để nhóm cuối không phải chờ quá lâu. */
+              style={{ animationDelay: `${Math.min(i, 6) * 40}ms` }}
+              className={cn(
+                'border-hairline bg-surface animate-rise rounded-lg border px-3',
+                'ease-out-quart transition-colors duration-150 hover:border-brand-line',
+              )}
             >
               <AccordionTrigger className="py-2.5 text-sm">
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="text-ink-1 font-medium">{CARD_TYPE_LABEL[g.type]}</span>
-                  <span className="text-ink-3 text-xs">({g.items.length})</span>
+                  <span className="text-ink-3 text-xs tabular-nums">({g.items.length})</span>
                 </span>
               </AccordionTrigger>
               <AccordionContent className="space-y-2 pb-3">

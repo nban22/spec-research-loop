@@ -35,7 +35,7 @@ export function JobProgress({
 
   if (job.status === 'FAILED') {
     return (
-      <div className="border-danger-line bg-danger-soft space-y-2 rounded-lg border px-3 py-3">
+      <div className="border-danger-line bg-danger-soft animate-rise space-y-2 rounded-lg border px-3 py-3">
         <p className="text-danger-strong text-sm">{messageOf(job.error_code ?? undefined)}</p>
         {onReload && (
           <Button size="sm" variant="outline" onClick={onReload}>
@@ -56,7 +56,7 @@ export function JobProgress({
       aria-live="polite"
       aria-label={job.message ?? JOB_LABEL[job.kind] ?? 'Đang xử lý'}
     >
-      <div className="border-brand-line bg-brand-soft space-y-2 rounded-lg border px-3 py-3">
+      <div className="border-brand-line bg-brand-soft animate-rise space-y-2 rounded-lg border px-3 py-3">
         <p className="text-brand-strong flex items-center gap-2 text-sm font-medium">
           <Loader2 className="size-4 animate-spin" aria-hidden />
           <span className="min-w-0 flex-1">

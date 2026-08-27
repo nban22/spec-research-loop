@@ -7,46 +7,53 @@
  */
 
 export const ERROR_MESSAGE: Record<string, string> = {
-  VALIDATION_FAILED: 'Dữ liệu chưa hợp lệ. Kiểm tra lại các ô đã nhập.',
-  NOT_FOUND: 'Không tìm thấy nội dung này.',
-  INTERNAL_ERROR: 'Máy chủ gặp lỗi. Thử lại sau ít phút.',
+  VALIDATION_FAILED: 'Thông tin nhập vào chưa hợp lệ. Bạn vui lòng kiểm tra lại các ô đã nhập.',
+  NOT_FOUND: 'Rất tiếc, hệ thống không tìm thấy nội dung bạn yêu cầu.',
+  INTERNAL_ERROR:
+    'Máy chủ đang gặp sự cố. Thành thật xin lỗi bạn, vui lòng thử lại sau ít phút.',
 
-  INVALID_CREDENTIALS: 'Email hoặc mật khẩu không đúng.',
-  EMAIL_ALREADY_USED: 'Email này đã được đăng ký.',
-  UNAUTHENTICATED: 'Phiên đăng nhập đã hết hạn. Đăng nhập lại nhé.',
-  REFRESH_TOKEN_INVALID: 'Phiên đăng nhập đã hết hạn. Đăng nhập lại nhé.',
+  INVALID_CREDENTIALS: 'Email hoặc mật khẩu chưa đúng. Bạn vui lòng kiểm tra lại.',
+  EMAIL_ALREADY_USED:
+    'Email này đã được đăng ký. Bạn vui lòng đăng nhập, hoặc dùng một email khác.',
+  UNAUTHENTICATED: 'Phiên đăng nhập đã hết hạn. Bạn vui lòng đăng nhập lại.',
+  REFRESH_TOKEN_INVALID: 'Phiên đăng nhập đã hết hạn. Bạn vui lòng đăng nhập lại.',
 
   SOURCE_PROVIDER_UNAVAILABLE:
-    'Không lấy được nguồn từ Semantic Scholar lẫn OpenAlex. Bước này dừng lại ở đây — hệ thống không tự nghĩ ra paper.',
-  NO_SOURCES_YET: 'Chưa có nguồn nào. Hãy chạy tìm nguồn trước.',
+    'Rất tiếc, hệ thống chưa lấy được nguồn từ Semantic Scholar lẫn OpenAlex nên xin phép dừng bước này. Hệ thống không tự nghĩ ra paper, để bảo đảm mọi trích dẫn bạn nhận được đều có thật.',
+  NO_SOURCES_YET: 'Chưa có nguồn nào. Bạn vui lòng chạy tìm nguồn trước.',
 
-  LLM_UNAVAILABLE: 'Không gọi được mô hình. Thử chạy lại bước này.',
-  LLM_INVALID_JSON: 'Mô hình trả về dữ liệu không đúng khuôn. Thử chạy lại bước này.',
+  LLM_UNAVAILABLE: 'Hệ thống chưa gọi được mô hình. Bạn vui lòng chạy lại bước này.',
+  LLM_INVALID_JSON:
+    'Mô hình trả về dữ liệu chưa đúng khuôn. Bạn vui lòng chạy lại bước này.',
 
-  JUDGE_ROUND_EXISTS: 'Vòng judge này đã chạy trên phiên bản hiện tại rồi.',
-  JUDGE_ROUND_LIMIT: 'Đã dùng hết 3 vòng judge cho dự án này.',
+  JUDGE_ROUND_EXISTS:
+    'Vòng judge này đã chạy trên phiên bản hiện tại. Bạn vui lòng tạo phiên bản mới trước khi chạy tiếp.',
+  JUDGE_ROUND_LIMIT: 'Dự án này đã dùng hết 3 vòng judge theo quy định.',
   JUDGE_QUORUM_NOT_MET:
-    'Có quá ít judge chạy được nên chưa tính được điểm đồng thuận. Hãy chạy lại.',
+    'Số judge chạy được quá ít nên hệ thống chưa tính được điểm đồng thuận. Bạn vui lòng chạy lại.',
 
-  DECISION_ALREADY_APPLIED: 'Quyết định này đã được áp dụng rồi.',
-  VERSION_CONFLICT: 'Spec đã thay đổi ở nơi khác. Tải lại trang rồi chọn lại.',
-  OTHER_REASON_REQUIRED: 'Chọn “Khác” thì bắt buộc nhập lý do.',
-  DECISION_OPTION_UNKNOWN: 'Phương án này không còn trong danh sách. Tải lại rồi chọn lại.',
+  DECISION_ALREADY_APPLIED: 'Quyết định này đã được áp dụng trước đó.',
+  VERSION_CONFLICT:
+    'Bản đặc tả đã thay đổi ở nơi khác. Bạn vui lòng tải lại trang rồi chọn lại.',
+  OTHER_REASON_REQUIRED: 'Khi chọn “Khác”, bạn vui lòng nhập lý do.',
+  DECISION_OPTION_UNKNOWN:
+    'Phương án này không còn trong danh sách. Bạn vui lòng tải lại trang rồi chọn lại.',
 
   EXPORT_BLOCKED_UNSUPPORTED_CITATION:
-    'Còn trích dẫn chưa được nguồn hỗ trợ nên chưa xuất bản được.',
+    'Vẫn còn trích dẫn chưa được nguồn hỗ trợ, nên hệ thống xin phép chưa xuất bản.',
   EXPORT_BLOCKED_NOT_VERIFIED:
-    'Phiên bản này chưa qua bước kiểm chứng cứ nên chưa xuất bản được.',
+    'Phiên bản này chưa qua bước kiểm chứng cứ, nên hệ thống xin phép chưa xuất bản.',
   PDF_ENGINE_UNAVAILABLE:
-    'Máy chủ chưa dựng được PDF. Bản Markdown vẫn tải bình thường.',
+    'Máy chủ chưa dựng được bản PDF, rất mong bạn thông cảm. Bản Markdown vẫn tải bình thường.',
 
-  STEP_PRECONDITION_FAILED: 'Cần hoàn tất bước trước đã.',
-  JOB_ALREADY_RUNNING: 'Một tiến trình cùng loại đang chạy. Đợi nó xong đã.',
+  STEP_PRECONDITION_FAILED: 'Bạn vui lòng hoàn tất bước trước đã.',
+  JOB_ALREADY_RUNNING:
+    'Đang có một tiến trình cùng loại chạy. Bạn vui lòng đợi tiến trình đó hoàn tất.',
 };
 
 export function messageOf(code: string | undefined, fallback?: string): string {
   if (code && ERROR_MESSAGE[code]) return ERROR_MESSAGE[code];
-  return fallback ?? 'Đã có lỗi xảy ra. Thử lại nhé.';
+  return fallback ?? 'Rất tiếc, đã có lỗi xảy ra. Bạn vui lòng thử lại.';
 }
 
 /**
@@ -54,17 +61,17 @@ export function messageOf(code: string | undefined, fallback?: string): string {
  * kết quả sinh ra là tiếng Anh (§5.5 luật 2).
  */
 export const JOB_LABEL: Record<string, string> = {
-  ANALYZE: 'Đang phân tích và phân rã ý tưởng…',
-  SEARCH: 'Đang tìm nguồn trên Semantic Scholar và OpenAlex…',
-  RELATED_WORK: 'Đang đọc abstract và dựng bảng nghiên cứu liên quan…',
-  GENERATE: 'Đang sinh nội dung spec…',
-  JUDGE: 'Đang chạy 5 judge độc lập…',
-  VERIFY: 'Đang kiểm từng cặp (khẳng định, nguồn)…',
-  EXPORT: 'Đang dựng file xuất bản…',
+  ANALYZE: 'Hệ thống đang phân tích và phân rã ý tưởng của bạn…',
+  SEARCH: 'Hệ thống đang tìm nguồn trên Semantic Scholar và OpenAlex…',
+  RELATED_WORK: 'Hệ thống đang đọc abstract và dựng bảng nghiên cứu liên quan…',
+  GENERATE: 'Hệ thống đang sinh nội dung đặc tả…',
+  JUDGE: 'Hệ thống đang chạy 5 judge độc lập…',
+  VERIFY: 'Hệ thống đang kiểm từng cặp (khẳng định, nguồn)…',
+  EXPORT: 'Hệ thống đang dựng tệp xuất bản…',
 };
 
 /** Quá ~60 giây thì thêm một dòng trấn an rằng job vẫn chạy (§5.5 luật 3). */
 export const LONG_WAIT_HINT =
-  'Việc này vẫn đang chạy ở máy chủ. Bạn có thể rời trang rồi quay lại — tiến độ không mất.';
+  'Việc này vẫn đang chạy ở máy chủ. Bạn có thể rời trang rồi quay lại — tiến độ không bị mất.';
 
-export const SSE_LOST_HINT = 'Mất kết nối theo dõi, đang thử lại…';
+export const SSE_LOST_HINT = 'Mất kết nối theo dõi, hệ thống đang thử lại…';

@@ -11,7 +11,7 @@ import { OptionList } from '@/components/option-list';
 import { Panel } from '@/components/panel';
 import { SpecCard } from '@/components/spec-cards';
 import { KeywordChipInput, RelatedWorkTable, SourceFilterList } from '@/components/sources';
-import { CardSkeleton, EmptyState } from '@/components/states';
+import { EmptyState, TableSkeleton } from '@/components/states';
 import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
 import {
@@ -123,9 +123,11 @@ export function Step2({ projectId }: { projectId: string }) {
 
       <Panel accent="ok" icon={BookMarked} title="Bảng nghiên cứu liên quan">
         {loadingSources ? (
-          <CardSkeleton rows={3} />
+          <TableSkeleton rows={4} cols={5} />
         ) : allSources.length === 0 ? (
           <EmptyState
+            icon={Search}
+            tone="brand"
             title="Chưa tìm nguồn lần nào"
             description="Sửa từ khoá bên trái rồi bấm “Tìm nguồn thật”. Mỗi paper lấy về đều được lưu kèm nguyên văn phản hồi API để chứng minh nó có thật."
           />

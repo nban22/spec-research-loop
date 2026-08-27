@@ -23,7 +23,8 @@ export function RoundTracker({
           <span className="flex items-center gap-1.5">
             <span
               className={cn(
-                'flex size-4 items-center justify-center rounded-full text-[10px] font-semibold',
+                'flex size-4 items-center justify-center rounded-full text-2xs font-semibold tabular-nums',
+                'ease-out-quart transition-colors duration-300',
                 i < activeIndex && 'bg-ok-ink text-white',
                 i === activeIndex && 'bg-brand-ink text-white',
                 i > activeIndex && 'border-hairline text-ink-4 border',
@@ -33,7 +34,7 @@ export function RoundTracker({
             </span>
             <span
               className={cn(
-                'text-xs',
+                'text-xs ease-out-quart transition-colors duration-300',
                 i === activeIndex ? 'text-ink-1 font-medium' : 'text-ink-3',
               )}
             >
@@ -65,7 +66,7 @@ export function SummaryBar({
   hint?: string;
 }) {
   return (
-    <section className="border-hairline bg-surface shadow-card flex flex-col gap-2 rounded-xl border px-3 py-3 sm:px-4 md:flex-row md:items-center md:gap-4">
+    <section className="border-hairline bg-surface shadow-card animate-rise flex flex-col gap-2 rounded-xl border px-3 py-3 sm:px-4 md:flex-row md:items-center md:gap-4">
       <p className="text-ink-1 shrink-0 text-sm font-semibold">Tóm tắt sau vòng {round}</p>
       <div className="min-w-0 flex-1">
         <RoundTracker nodes={nodes} activeIndex={activeIndex} />

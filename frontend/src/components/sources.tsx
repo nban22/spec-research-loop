@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import {
   Table,
@@ -24,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { ApiSource } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { SupportTag } from './support-tag';
 
 /**
@@ -36,7 +38,11 @@ export function SourceChip({ source }: { source: ApiSource }) {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="border-hairline bg-sunken text-ink-2 hover:border-brand-line inline-flex max-w-full cursor-pointer items-center gap-1 rounded-sm border px-2 py-1 text-xs"
+          className={cn(
+            'border-hairline bg-sunken text-ink-2 inline-flex max-w-full cursor-pointer items-center gap-1 rounded-sm border px-2 py-1 text-xs',
+            'ease-out-quart transition-[color,background-color,border-color] duration-150',
+            'hover:border-brand-line hover:bg-brand-soft hover:text-brand-strong',
+          )}
         >
           <span className="truncate">{source.title}</span>
           {source.year && <span className="text-ink-4 shrink-0">({source.year})</span>}
@@ -68,9 +74,9 @@ export function SourceChip({ source }: { source: ApiSource }) {
           />
         </dl>
         {source.abstract && (
-          <p className="text-ink-2 max-h-48 overflow-y-auto text-xs leading-relaxed">
-            {source.abstract}
-          </p>
+          <ScrollArea className="max-h-48">
+            <p className="text-ink-2 pr-3 text-xs leading-relaxed">{source.abstract}</p>
+          </ScrollArea>
         )}
         {source.url && (
           <a
@@ -141,14 +147,14 @@ export function RelatedWorkTable({ rows }: { rows: RelatedRow[] }) {
           </TableHeader>
           <TableBody>
             {rows.map((r) => (
-              <TableRow key={r.id}>
+              <TableRow key={r.id} className="ease-out-quart transition-colors duration-150 hover:bg-sunken">
                 <TableCell className="text-ink-1 align-top text-xs font-medium">
                   {r.source.title}
                   {r.source.year ? ` (${r.source.year})` : ''}
                 </TableCell>
                 <TableCell className="text-ink-2 align-top text-xs">{r.what_done}</TableCell>
                 <TableCell className="align-top">
-                  <Badge variant="outline" className="text-[11px]">
+                  <Badge variant="outline" className="text-2xs">
                     {r.feedback_type}
                   </Badge>
                 </TableCell>
@@ -167,12 +173,15 @@ export function RelatedWorkTable({ rows }: { rows: RelatedRow[] }) {
       {/* < md: mỗi paper một card, có cấu trúc riêng chứ không phải bảng bị bẻ */}
       <ul className="space-y-2 md:hidden">
         {rows.map((r) => (
-          <li key={r.id} className="border-hairline bg-surface space-y-2 rounded-lg border p-3">
+          <li
+            key={r.id}
+            className="border-hairline bg-surface ease-out-quart hover:border-brand-line space-y-2 rounded-lg border p-3 transition-colors duration-150"
+          >
             <h4 className="text-ink-1 text-sm font-medium">
               {r.source.title}
               {r.source.year ? ` (${r.source.year})` : ''}
             </h4>
-            <Badge variant="outline" className="text-[11px]">
+            <Badge variant="outline" className="text-2xs">
               {r.feedback_type}
             </Badge>
             <div className="space-y-1 text-xs">

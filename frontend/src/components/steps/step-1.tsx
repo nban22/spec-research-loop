@@ -70,6 +70,8 @@ export function Step1({ projectId }: { projectId: string }) {
         <CardSkeleton rows={2} />
       ) : !analyzed ? (
         <EmptyState
+          icon={Lightbulb}
+          tone="brand"
           title="Chưa phân tích ý tưởng"
           description="Bấm “Phân tích ý tưởng” ở cột bên trái. Hệ thống sẽ diễn giải lại ý tưởng, chỉ ra các vấn đề chính, và phân rã thành thẻ để bạn xác nhận."
         />

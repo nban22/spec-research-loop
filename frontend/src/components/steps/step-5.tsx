@@ -93,10 +93,14 @@ export function Step5({ projectId }: { projectId: string }) {
       document.body.appendChild(a);
       a.click();
       a.remove();
-      toast.success(`Đã xuất ${res.filename}`);
+      toast.success(`Đã xuất bản thành công: ${res.filename}. Xin cảm ơn bạn.`);
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Không xuất được file.');
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Hệ thống chưa xuất được tệp. Bạn vui lòng thử lại.',
+      );
     } finally {
       setExporting(null);
     }
@@ -209,12 +213,12 @@ export function Step5({ projectId }: { projectId: string }) {
                         // nếu không panel ghim ở đây mãi.
                         setDeferred((d) => [...d, offender.card_source_id]);
                         toast.info(
-                          'Đã ghi lại. Trích dẫn này vẫn chặn xuất bản cho tới khi bạn tìm nguồn khác ở bước 2.',
+                          'Hệ thống đã ghi nhận. Trích dẫn này vẫn chặn xuất bản cho tới khi bạn tìm được nguồn khác ở bước 2.',
                         );
                         return;
                       }
                       toast.success(
-                        'Đã ghi lại lý do. Trích dẫn được giữ và sẽ mang dấu trong file xuất ra.',
+                        'Hệ thống đã ghi nhận lý do của bạn. Trích dẫn được giữ lại và sẽ mang dấu trong tệp xuất ra.',
                       );
                     },
                   },

@@ -11,7 +11,10 @@ export function ExperimentPlanList({ plan }: { plan: ApiExperimentPlan }) {
   return (
     <ol className="space-y-2">
       {plan.experiments.map((e) => (
-        <li key={e.code} className="border-hairline bg-surface rounded-lg border p-3">
+        <li
+          key={e.code}
+          className="border-hairline bg-surface ease-out-quart hover:border-brand-line hover:shadow-card rounded-lg border p-3 transition-[border-color,box-shadow] duration-150"
+        >
           <p className="text-ink-1 text-sm font-semibold">
             <span className="text-brand-strong">{e.code}</span> — {e.title}
           </p>
@@ -40,9 +43,12 @@ export function StatTileGrid({ items }: { items: { label: string; value: string 
     <div className="@container">
       <dl className="grid grid-cols-2 gap-2 @lg:grid-cols-4">
         {items.map((s) => (
-          <div key={s.label} className="border-hairline bg-sunken rounded-md border px-2.5 py-2">
+          <div
+            key={s.label}
+            className="border-hairline bg-sunken ease-out-quart hover:border-brand-line rounded-md border px-2.5 py-2 transition-colors duration-150"
+          >
             <dt className="text-ink-3 text-xs">{s.label}</dt>
-            <dd className="text-ink-1 text-sm font-semibold">{s.value}</dd>
+            <dd className="text-ink-1 text-sm font-semibold tabular-nums">{s.value}</dd>
           </div>
         ))}
       </dl>
@@ -123,11 +129,16 @@ export function SpecChecklist({ sections }: { sections: ApiSpecSection[] }) {
   return (
     <div className="space-y-2">
       <p className="text-ink-2 text-xs">
-        Đã có <span className="text-ink-1 font-semibold">{present}/14</span> mục
+        Đã có <span className="text-ink-1 font-semibold tabular-nums">{present}/14</span> mục
       </p>
       <ol className="space-y-1">
-        {sections.map((s) => (
-          <li key={s.key} className="flex items-start gap-2 text-xs">
+        {sections.map((s, i) => (
+          <li
+            key={s.key}
+            /* So le 30ms: 14 mục tick lần lượt theo thứ tự đọc thay vì bật ra cùng lúc. */
+            style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}
+            className="animate-rise flex items-start gap-2 text-xs"
+          >
             <span
               className={cn(
                 'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full',
@@ -156,7 +167,7 @@ export function SpecOutline({ sections }: { sections: ApiSpecSection[] }) {
     <ol className="space-y-1.5">
       {sections.map((s) => (
         <li key={s.key} className="flex gap-2">
-          <span className="bg-sunken text-ink-3 mt-0.5 flex size-5 shrink-0 items-center justify-center rounded text-[10px] font-semibold">
+          <span className="bg-sunken text-ink-3 mt-0.5 flex size-5 shrink-0 items-center justify-center rounded text-2xs font-semibold">
             {s.no}
           </span>
           <span className="min-w-0">
@@ -177,7 +188,7 @@ export function HowItWorksList({ steps }: { steps: string[] }) {
     <ol className="space-y-2">
       {steps.map((s, i) => (
         <li key={i} className="flex gap-2">
-          <span className="bg-ok-soft text-ok-strong flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
+          <span className="bg-ok-soft text-ok-strong flex size-5 shrink-0 items-center justify-center rounded-full text-2xs font-semibold">
             {i + 1}
           </span>
           <span className="text-ink-2 text-xs leading-relaxed">{s}</span>

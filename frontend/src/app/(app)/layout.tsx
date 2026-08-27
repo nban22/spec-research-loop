@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CommandPalette } from '@/components/command-palette';
 import { TopNav } from '@/components/top-nav';
 import { api, qk } from '@/lib/api';
 
@@ -25,7 +26,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   if (isLoading || !data) {
     return (
-      <div className="mx-auto w-full max-w-[1400px] space-y-3 p-4">
+      <div className="mx-auto w-full max-w-350 space-y-3 p-4">
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-64 w-full" />
       </div>
@@ -36,6 +37,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <>
       <TopNav />
       <main className="flex-1">{children}</main>
+      {/* Nghe phím tắt ở cấp layout: ⌘K phải chạy được từ bất kỳ màn nào sau đăng nhập. */}
+      <CommandPalette />
     </>
   );
 }

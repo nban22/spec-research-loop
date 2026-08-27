@@ -36,7 +36,7 @@ export function JudgeTracePill({ keys }: { keys: JudgeKey[] }) {
       {keys.map((k) => (
         <span
           key={k}
-          className="border-brand-line bg-brand-soft text-brand-strong rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+          className="border-brand-line bg-brand-soft text-brand-strong rounded-full border px-1.5 py-0.5 text-2xs font-semibold"
           title={JUDGE_META[k].name}
         >
           {k}
@@ -52,7 +52,8 @@ function JudgeCard({ judgeKey, state }: { judgeKey: JudgeKey; state: JudgeState 
     <li
       className={cn(
         'bg-surface w-56 shrink-0 snap-start rounded-lg border p-3 md:w-auto',
-        state === 'done' && 'border-ok-line',
+        'ease-out-quart transition-[border-color,background-color] duration-300',
+        state === 'done' && 'border-ok-line bg-ok-soft/40',
         state === 'failed' && 'border-danger-line',
         state === 'running' && 'border-brand-line',
         state === 'idle' && 'border-hairline',
@@ -60,7 +61,7 @@ function JudgeCard({ judgeKey, state }: { judgeKey: JudgeKey; state: JudgeState 
     >
       <div className="flex items-center gap-2">
         <span className="text-ink-3 shrink-0 text-xs font-semibold">{judgeKey}</span>
-        <span className="text-ink-1 min-w-0 flex-1 break-words text-sm font-medium leading-tight">
+        <span className="text-ink-1 min-w-0 flex-1 wrap-break-word text-sm font-medium leading-tight">
           {meta.name}
         </span>
         {state === 'running' && (
@@ -223,7 +224,7 @@ function SourceRefList({ found, missing }: { found: ApiSource[]; missing: string
   if (found.length === 0 && missing.length === 0) return null;
   return (
     <div className="mt-1.5 space-y-1">
-      <p className="text-ink-4 text-[11px]">Nguồn judge đối chiếu:</p>
+      <p className="text-ink-4 text-2xs">Nguồn judge đối chiếu:</p>
       <div className="flex flex-wrap gap-1">
         {found.map((s) => (
           <SourceChip key={s.id} source={s} />
@@ -289,7 +290,7 @@ function ReasonCell({ reason, sources }: { reason: string; sources: ApiSource[] 
         <DialogTrigger asChild>
           <button className="text-ink-2 hover:text-ink-1 w-full cursor-pointer text-left transition-colors focus:outline-none">
             <span className="line-clamp-3">{reason}</span>
-            <span className="text-brand-strong mt-1 inline-block text-[10px] font-medium tracking-wider uppercase hover:underline">
+            <span className="text-brand-strong mt-1 inline-block text-2xs font-medium tracking-wider uppercase hover:underline">
               Đọc thêm
             </span>
           </button>
@@ -342,7 +343,13 @@ export function IssueTable({
           </TableHeader>
           <TableBody>
             {groups.map((g) => (
-              <TableRow key={g.id} className={cn(activeId === g.id && 'bg-decide-soft')}>
+              <TableRow
+                key={g.id}
+                className={cn(
+                  'ease-out-quart transition-colors duration-150',
+                  activeId === g.id ? 'bg-decide-soft' : 'hover:bg-sunken',
+                )}
+              >
                 <TableCell className="align-top">
                   <SeverityBadge severity={g.max_severity} />
                 </TableCell>
@@ -355,7 +362,7 @@ export function IssueTable({
                 </TableCell>
                 <TableCell className="align-top text-center">
                   <JudgeTracePill keys={g.judge_keys} />
-                  <p className="text-ink-3 mt-1 text-[11px]">
+                  <p className="text-ink-3 mt-1 text-2xs tabular-nums">
                     {g.agreement_count}/{g.judges_completed}
                   </p>
                 </TableCell>
@@ -376,7 +383,10 @@ export function IssueTable({
             key={g.id}
             className={cn(
               'space-y-2 rounded-lg border p-3',
-              activeId === g.id ? 'border-decide-ink bg-decide-soft' : 'border-hairline bg-surface',
+              'ease-out-quart transition-[border-color,background-color] duration-150',
+              activeId === g.id
+                ? 'border-decide-ink bg-decide-soft'
+                : 'border-hairline bg-surface hover:border-decide-line',
             )}
           >
             <div className="flex items-start gap-2">
@@ -392,7 +402,7 @@ export function IssueTable({
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
                 <JudgeTracePill keys={g.judge_keys} />
-                <span className="text-ink-3 text-[11px]">
+                <span className="text-ink-3 text-2xs tabular-nums">
                   {g.agreement_count}/{g.judges_completed}
                 </span>
               </span>

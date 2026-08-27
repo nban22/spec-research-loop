@@ -52,13 +52,17 @@ export function Stepper({
                 disabled={!reachable}
                 onClick={() => go(s.no)}
                 className={cn(
-                  'flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left',
-                  reachable ? 'cursor-pointer' : 'cursor-not-allowed opacity-55',
+                  'group flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left',
+                  'ease-out-quart transition-colors duration-150',
+                  reachable
+                    ? 'hover:bg-sunken cursor-pointer'
+                    : 'cursor-not-allowed opacity-55',
                 )}
               >
                 <span
                   className={cn(
-                    'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
+                    'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums',
+                    'ease-out-quart transition-colors duration-200',
                     done && 'bg-ok-ink text-white',
                     active && 'bg-brand-ink text-white',
                     !done && !active && 'border-hairline text-ink-4 border',

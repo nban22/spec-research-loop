@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/sheet';
 import { api, qk } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { CommandPaletteTrigger } from './command-palette';
 
 type Me = { user: { id: string; email: string; display_name: string } };
 
@@ -79,9 +80,10 @@ export function TopNav() {
                   href={item.href}
                   className={cn(
                     'rounded-md px-3 py-2.5 text-sm',
+                    'ease-out-quart transition-colors duration-150',
                     isActive(item.href)
                       ? 'bg-brand-soft text-brand-strong font-medium'
-                      : 'text-ink-2',
+                      : 'text-ink-2 hover:bg-sunken hover:text-ink-1',
                   )}
                 >
                   {item.label}
@@ -103,8 +105,8 @@ export function TopNav() {
           </SheetContent>
         </Sheet>
 
-        <Link href="/" className="flex items-center gap-2">
-          <span className="bg-brand-ink rounded-md p-1.5 text-white">
+        <Link href="/" className="group flex items-center gap-2">
+          <span className="bg-brand-ink ease-out-quart rounded-md p-1.5 text-white transition-transform duration-150 group-hover:scale-105">
             <Workflow className="size-4" aria-hidden />
           </span>
           <span className="text-ink-1 text-sm font-semibold">SpecResearch Loop</span>
@@ -117,9 +119,10 @@ export function TopNav() {
               href={item.href}
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm',
+                'ease-out-quart transition-[color,background-color] duration-150',
                 isActive(item.href)
                   ? 'text-brand-strong border-brand-ink border-b-2 font-medium'
-                  : 'text-ink-2 hover:text-ink-1',
+                  : 'text-ink-2 hover:bg-sunken hover:text-ink-1',
               )}
             >
               {item.label}
@@ -127,12 +130,13 @@ export function TopNav() {
           ))}
         </nav>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <CommandPaletteTrigger />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex cursor-pointer items-center gap-2 rounded-full"
+                className="ease-out-quart hover:bg-sunken flex cursor-pointer items-center gap-2 rounded-full p-0.5 pr-2 transition-colors duration-150"
                 aria-label="Tài khoản"
               >
                 <Avatar className="size-8">

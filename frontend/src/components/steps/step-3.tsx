@@ -9,7 +9,7 @@ import { JobProgress } from '@/components/job-progress';
 import { OptionList } from '@/components/option-list';
 import { Panel } from '@/components/panel';
 import { SpecCard } from '@/components/spec-cards';
-import { EmptyState } from '@/components/states';
+import { EmptyState, StatTileSkeleton } from '@/components/states';
 import { EstimateRows, ExperimentPlanList, StatTileGrid } from '@/components/spec-views';
 import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
@@ -92,6 +92,8 @@ export function Step3({ projectId }: { projectId: string }) {
       <Panel accent="ok" icon={Beaker} title="Kế hoạch thí nghiệm">
         {!hasPlan ? (
           <EmptyState
+            icon={Beaker}
+            tone="ok"
             title="Chưa có kế hoạch thí nghiệm"
             description="Sinh contribution và Claim–Evidence trước, rồi dựng kế hoạch thí nghiệm. Mỗi thí nghiệm phải gắn với ít nhất một khẳng định."
             action={
@@ -136,6 +138,10 @@ export function Step3({ projectId }: { projectId: string }) {
             />
             <EstimateRows estimate={estimate} />
           </>
+        ) : hasPlan ? (
+          /* Đã có kế hoạch mà chưa có ước lượng ⇒ pha 2 của job đang chạy: hiện đúng khung
+             bốn ô sắp tới, không hiện chữ như thể không có gì. */
+          <StatTileSkeleton />
         ) : (
           <p className="text-ink-3 text-xs">
             Ước lượng xuất hiện sau khi có kế hoạch thí nghiệm. Đây là công thức thuần — không

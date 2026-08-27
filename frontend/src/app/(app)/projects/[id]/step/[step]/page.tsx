@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { use } from 'react';
+import { StepTransition } from '@/components/step-transition';
 import { Stepper } from '@/components/stepper';
 import { Step1 } from '@/components/steps/step-1';
 import { Step2 } from '@/components/steps/step-2';
@@ -38,31 +39,35 @@ export default function StepPage({ params }: PageProps<'/projects/[id]/step/[ste
     <>
       <Stepper projectId={id} current={visibleStepNo} maxReached={reachedNo} />
 
-      <div className="mx-auto w-full max-w-[1400px] px-3 pt-3 md:px-4">
-        <h1 className="text-ink-1 text-lg font-semibold md:text-xl">
-          {visibleStepNo}. {STEPS[visibleStepNo - 1]?.title}
-        </h1>
-        <p className="text-ink-3 line-clamp-2 text-xs md:text-sm">
-          {data?.project.title ?? 'Đang tải dự án…'}
-        </p>
-      </div>
-
-      {isLoading ? (
-        <div className="mx-auto w-full max-w-[1400px] space-y-3 p-3 md:p-4">
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-64 w-full" />
+      {/* Tiêu đề nằm TRONG vùng chuyển: đổi bước thì cả tên bước lẫn nội dung cùng trượt,
+          còn `Stepper` đứng yên vì nó là điều hướng, không phải nội dung. */}
+      <StepTransition step={visibleStepNo}>
+        <div className="mx-auto w-full max-w-[1400px] px-3 pt-3 md:px-4">
+          <h1 className="text-ink-1 text-lg font-semibold md:text-xl">
+            {visibleStepNo}. {STEPS[visibleStepNo - 1]?.title}
+          </h1>
+          <p className="text-ink-3 line-clamp-2 text-xs md:text-sm">
+            {data?.project.title ?? 'Đang tải dự án…'}
+          </p>
         </div>
-      ) : visibleStepNo === 1 ? (
-        <Step1 projectId={id} />
-      ) : visibleStepNo === 2 ? (
-        <Step2 projectId={id} />
-      ) : visibleStepNo === 3 ? (
-        <Step3 projectId={id} />
-      ) : visibleStepNo === 4 ? (
-        <Step4 projectId={id} />
-      ) : (
-        <Step5 projectId={id} />
-      )}
+
+        {isLoading ? (
+          <div className="mx-auto w-full max-w-[1400px] space-y-3 p-3 md:p-4">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : visibleStepNo === 1 ? (
+          <Step1 projectId={id} />
+        ) : visibleStepNo === 2 ? (
+          <Step2 projectId={id} />
+        ) : visibleStepNo === 3 ? (
+          <Step3 projectId={id} />
+        ) : visibleStepNo === 4 ? (
+          <Step4 projectId={id} />
+        ) : (
+          <Step5 projectId={id} />
+        )}
+      </StepTransition>
     </>
   );
 }

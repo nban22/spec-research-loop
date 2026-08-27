@@ -163,7 +163,11 @@ export function useGateDecision(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Không lưu được lựa chọn.');
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Hệ thống chưa lưu được lựa chọn của bạn. Vui lòng thử lại.',
+      );
     },
   });
 }
@@ -190,7 +194,11 @@ export function useJobAction(projectId: string) {
       api.post<{ jobId: string }>(input.path, input.body),
     onSuccess: (res) => setJobId(res.jobId),
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Không khởi động được tiến trình.');
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Hệ thống chưa khởi động được tiến trình. Bạn vui lòng thử lại.',
+      );
     },
   });
 
@@ -224,7 +232,11 @@ export function useAnswerDecision(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Không lưu được lựa chọn.');
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Hệ thống chưa lưu được lựa chọn của bạn. Vui lòng thử lại.',
+      );
     },
   });
 }
@@ -254,16 +266,22 @@ export function useApplyDecision(projectId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
-      toast.success('Đã tạo phiên bản mới. Đang kiểm lại chứng cứ phần vừa sửa…');
+      toast.success(
+        'Đã tạo phiên bản mới. Hệ thống đang kiểm lại chứng cứ ở phần bạn vừa sửa…',
+      );
     },
     onError: (err) => {
       if (err instanceof ApiError && err.code === 'DECISION_ALREADY_APPLIED') {
         // Với người dùng đây không phải lỗi — chỉ là "thứ bạn muốn đã có rồi" (C4 · F.7).
-        toast.info('Quyết định này đã được áp dụng rồi.');
+        toast.info('Quyết định này đã được áp dụng trước đó.');
         void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
         return;
       }
-      toast.error(err instanceof ApiError ? err.message : 'Không áp dụng được quyết định.');
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Hệ thống chưa áp dụng được quyết định. Bạn vui lòng thử lại.',
+      );
     },
   });
 }

@@ -20,7 +20,7 @@ import { ConsensusMeter, IssueTable, JudgePanel, type JudgeState } from '@/compo
 import { OptionList } from '@/components/option-list';
 import { Panel } from '@/components/panel';
 import { SpecOutline } from '@/components/spec-views';
-import { EmptyState } from '@/components/states';
+import { EmptyState, JudgePanelSkeleton } from '@/components/states';
 import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
 import { ApiError, api, qk } from '@/lib/api';
@@ -102,7 +102,11 @@ export function Step4({ projectId }: { projectId: string }) {
       );
       setOptions(res);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Không sinh được phương án.');
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Hệ thống chưa sinh được phương án. Bạn vui lòng thử lại.',
+      );
     } finally {
       setLoadingOptions(false);
     }
@@ -128,7 +132,11 @@ export function Step4({ projectId }: { projectId: string }) {
       setDecisionId(res.decision.id);
       setPreview(res.preview);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Không lưu được lựa chọn.');
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Hệ thống chưa lưu được lựa chọn của bạn. Vui lòng thử lại.',
+      );
     } finally {
       setLoadingOptions(false);
     }
@@ -167,7 +175,7 @@ export function Step4({ projectId }: { projectId: string }) {
           </Button>
         }
       >
-        <JudgePanel states={judgeStates} />
+        {runData ? <JudgePanel states={judgeStates} /> : <JudgePanelSkeleton />}
         {roundsExhausted && (
           <HintBox tone="warn">
             Đã dùng hết {MAX_JUDGE_ROUNDS} vòng judge cho dự án này.
@@ -178,11 +186,15 @@ export function Step4({ projectId }: { projectId: string }) {
       <Panel accent="neutral" icon={ListChecks} title="Tổng hợp issue">
         {!hasJudged ? (
           <EmptyState
+            icon={Gavel}
+            tone="decide"
             title="Judge chưa chạy vòng nào"
             description="Bấm “Chạy Judge” ở trên. 5 judge chấm độc lập, mỗi judge một context sạch — không judge nào thấy nhận xét của judge khác."
           />
         ) : groups.length === 0 ? (
           <EmptyState
+            icon={ShieldCheck}
+            tone="ok"
             title="Không có vấn đề nào được nêu"
             description="Cả 5 judge đều không tìm thấy defect nào đáng báo. Bạn có thể sang bước chốt spec."
           />
@@ -367,15 +379,16 @@ function ConfirmApply({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Tạo phiên bản mới?</DialogTitle>
+            <DialogTitle>Bạn xác nhận tạo phiên bản mới?</DialogTitle>
             <DialogDescription>
-              Phiên bản hiện tại được giữ nguyên và không bao giờ bị sửa đè — bạn luôn so lại
-              được hai bản. Sau khi áp dụng, hệ thống chạy lại kiểm chứng cứ trên phần bị đụng.
+              Phiên bản hiện tại được giữ nguyên và không bao giờ bị sửa đè — bạn luôn so
+              lại được hai bản. Sau khi áp dụng, hệ thống sẽ tự chạy lại phần kiểm chứng cứ
+              trên những chỗ vừa đụng tới.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Huỷ
+              Để sau
             </Button>
             <Button
               disabled={pending}
@@ -384,7 +397,7 @@ function ConfirmApply({
                 onConfirm(decisionId);
               }}
             >
-              {pending ? 'Đang tạo…' : 'Xác nhận'}
+              {pending ? 'Hệ thống đang tạo…' : 'Xác nhận'}
             </Button>
           </DialogFooter>
         </DialogContent>

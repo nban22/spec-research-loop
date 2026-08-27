@@ -25,7 +25,7 @@ export function SupportTag({
     <span className={cn('inline-flex flex-wrap items-center gap-1.5', className)}>
       <span
         className={cn(
-          'inline-flex shrink-0 items-center gap-1 rounded-sm border-2 bg-transparent px-1.5 py-0.5 text-[11px] font-bold tracking-wide',
+          'inline-flex shrink-0 items-center gap-1 rounded-sm border-2 bg-transparent px-1.5 py-0.5 text-2xs font-bold tracking-wide',
           style.className,
         )}
       >

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ProjectCard, type ProjectSummary } from '@/components/project-card';
 import { CardSkeleton, EmptyState } from '@/components/states';
+import { Lightbulb } from 'lucide-react';
 import { api, qk } from '@/lib/api';
 
 /** Lưới card: 1 cột mobile · 2 tablet · 3 desktop (DESIGN_SYSTEM §5.4). */
@@ -29,6 +30,8 @@ export default function ProjectsPage() {
         <CardSkeleton rows={3} />
       ) : projects.length === 0 ? (
         <EmptyState
+          icon={Lightbulb}
+          tone="brand"
           title="Chưa có dự án nào"
           description="Nhập một ý tưởng nghiên cứu ở trang chủ để bắt đầu. Ý tưởng càng mơ hồ thì hệ thống càng có việc để làm."
           action={

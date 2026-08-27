@@ -88,7 +88,8 @@ export function OptionList({
               disabled={disabled}
               onClick={() => setChosen(o.key)}
               className={cn(
-                'rounded-md border px-3 py-2 text-left transition-colors',
+                'rounded-md border px-3 py-2 text-left',
+                'ease-out-quart transition-[border-color,background-color] duration-150',
                 active
                   ? 'border-decide-ink bg-decide-soft border-2'
                   : 'border-hairline bg-surface hover:border-decide-line',
@@ -101,7 +102,7 @@ export function OptionList({
                 <span className="min-w-0 flex-1">
                   <span className="text-ink-1 font-medium">{o.label}</span>
                   {o.recommended && (
-                    <span className="text-ok-strong bg-ok-soft ml-2 inline-flex whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold">
+                    <span className="text-ok-strong bg-ok-soft ml-2 inline-flex whitespace-nowrap rounded px-1.5 py-0.5 text-2xs font-semibold">
                       GỢI Ý
                     </span>
                   )}

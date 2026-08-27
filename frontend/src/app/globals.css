@@ -105,6 +105,93 @@
   --shadow-card: 0 1px 2px 0 oklch(0.208 0.042 265.755 / 0.05);
   --shadow-float: 0 8px 24px -6px oklch(0.208 0.042 265.755 / 0.16);
   --shadow-sheet: 0 -8px 24px -6px oklch(0.208 0.042 265.755 / 0.14);
+  /* Bóng khi rê chuột lên thứ bấm được — nhạt hơn `float`, ám sắc `brand` để cảm giác
+     "nhấc lên" đi kèm màu của hành động chứ không phải một mảng xám. */
+  --shadow-lift: 0 2px 8px -2px oklch(0.546 0.215 262.88 / 0.14);
+
+  /*
+   * Đường cong chuyển động. Trước đây mọi transition dùng **mặc định trình duyệt**, tức là
+   * `ease` — chậm ở đầu, giật ở cuối. Hai đường cong dưới đây là toàn bộ vốn chuyển động
+   * của hệ: `out-quart` cho mọi thay đổi trạng thái, `spring` cho thứ *xuất hiện*.
+   *
+   * Thời lượng dùng thang số có sẵn của Tailwind, chốt ba nấc và không dùng nấc khác:
+   *   duration-150 → hover, focus, đổi màu      (thấy tức thì)
+   *   duration-200 → accordion, panel, tô nền   (theo kịp mắt)
+   *   duration-300 → sheet, dialog, phần tử vào (đủ để đọc được hướng chuyển động)
+   */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /*
+   * `rise` — phần tử **xuất hiện lần đầu** trượt lên 6px kèm mờ dần. Dùng kèm `animationDelay`
+   * so le 40ms để một danh sách hiện ra theo thứ tự đọc thay vì bật ra cùng lúc.
+   * `both` giữ trạng thái đầu trong lúc chờ delay — không có nó thì phần tử nháy một nhịp
+   * ở trạng thái cuối rồi mới lùi về đầu.
+   */
+  --animate-rise: rise 300ms var(--ease-out-quart) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /*
+   * Chuyển bước 1→5 **có hướng**: đi tới thì nội dung trượt vào từ phải, quay lại thì từ trái.
+   * Hướng mang thông tin — người dùng biết mình vừa tiến hay lùi mà không phải đọc stepper.
+   *
+   * Không dùng View Transitions API: Next 16 chưa mở nó ở config ổn định, và tự làm bằng
+   * keyframe thì kiểm soát được hoàn toàn, không phụ thuộc cờ experimental.
+   */
+  --animate-step-next: step-next 320ms var(--ease-out-quart) both;
+  --animate-step-prev: step-prev 320ms var(--ease-out-quart) both;
+
+  @keyframes step-next {
+    from {
+      opacity: 0;
+      transform: translateX(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes step-prev {
+    from {
+      opacity: 0;
+      transform: translateX(-18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Nội dung vừa được thay tại chỗ (đổi bộ lọc, áp dụng quyết định) — chỉ mờ dần, không trượt. */
+  --animate-fade-in: fade-in 200ms var(--ease-out-quart) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /*
+   * Nấc chữ thứ sáu, thay cho `text-[10px]` và `text-[11px]` rải rác 13 chỗ.
+   * Thang chốt ở SÁU nấc: 2xs · xs · sm · base · lg · xl. Không thêm cỡ tuỳ tiện nữa.
+   * 10px bị gộp lên 11px — dưới 11px thì dấu tiếng Việt bắt đầu dính vào nhau.
+   */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
 }
 
 /*
@@ -144,6 +231,20 @@
   /* Không tắt vòng focus — đi hết 5 bước bằng bàn phím là một mục nghiệm thu (§6.10). */
   :focus-visible {
     @apply outline-2 outline-offset-2;
+  }
+  /*
+   * Người bật "giảm chuyển động" ở hệ điều hành thì tắt **toàn bộ** chuyển động, không trừ
+   * component nào. Đặt ở `base` để không phải nhớ thêm `motion-reduce:` ở từng chỗ.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
