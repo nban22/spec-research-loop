@@ -419,7 +419,8 @@ export const ModelName = {
   EvalRun: 'EvalRun',
   EvalMetric: 'EvalMetric',
   AuditorScore: 'AuditorScore',
-  HumanCheck: 'HumanCheck'
+  HumanCheck: 'HumanCheck',
+  OverclaimFlag: 'OverclaimFlag'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -435,7 +436,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck"
+    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2141,6 +2142,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    OverclaimFlag: {
+      payload: Prisma.$OverclaimFlagPayload<ExtArgs>
+      fields: Prisma.OverclaimFlagFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.OverclaimFlagFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.OverclaimFlagFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>
+        }
+        findFirst: {
+          args: Prisma.OverclaimFlagFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.OverclaimFlagFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>
+        }
+        findMany: {
+          args: Prisma.OverclaimFlagFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>[]
+        }
+        create: {
+          args: Prisma.OverclaimFlagCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>
+        }
+        createMany: {
+          args: Prisma.OverclaimFlagCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.OverclaimFlagCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>[]
+        }
+        delete: {
+          args: Prisma.OverclaimFlagDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>
+        }
+        update: {
+          args: Prisma.OverclaimFlagUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>
+        }
+        deleteMany: {
+          args: Prisma.OverclaimFlagDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.OverclaimFlagUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.OverclaimFlagUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>[]
+        }
+        upsert: {
+          args: Prisma.OverclaimFlagUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OverclaimFlagPayload>
+        }
+        aggregate: {
+          args: Prisma.OverclaimFlagAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOverclaimFlag>
+        }
+        groupBy: {
+          args: Prisma.OverclaimFlagGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OverclaimFlagGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.OverclaimFlagCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OverclaimFlagCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2216,6 +2291,7 @@ export const ProjectScalarFieldEnum = {
   verifier_gate: 'verifier_gate',
   judge_round: 'judge_round',
   judge_rounds_total: 'judge_rounds_total',
+  overclaim_detector: 'overclaim_detector',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -2539,6 +2615,27 @@ export const HumanCheckScalarFieldEnum = {
 } as const
 
 export type HumanCheckScalarFieldEnum = (typeof HumanCheckScalarFieldEnum)[keyof typeof HumanCheckScalarFieldEnum]
+
+
+export const OverclaimFlagScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  card_id: 'card_id',
+  detector: 'detector',
+  level: 'level',
+  matched_terms: 'matched_terms',
+  declared_scope: 'declared_scope',
+  actual_scope: 'actual_scope',
+  rationale: 'rationale',
+  suggested_narrowing: 'suggested_narrowing',
+  recommended_exit: 'recommended_exit',
+  chosen_exit: 'chosen_exit',
+  decision_id: 'decision_id',
+  llm_calls: 'llm_calls',
+  created_at: 'created_at'
+} as const
+
+export type OverclaimFlagScalarFieldEnum = (typeof OverclaimFlagScalarFieldEnum)[keyof typeof OverclaimFlagScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3111,6 +3208,7 @@ export type GlobalOmitConfig = {
   evalMetric?: Prisma.EvalMetricOmit
   auditorScore?: Prisma.AuditorScoreOmit
   humanCheck?: Prisma.HumanCheckOmit
+  overclaimFlag?: Prisma.OverclaimFlagOmit
 }
 
 /* Types for Logging */

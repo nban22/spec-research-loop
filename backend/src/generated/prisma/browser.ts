@@ -132,3 +132,17 @@ export type AuditorScore = Prisma.AuditorScoreModel
  * 
  */
 export type HumanCheck = Prisma.HumanCheckModel
+/**
+ * Model OverclaimFlag
+ * *
+ *  * Một cờ phóng đại trên một `Card(CLAIM)`.
+ *  *
+ *  * `card_id` / `spec_version_id` cố ý để **scalar trần, không khai relation**. Relation của Prisma
+ *  * đòi thêm field ngược ở `Card` và `SpecVersion`, mà luật chung 4 chỉ cho thêm dòng vào cuối
+ *  * `schema.prisma`, không cho sửa model đang có. Đánh đổi: mất cascade delete — `OverclaimFlag`
+ *  * phải xoá tay khi xoá version (xem `OverclaimService.clearForVersion`).
+ *  *
+ *  * `Issue` **không** bị sửa (ràng buộc của #7). Cờ này sinh ra `Issue` qua judge run riêng chứ
+ *  * không thêm cột vào bảng đó.
+ */
+export type OverclaimFlag = Prisma.OverclaimFlagModel

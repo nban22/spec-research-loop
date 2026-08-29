@@ -1,0 +1,131 @@
+{
+  "_readme": [
+    "Tập gieo tay của #7 — 20 claim phóng đại và 12 claim sạch làm đối chứng.",
+    "Claim cố ý viết theo lối một tác giả thật sẽ viết, KHÔNG chép lại từ điển ở",
+    "src/judge/overclaim/overclaim-lexicon.ts. Nếu chép, tỉ lệ bắt được luôn là 100% và con số",
+    "mất hết ý nghĩa. Có claim tầng luật bắt trượt là chuyện bình thường — chỗ đó là vùng xám",
+    "của tầng LLM, và tỉ lệ trượt phải được báo nguyên trong docs/evaluation_report.md."
+  ],
+  "plans": {
+    "single_domain": {
+      "experiments": [
+        {
+          "code": "E1",
+          "title": "Retrieval quality on Vietnamese legal QA",
+          "bullets": [
+            "Evaluate on the ZaloLegal corpus of 3000 statute passages",
+            "Compare against a BM25 baseline",
+            "Report nDCG@10 and recall@50"
+          ],
+          "linked_claim_title": ""
+        }
+      ],
+      "baselines_and_metrics": "BM25 baseline; nDCG@10 and recall@50 as metrics.",
+      "ablation_plan": "Remove the reranker stage and re-measure nDCG@10.",
+      "risks_and_limitations": "Only one corpus is available with gold relevance labels.",
+      "estimator_inputs": {
+        "model_params_b": 7,
+        "quantization": "int4",
+        "candidates": 3,
+        "rounds": 2,
+        "eval_samples": 500,
+        "avg_prompt_tokens": 1200,
+        "avg_output_tokens": 400
+      }
+    },
+    "no_baseline": {
+      "experiments": [
+        {
+          "code": "E1",
+          "title": "Qualitative inspection of generated answers",
+          "bullets": [
+            "Read 50 generated answers on the ZaloLegal corpus",
+            "Note cases where the answer cites a statute that does not exist"
+          ],
+          "linked_claim_title": ""
+        }
+      ],
+      "baselines_and_metrics": "We inspect outputs manually and describe what we observe.",
+      "ablation_plan": "Not applicable at this stage.",
+      "risks_and_limitations": "No quantitative comparison is planned yet.",
+      "estimator_inputs": {
+        "model_params_b": 7,
+        "quantization": "int4",
+        "candidates": 1,
+        "rounds": 1,
+        "eval_samples": 50,
+        "avg_prompt_tokens": 1000,
+        "avg_output_tokens": 300
+      }
+    },
+    "two_domain": {
+      "experiments": [
+        {
+          "code": "E1",
+          "title": "Retrieval on legal text",
+          "bullets": [
+            "Evaluate on the ZaloLegal corpus",
+            "Compare against a BM25 baseline, report nDCG@10"
+          ],
+          "linked_claim_title": ""
+        },
+        {
+          "code": "E2",
+          "title": "Retrieval on medical text",
+          "bullets": [
+            "Evaluate on the ViMedQA corpus",
+            "Compare against the same BM25 baseline, report nDCG@10"
+          ],
+          "linked_claim_title": ""
+        }
+      ],
+      "baselines_and_metrics": "BM25 baseline on both the ZaloLegal and ViMedQA datasets; nDCG@10.",
+      "ablation_plan": "Drop the reranker on each domain separately.",
+      "risks_and_limitations": "Two domains is still narrow for a generality claim.",
+      "estimator_inputs": {
+        "model_params_b": 7,
+        "quantization": "int4",
+        "candidates": 3,
+        "rounds": 2,
+        "eval_samples": 800,
+        "avg_prompt_tokens": 1200,
+        "avg_output_tokens": 400
+      }
+    }
+  },
+  "claims": [
+    { "id": "b-oc-01", "plan": "single_domain", "overclaimed": true, "text": "Our retrieval pipeline improves answer accuracy across all domains." },
+    { "id": "b-oc-02", "plan": "single_domain", "overclaimed": true, "text": "The reranker is domain-agnostic and needs no per-corpus tuning." },
+    { "id": "b-oc-03", "plan": "single_domain", "overclaimed": true, "text": "The method works for any language with a subword tokenizer." },
+    { "id": "b-oc-04", "plan": "single_domain", "overclaimed": true, "text": "Retrieval quality improves regardless of document formatting." },
+    { "id": "b-oc-05", "plan": "single_domain", "overclaimed": true, "text": "Our approach always returns the governing statute in the top ten results." },
+    { "id": "b-oc-06", "plan": "single_domain", "overclaimed": true, "text": "The system is universally applicable to legal question answering." },
+    { "id": "b-oc-07", "plan": "single_domain", "overclaimed": true, "text": "We evaluate across three domains and observe consistent gains." },
+    { "id": "b-oc-08", "plan": "single_domain", "overclaimed": true, "text": "The technique transfers to five datasets without any modification." },
+    { "id": "b-oc-09", "plan": "single_domain", "overclaimed": true, "text": "Our reranker outperforms all published baselines for legal retrieval." },
+    { "id": "b-oc-10", "plan": "single_domain", "overclaimed": true, "text": "The pipeline is model-agnostic and accepts arbitrary encoders." },
+    { "id": "b-oc-11", "plan": "single_domain", "overclaimed": true, "text": "Performance is superior to prior work in all settings we considered." },
+    { "id": "b-oc-12", "plan": "single_domain", "overclaimed": true, "text": "The retriever never fails to surface the relevant article." },
+    { "id": "b-oc-13", "plan": "no_baseline", "overclaimed": true, "text": "Our method significantly reduces hallucinated statute citations." },
+    { "id": "b-oc-14", "plan": "no_baseline", "overclaimed": true, "text": "The approach dramatically improves end-to-end answer latency." },
+    { "id": "b-oc-15", "plan": "no_baseline", "overclaimed": true, "text": "Answer quality is substantially better than the retrieval-free setting." },
+    { "id": "b-oc-16", "plan": "single_domain", "overclaimed": true, "text": "This chunking strategy generalizes across languages and scripts." },
+    { "id": "b-oc-17", "plan": "single_domain", "overclaimed": true, "text": "The result is broadly applicable to retrieval-augmented generation." },
+    { "id": "b-oc-18", "plan": "single_domain", "overclaimed": true, "text": "Our system consistently outperforms dense retrieval on legal corpora." },
+    { "id": "b-oc-19", "plan": "two_domain", "overclaimed": true, "text": "The method generalizes to every professional domain we might encounter." },
+    { "id": "b-oc-20", "plan": "single_domain", "overclaimed": true, "text": "Hybrid retrieval achieves state-of-the-art results on legal question answering." },
+
+    { "id": "b-ok-01", "plan": "single_domain", "overclaimed": false, "text": "Hybrid retrieval improves nDCG@10 over BM25 on the ZaloLegal corpus." },
+    { "id": "b-ok-02", "plan": "single_domain", "overclaimed": false, "text": "The reranker raises recall@50 on Vietnamese statute passages." },
+    { "id": "b-ok-03", "plan": "single_domain", "overclaimed": false, "text": "Removing the reranker lowers nDCG@10 on the ZaloLegal corpus." },
+    { "id": "b-ok-04", "plan": "single_domain", "overclaimed": false, "text": "Our pipeline answers statute lookup questions using retrieved passages." },
+    { "id": "b-ok-05", "plan": "two_domain", "overclaimed": false, "text": "The reranker improves nDCG@10 on both the ZaloLegal and ViMedQA datasets." },
+    { "id": "b-ok-06", "plan": "two_domain", "overclaimed": false, "text": "We compare hybrid retrieval against BM25 on two Vietnamese corpora." },
+    { "id": "b-ok-07", "plan": "single_domain", "overclaimed": false, "text": "Retrieval latency stays under 400 ms per query on a single RTX 3090." },
+    { "id": "b-ok-08", "plan": "no_baseline", "overclaimed": false, "text": "We inspect fifty generated answers and catalogue the citation errors we find." },
+    { "id": "b-ok-09", "plan": "single_domain", "overclaimed": false, "text": "The chunking size of 512 tokens gives higher recall@50 than 256 tokens here." },
+    { "id": "b-ok-10", "plan": "single_domain", "overclaimed": false, "text": "Gold relevance labels exist for 3000 passages in the ZaloLegal corpus." },
+    { "id": "b-ok-11", "plan": "two_domain", "overclaimed": false, "text": "The same BM25 baseline is used in both experiments for comparability." },
+    { "id": "b-ok-12", "plan": "single_domain", "overclaimed": false, "text": "We report nDCG@10 and recall@50 for every configuration we train." }
+  ]
+}

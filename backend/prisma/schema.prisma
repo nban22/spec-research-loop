@@ -204,6 +204,9 @@ model Project {
   // ở `MAX_JUDGE_ROUNDS` (ARCHITECTURE §1.2 "tối đa 3 vòng judge cho mỗi project").
   // Trước khi có cột này, `apply` reset `judge_round = 0` nên giới hạn không bao giờ tới.
   judge_rounds_total      Int           @default(0)
+  // Cờ của làn B · #7. Mặc định **tắt** theo luật chung 1: nhánh chưa merge không được đổi
+  // hành vi demo của ai, và chính cờ này là cần gạt để chạy ablation ở #13.
+  overclaim_detector      Boolean       @default(false)
   created_at              DateTime      @default(now())
   updated_at              DateTime      @updatedAt
 
@@ -630,4 +633,47 @@ model HumanCheck {
   card_source CardSource @relation(fields: [card_source_id], references: [id], onDelete: Cascade)
 
   @@index([card_source_id])
+}
+
+// ------------------------------------------------------- làn B · #7 bắt claim phóng đại
+
+/**
+ * Một cờ phóng đại trên một `Card(CLAIM)`.
+ *
+ * `card_id` / `spec_version_id` cố ý để **scalar trần, không khai relation**. Relation của Prisma
+ * đòi thêm field ngược ở `Card` và `SpecVersion`, mà luật chung 4 chỉ cho thêm dòng vào cuối
+ * `schema.prisma`, không cho sửa model đang có. Đánh đổi: mất cascade delete — `OverclaimFlag`
+ * phải xoá tay khi xoá version (xem `OverclaimService.clearForVersion`).
+ *
+ * `Issue` **không** bị sửa (ràng buộc của #7). Cờ này sinh ra `Issue` qua judge run riêng chứ
+ * không thêm cột vào bảng đó.
+ */
+model OverclaimFlag {
+  id              String   @id @default(uuid())
+  spec_version_id String
+  card_id         String
+  /// `RULE` = tầng luật 0 token · `LLM` = tầng vùng xám. Để `String` thay vì enum: luật chung 2
+  /// cấm thêm giá trị vào enum đang có, và một enum mới vẫn kéo theo ba tầng phải sửa cùng lúc.
+  detector        String
+  /// `NONE` · `MINOR` · `MAJOR` · `CRITICAL` — chốt kiểu ở `contracts/llm-io/overclaim.ts`.
+  level           String
+  /// Cụm chữ trong claim khiến nó bị cờ.
+  matched_terms   Json
+  /// Phạm vi claim tự khai, và phạm vi đếm được trong `ExperimentPlan`.
+  declared_scope  Json
+  actual_scope    Json
+  rationale       String
+  /// Câu thu hẹp dùng được ngay. Tiêu chí hoàn thành của #7: không được chỉ là lời cảnh báo.
+  suggested_narrowing String
+  /// `NARROW_CLAIM` · `EXPAND_EXPERIMENT` · `TO_RESEARCH_QUESTION`.
+  recommended_exit    String
+  /// Đường ra người dùng đã chọn, và `Decision` ghi lại lựa chọn đó. Null khi chưa xử lý.
+  chosen_exit     String?
+  decision_id     String?
+  /// Số token tầng LLM đã tốn cho cờ này. `0` ⇒ tầng luật kết luận một mình.
+  llm_calls       Int      @default(0)
+  created_at      DateTime @default(now())
+
+  @@index([spec_version_id])
+  @@index([card_id])
 }
