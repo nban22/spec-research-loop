@@ -178,6 +178,11 @@ function FlagRow({
                   isChosen
                     ? 'border-decide-line border-2 bg-decide-soft'
                     : 'border-hairline bg-surface hover:bg-sunken',
+                  // Tailwind v4 bỏ `cursor: pointer` mặc định của `<button>`; `option-list.tsx`
+                  // cũng khai tay đúng cặp này.
+                  choose.isPending
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'cursor-pointer',
                 )}
               >
                 <span className="text-ink-1 text-xs font-medium">
