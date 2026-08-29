@@ -184,7 +184,7 @@ function FlagRow({
                   {opt.label}
                   {opt.key === flag.recommended_exit && (
                     <span className="text-decide-strong ml-1.5 font-normal">
-                      · hệ thống đề xuất
+                      · Hệ thống đề xuất
                     </span>
                   )}
                 </span>
