@@ -73,7 +73,8 @@ export const ModelName = {
   EvalRun: 'EvalRun',
   EvalMetric: 'EvalMetric',
   AuditorScore: 'AuditorScore',
-  HumanCheck: 'HumanCheck'
+  HumanCheck: 'HumanCheck',
+  OverclaimFlag: 'OverclaimFlag'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -128,6 +129,7 @@ export const ProjectScalarFieldEnum = {
   verifier_gate: 'verifier_gate',
   judge_round: 'judge_round',
   judge_rounds_total: 'judge_rounds_total',
+  overclaim_detector: 'overclaim_detector',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -451,6 +453,27 @@ export const HumanCheckScalarFieldEnum = {
 } as const
 
 export type HumanCheckScalarFieldEnum = (typeof HumanCheckScalarFieldEnum)[keyof typeof HumanCheckScalarFieldEnum]
+
+
+export const OverclaimFlagScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  card_id: 'card_id',
+  detector: 'detector',
+  level: 'level',
+  matched_terms: 'matched_terms',
+  declared_scope: 'declared_scope',
+  actual_scope: 'actual_scope',
+  rationale: 'rationale',
+  suggested_narrowing: 'suggested_narrowing',
+  recommended_exit: 'recommended_exit',
+  chosen_exit: 'chosen_exit',
+  decision_id: 'decision_id',
+  llm_calls: 'llm_calls',
+  created_at: 'created_at'
+} as const
+
+export type OverclaimFlagScalarFieldEnum = (typeof OverclaimFlagScalarFieldEnum)[keyof typeof OverclaimFlagScalarFieldEnum]
 
 
 export const SortOrder = {
