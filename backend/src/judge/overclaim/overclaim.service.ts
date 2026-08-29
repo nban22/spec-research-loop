@@ -137,7 +137,10 @@ export class OverclaimService {
     for (const card of claims) {
       const text = cardText(card);
       const declared = extractDeclaredScope(text);
-      const verdict = assessOverclaim(text, declared, actual);
+      // Phát hiện đọc **cả thẻ** (title + body + payload), nhưng câu thu hẹp chỉ được dựng từ
+      // `body` — tức là đúng câu khẳng định. Truyền cả `text` vào thì tiêu đề thẻ bị dán lên
+      // đầu câu đề xuất và nó hết "dán được ngay" (thấy khi chạy app thật).
+      const verdict = assessOverclaim(card.body, declared, actual);
 
       if (verdict.level !== 'NONE') {
         // Tầng luật kết luận dứt khoát — **không** gọi LLM.

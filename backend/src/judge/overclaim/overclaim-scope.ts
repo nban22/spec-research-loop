@@ -127,20 +127,28 @@ export function extractDeclaredScope(text: string): DeclaredScope {
  */
 function namedEntitiesNear(text: string, noun: RegExp): string[] {
   const found = new Set<string>();
-  const nounRe = new RegExp(noun.source, 'gi');
-  let m: RegExpExecArray | null;
-  while ((m = nounRe.exec(text)) !== null) {
-    // Cửa sổ 60 ký tự hai bên danh từ — đủ ôm "on the SQuAD and NQ datasets".
-    const from = Math.max(0, m.index - 60);
-    const window = text.slice(from, m.index + m[0].length + 60);
-    const names =
-      window.match(/\b[A-Z][A-Za-z0-9-]{1,}(?:\s+[A-Z][A-Za-z0-9-]+)?\b/g) ??
-      [];
-    for (const n of names) {
-      const clean = n.trim();
-      if (STOP_NAMES.has(clean.toLowerCase())) continue;
-      if (!looksLikeProperName(clean)) continue;
-      found.add(clean);
+  // Quét **theo từng dòng**. `collectStrings` nối các chuỗi rời bằng `\n`, nên cửa sổ trượt qua
+  // dòng là trượt sang một bullet khác. Hai lỗi thật thấy lúc chạy app:
+  //   · `\s+` ở nhánh tên hai từ ăn cả `\n` ⇒ `"QA\nEvaluate"` thành một "tên dataset".
+  //   · `BM25` ở bullet "Compare against a BM25 baseline" bị đếm thành dataset, chỉ vì bullet
+  //     "…the ZaloLegal corpus…" nằm trong 60 ký tự kế bên.
+  // Thực thể phải nằm **cùng dòng** với danh từ chiều mới được tính.
+  for (const line of text.split('\n')) {
+    const nounRe = new RegExp(noun.source, 'gi');
+    let m: RegExpExecArray | null;
+    while ((m = nounRe.exec(line)) !== null) {
+      // Cửa sổ 60 ký tự hai bên danh từ — đủ ôm "on the SQuAD and NQ datasets".
+      const from = Math.max(0, m.index - 60);
+      const window = line.slice(from, m.index + m[0].length + 60);
+      const names =
+        window.match(/\b[A-Z][A-Za-z0-9-]{1,}(?:[ ]+[A-Z][A-Za-z0-9-]+)?\b/g) ??
+        [];
+      for (const n of names) {
+        const clean = n.trim();
+        if (STOP_NAMES.has(clean.toLowerCase())) continue;
+        if (!looksLikeProperName(clean)) continue;
+        found.add(clean);
+      }
     }
   }
   return [...found];

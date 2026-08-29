@@ -96,6 +96,17 @@ describe('câu thu hẹp đề xuất', () => {
     expect(out.length).toBeGreaterThan(30);
   });
 
+  it('không dán tiêu đề thẻ vào câu đề xuất', () => {
+    // Lỗi thật lúc chạy app: `cardText()` nối title + body, và cả khối đó bị đưa vào
+    // `buildNarrowing` ⇒ câu đề xuất mở đầu bằng tiêu đề thẻ, dán vào spec là hỏng.
+    const actual = extractActualScope(SINGLE_DOMAIN, 'Vietnamese legal QA');
+    const body =
+      'Our retrieval pipeline improves answer accuracy across all domains.';
+    const out = buildNarrowing(body, actual);
+    expect(out).not.toMatch(/Cross-domain retrieval quality/);
+    expect(out.split('\n')).toHaveLength(1);
+  });
+
   it('không bịa câu khi không có bằng chứng phạm vi nào để thay vào', () => {
     const actual = extractActualScope({}, null);
     expect(buildNarrowing('The method works for any language.', actual)).toBe(
@@ -128,6 +139,15 @@ describe('tách phạm vi khai và phạm vi thật', () => {
     const a = extractActualScope(seed.plans.no_baseline, null);
     expect(a.hasBaseline).toBe(false);
     expect(a.hasMetric).toBe(false);
+  });
+
+  it('không gộp tên vắt qua hai dòng, không đếm baseline ở dòng khác thành dataset', () => {
+    // Cả hai đều là lỗi thật lúc chạy app: kế hoạch một dataset bị đếm thành ba, vì
+    // `"QA\nEvaluate"` được coi là một tên, và `BM25` ở bullet khác lọt vào cửa sổ 60 ký tự.
+    const a = extractActualScope(SINGLE_DOMAIN, null);
+    expect(a.names.datasets).toEqual(['ZaloLegal']);
+    expect(a.counts.datasets).toBe(1);
+    expect(a.names.datasets.every((n) => !n.includes('\n'))).toBe(true);
   });
 });
 
