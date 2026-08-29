@@ -121,4 +121,6 @@ export const qk = {
     ['card-sources', cardSourceId, 'gate-options'] as const,
   diff: (id: string, against?: string) => ['spec-versions', id, 'diff', against] as const,
   job: (id: string) => ['jobs', id] as const,
+  // làn B · #7 — thêm dòng vào cuối theo luật chung 4, không sửa dòng của ai.
+  overclaim: (id: string) => ['spec-versions', id, 'overclaim'] as const,
 };

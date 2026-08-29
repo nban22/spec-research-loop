@@ -18,6 +18,7 @@ import { HintBox } from '@/components/hint-box';
 import { JobProgress } from '@/components/job-progress';
 import { ConsensusMeter, IssueTable, JudgePanel, type JudgeState } from '@/components/judge';
 import { OptionList } from '@/components/option-list';
+import { OverclaimPanel } from '@/components/overclaim-panel';
 import { Panel } from '@/components/panel';
 import { SpecOutline } from '@/components/spec-views';
 import { EmptyState, JudgePanelSkeleton } from '@/components/states';
@@ -214,6 +215,10 @@ export function Step4({ projectId }: { projectId: string }) {
           </>
         )}
       </Panel>
+
+      {/* Làn B · #7 — cờ phóng đại đứng cạnh bảng issue, không trộn vào nó: nó đến từ một cơ
+          chế khác (luật + vùng xám), và nó có ba đường ra riêng của Bước 10. */}
+      <OverclaimPanel versionId={versionId} />
 
       {/* Bằng chứng độc lập đọc thẳng từ dữ liệu — endpoint bằng chứng, không phải debug. */}
       {hasJudged && (
