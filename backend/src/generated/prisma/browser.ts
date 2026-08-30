@@ -146,3 +146,16 @@ export type HumanCheck = Prisma.HumanCheckModel
  *  * không thêm cột vào bảng đó.
  */
 export type OverclaimFlag = Prisma.OverclaimFlagModel
+/**
+ * Model AmbiguityFlag
+ * *
+ *  * Một cờ mơ hồ trên một `Card`.
+ *  *
+ *  * `Card.status` được gán `AMBIGUOUS` (giá trị enum **đã có**, không thêm giá trị mới — luật
+ *  * chung 2). Nhưng gán đè là **xoá mất trạng thái cũ**, nên `previous_status` giữ lại giá trị
+ *  * trước đó để `clearForVersion` khôi phục được. Không có nó thì quét lần hai là mất dữ liệu.
+ *  *
+ *  * `card_id` / `spec_version_id` để scalar trần, không relation — cùng lý do với `OverclaimFlag`:
+ *  * relation đòi thêm field ngược vào `Card`, mà luật chung 4 chỉ cho thêm dòng cuối file.
+ */
+export type AmbiguityFlag = Prisma.AmbiguityFlagModel

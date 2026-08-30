@@ -18,6 +18,7 @@ import { PromptsModule } from './prompts/prompts.module';
 import { SourcesModule } from './sources/sources.module';
 import { SpecModule } from './spec/spec.module';
 import { VerifierModule } from './verifier/verifier.module';
+import { CritiqueModule } from './critique/critique.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { VerifierModule } from './verifier/verifier.module';
     AuthModule,
     ProjectModule,
     AnalyticsModule,
+    CritiqueModule,
   ],
   controllers: [HealthController],
   providers: [

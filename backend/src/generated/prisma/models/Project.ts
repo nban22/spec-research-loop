@@ -50,6 +50,7 @@ export type ProjectMinAggregateOutputType = {
   judge_round: number | null
   judge_rounds_total: number | null
   overclaim_detector: boolean | null
+  ambiguity_detector: boolean | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -68,6 +69,7 @@ export type ProjectMaxAggregateOutputType = {
   judge_round: number | null
   judge_rounds_total: number | null
   overclaim_detector: boolean | null
+  ambiguity_detector: boolean | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -86,6 +88,7 @@ export type ProjectCountAggregateOutputType = {
   judge_round: number
   judge_rounds_total: number
   overclaim_detector: number
+  ambiguity_detector: number
   created_at: number
   updated_at: number
   _all: number
@@ -116,6 +119,7 @@ export type ProjectMinAggregateInputType = {
   judge_round?: true
   judge_rounds_total?: true
   overclaim_detector?: true
+  ambiguity_detector?: true
   created_at?: true
   updated_at?: true
 }
@@ -134,6 +138,7 @@ export type ProjectMaxAggregateInputType = {
   judge_round?: true
   judge_rounds_total?: true
   overclaim_detector?: true
+  ambiguity_detector?: true
   created_at?: true
   updated_at?: true
 }
@@ -152,6 +157,7 @@ export type ProjectCountAggregateInputType = {
   judge_round?: true
   judge_rounds_total?: true
   overclaim_detector?: true
+  ambiguity_detector?: true
   created_at?: true
   updated_at?: true
   _all?: true
@@ -257,6 +263,7 @@ export type ProjectGroupByOutputType = {
   judge_round: number
   judge_rounds_total: number
   overclaim_detector: boolean
+  ambiguity_detector: boolean
   created_at: Date
   updated_at: Date
   _count: ProjectCountAggregateOutputType | null
@@ -298,6 +305,7 @@ export type ProjectWhereInput = {
   judge_round?: Prisma.IntFilter<"Project"> | number
   judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   overclaim_detector?: Prisma.BoolFilter<"Project"> | boolean
+  ambiguity_detector?: Prisma.BoolFilter<"Project"> | boolean
   created_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -323,6 +331,7 @@ export type ProjectOrderByWithRelationInput = {
   judge_round?: Prisma.SortOrder
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
+  ambiguity_detector?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -351,6 +360,7 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   judge_round?: Prisma.IntFilter<"Project"> | number
   judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   overclaim_detector?: Prisma.BoolFilter<"Project"> | boolean
+  ambiguity_detector?: Prisma.BoolFilter<"Project"> | boolean
   created_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -376,6 +386,7 @@ export type ProjectOrderByWithAggregationInput = {
   judge_round?: Prisma.SortOrder
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
+  ambiguity_detector?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   _count?: Prisma.ProjectCountOrderByAggregateInput
@@ -402,6 +413,7 @@ export type ProjectScalarWhereWithAggregatesInput = {
   judge_round?: Prisma.IntWithAggregatesFilter<"Project"> | number
   judge_rounds_total?: Prisma.IntWithAggregatesFilter<"Project"> | number
   overclaim_detector?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
+  ambiguity_detector?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
   created_at?: Prisma.DateTimeWithAggregatesFilter<"Project"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"Project"> | Date | string
 }
@@ -419,6 +431,7 @@ export type ProjectCreateInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -444,6 +457,7 @@ export type ProjectUncheckedCreateInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -467,6 +481,7 @@ export type ProjectUpdateInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -492,6 +507,7 @@ export type ProjectUncheckedUpdateInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -516,6 +532,7 @@ export type ProjectCreateManyInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -533,6 +550,7 @@ export type ProjectUpdateManyMutationInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -551,6 +569,7 @@ export type ProjectUncheckedUpdateManyInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -579,6 +598,7 @@ export type ProjectCountOrderByAggregateInput = {
   judge_round?: Prisma.SortOrder
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
+  ambiguity_detector?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -602,6 +622,7 @@ export type ProjectMaxOrderByAggregateInput = {
   judge_round?: Prisma.SortOrder
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
+  ambiguity_detector?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -620,6 +641,7 @@ export type ProjectMinOrderByAggregateInput = {
   judge_round?: Prisma.SortOrder
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
+  ambiguity_detector?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -810,6 +832,7 @@ export type ProjectCreateWithoutUserInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionCreateNestedManyWithoutProjectInput
@@ -833,6 +856,7 @@ export type ProjectUncheckedCreateWithoutUserInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -886,6 +910,7 @@ export type ProjectScalarWhereInput = {
   judge_round?: Prisma.IntFilter<"Project"> | number
   judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   overclaim_detector?: Prisma.BoolFilter<"Project"> | boolean
+  ambiguity_detector?: Prisma.BoolFilter<"Project"> | boolean
   created_at?: Prisma.DateTimeFilter<"Project"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Project"> | Date | string
 }
@@ -903,6 +928,7 @@ export type ProjectCreateWithoutSpec_versionsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -927,6 +953,7 @@ export type ProjectUncheckedCreateWithoutSpec_versionsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   sources?: Prisma.SourceUncheckedCreateNestedManyWithoutProjectInput
@@ -965,6 +992,7 @@ export type ProjectUpdateWithoutSpec_versionsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -989,6 +1017,7 @@ export type ProjectUncheckedUpdateWithoutSpec_versionsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sources?: Prisma.SourceUncheckedUpdateManyWithoutProjectNestedInput
@@ -1011,6 +1040,7 @@ export type ProjectCreateWithoutSourcesInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1035,6 +1065,7 @@ export type ProjectUncheckedCreateWithoutSourcesInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1073,6 +1104,7 @@ export type ProjectUpdateWithoutSourcesInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1097,6 +1129,7 @@ export type ProjectUncheckedUpdateWithoutSourcesInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1119,6 +1152,7 @@ export type ProjectCreateWithoutDecisionsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1143,6 +1177,7 @@ export type ProjectUncheckedCreateWithoutDecisionsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1181,6 +1216,7 @@ export type ProjectUpdateWithoutDecisionsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1205,6 +1241,7 @@ export type ProjectUncheckedUpdateWithoutDecisionsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1227,6 +1264,7 @@ export type ProjectCreateWithoutJob_runsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1251,6 +1289,7 @@ export type ProjectUncheckedCreateWithoutJob_runsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1289,6 +1328,7 @@ export type ProjectUpdateWithoutJob_runsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1313,6 +1353,7 @@ export type ProjectUncheckedUpdateWithoutJob_runsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1335,6 +1376,7 @@ export type ProjectCreateWithoutLlm_callsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1359,6 +1401,7 @@ export type ProjectUncheckedCreateWithoutLlm_callsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1397,6 +1440,7 @@ export type ProjectUpdateWithoutLlm_callsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1421,6 +1465,7 @@ export type ProjectUncheckedUpdateWithoutLlm_callsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1443,6 +1488,7 @@ export type ProjectCreateWithoutEval_runsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -1467,6 +1513,7 @@ export type ProjectUncheckedCreateWithoutEval_runsInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   spec_versions?: Prisma.SpecVersionUncheckedCreateNestedManyWithoutProjectInput
@@ -1505,6 +1552,7 @@ export type ProjectUpdateWithoutEval_runsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -1529,6 +1577,7 @@ export type ProjectUncheckedUpdateWithoutEval_runsInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1551,6 +1600,7 @@ export type ProjectCreateManyUserInput = {
   judge_round?: number
   judge_rounds_total?: number
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -1568,6 +1618,7 @@ export type ProjectUpdateWithoutUserInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUpdateManyWithoutProjectNestedInput
@@ -1591,6 +1642,7 @@ export type ProjectUncheckedUpdateWithoutUserInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   spec_versions?: Prisma.SpecVersionUncheckedUpdateManyWithoutProjectNestedInput
@@ -1614,6 +1666,7 @@ export type ProjectUncheckedUpdateManyWithoutUserInput = {
   judge_round?: Prisma.IntFieldUpdateOperationsInput | number
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1708,6 +1761,7 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   judge_round?: boolean
   judge_rounds_total?: boolean
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: boolean
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1734,6 +1788,7 @@ export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   judge_round?: boolean
   judge_rounds_total?: boolean
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: boolean
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1753,6 +1808,7 @@ export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   judge_round?: boolean
   judge_rounds_total?: boolean
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: boolean
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1772,11 +1828,12 @@ export type ProjectSelectScalar = {
   judge_round?: boolean
   judge_rounds_total?: boolean
   overclaim_detector?: boolean
+  ambiguity_detector?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "raw_idea" | "domain" | "step" | "status" | "current_spec_version_id" | "arm" | "verifier_gate" | "judge_round" | "judge_rounds_total" | "overclaim_detector" | "created_at" | "updated_at", ExtArgs["result"]["project"]>
+export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "raw_idea" | "domain" | "step" | "status" | "current_spec_version_id" | "arm" | "verifier_gate" | "judge_round" | "judge_rounds_total" | "overclaim_detector" | "ambiguity_detector" | "created_at" | "updated_at", ExtArgs["result"]["project"]>
 export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   spec_versions?: boolean | Prisma.Project$spec_versionsArgs<ExtArgs>
@@ -1819,6 +1876,7 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     judge_round: number
     judge_rounds_total: number
     overclaim_detector: boolean
+    ambiguity_detector: boolean
     created_at: Date
     updated_at: Date
   }, ExtArgs["result"]["project"]>
@@ -2264,6 +2322,7 @@ export interface ProjectFieldRefs {
   readonly judge_round: Prisma.FieldRef<"Project", 'Int'>
   readonly judge_rounds_total: Prisma.FieldRef<"Project", 'Int'>
   readonly overclaim_detector: Prisma.FieldRef<"Project", 'Boolean'>
+  readonly ambiguity_detector: Prisma.FieldRef<"Project", 'Boolean'>
   readonly created_at: Prisma.FieldRef<"Project", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"Project", 'DateTime'>
 }
