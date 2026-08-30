@@ -40,9 +40,7 @@ import { CritiqueModule } from './critique/critique.module';
     DecisionModule,
     AuthModule,
     ProjectModule,
-    // làn C · #17
     AnalyticsModule,
-    // làn B · #12
     CritiqueModule,
   ],
   controllers: [HealthController],

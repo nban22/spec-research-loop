@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AppError } from '../common/app-error';
 import { json, jsonOrDbNull } from '../common/prisma-json';
 import { PrismaService } from '../common/prisma.service';
+import { cardStatusSchema } from '../contracts/enums';
 import { optionsOutputSchema } from '../contracts/llm-io/generator';
 import {
   reviseOutputSchema,
@@ -567,6 +568,33 @@ export class DecisionService {
 
     const outcome = applyChanges(parent.cards, parsedDraft.data);
 
+    /**
+     * `AMBIGUOUS` là trạng thái **suy ra** từ nội dung version, do B6 (#12) gán và giữ giá trị
+     * gốc ở `AmbiguityFlag.previous_status`. Nhưng cờ gắn theo `spec_version_id`, còn thẻ thì
+     * được chép nguyên sang version con — nên nếu chép cả `AMBIGUOUS` thì version mới có thẻ
+     * `AMBIGUOUS` mà **không có cờ nào**, và lượt quét sau sẽ ghi `previous_status='AMBIGUOUS'`,
+     * làm mất vĩnh viễn trạng thái thật.
+     *
+     * Version con phải bắt đầu từ trạng thái **gốc** rồi tự quét lại.
+     */
+    const restore = new Map(
+      (
+        await this.prisma.ambiguityFlag.findMany({
+          where: { spec_version_id: parent.id },
+          select: { card_id: true, previous_status: true },
+        })
+      ).map((f) => [f.card_id, f.previous_status]),
+    );
+    // `id` optional: thẻ do thao tác `ADD` sinh ra chưa có id, và chúng không bao giờ mang
+    // `AMBIGUOUS` nên nhánh tra cứu không chạm tới.
+    const statusFor = (card: { id?: string; status: string }): CardStatus => {
+      if (card.status !== 'AMBIGUOUS') return card.status as CardStatus;
+      const prev = cardStatusSchema.safeParse(
+        card.id === undefined ? undefined : restore.get(card.id),
+      );
+      return prev.success ? prev.data : 'PROPOSED';
+    };
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         const version = await tx.specVersion.create({
@@ -588,7 +616,7 @@ export class DecisionService {
             id: undefined,
             spec_version_id: version.id,
             type: c.type,
-            status: c.status,
+            status: statusFor(c),
             title: c.title,
             body: c.body,
             payload: jsonOrDbNull(c.payload),

@@ -88,8 +88,24 @@ export const MEASURABLE_MARKERS: RegExp[] = [
 const AUX =
   'is|are|was|were|can|could|will|would|has|have|does|do|should|may|might|must';
 
+/**
+ * Danh từ số ít **kết thúc bằng `-s`** — nhóm gốc Latin/Hy Lạp. Nhánh `-s` bên dưới coi
+ * `-s` là dấu hiệu chia động từ hợp với chủ ngữ số ít, nhưng với nhóm này thì sai:
+ * `"This corpus has 10k docs."` có tiền ngữ đàng hoàng, không được cờ.
+ */
+const SINGULAR_S_NOUNS =
+  'corpus|analysis|basis|bias|hypothesis|thesis|synthesis|status|focus|process|access|dataset|class|loss';
+
+/**
+ * `\b` phải đóng **cả hai** nhánh, không riêng nhánh `-s`.
+ *
+ * Bản đầu để `(?:\w+(?:s|ed|ing)\b|${AUX})` — `\b` chỉ thuộc nhánh trái, nên nhánh `AUX` khớp
+ * như **tiền tố**: `do` ⊂ `document`, `can` ⊂ `candidate`, `is` ⊂ `issue`. Hệ quả là
+ * `"This document describes…"` bị cờ, trái hẳn ví dụ trong chính doc ở trên. Nhánh số nhiều
+ * vốn đã có `\b` đúng chỗ — chênh lệch đó là dấu hiệu của sót, không phải chủ ý.
+ */
 export const DANGLING_PRONOUN_SINGULAR = new RegExp(
-  `^\\s*(?:it|this|that)\\s+(?:\\w+ly\\s+)?(?:\\w+(?:s|ed|ing)\\b|${AUX})`,
+  `^\\s*(?:it|this|that)\\s+(?:\\w+ly\\s+)?(?!(?:${SINGULAR_S_NOUNS})\\b)(?:\\w+(?:s|ed|ing)|${AUX})\\b`,
   'i',
 );
 

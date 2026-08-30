@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { json } from '../common/prisma-json';
 import { PrismaService } from '../common/prisma.service';
-import type { CardStatus } from '../generated/prisma/enums';
+import { cardStatusSchema } from '../contracts/enums';
 import {
   detectAmbiguity,
   topFinding,
@@ -110,6 +110,8 @@ export class CritiqueService {
       cardId: string;
       previousStatus: string;
       finding: AmbiguityFinding;
+      /** Cờ nặng nhất của thẻ — **chỉ** cờ này được gắn câu hỏi làm rõ. */
+      isTop: boolean;
     }[] = [];
     let skippedMissing = 0;
 
@@ -121,15 +123,16 @@ export class CritiqueService {
       const findings = detectAmbiguity(card);
       if (findings.length === 0) continue;
 
+      // Một thẻ **một** câu hỏi, lấy cờ nặng nhất — hỏi hai câu về cùng một thẻ là làm phiền.
+      const top = topFinding(findings);
       for (const f of findings) {
         flagRows.push({
           cardId: card.id,
           previousStatus: card.status,
           finding: f,
+          isTop: f === top,
         });
       }
-      // Một thẻ **một** câu hỏi, lấy cờ nặng nhất — hỏi hai câu về cùng một thẻ là làm phiền.
-      const top = topFinding(findings);
       if (top) candidates.push(buildQuestion(card.id, card.title, top));
     }
 
@@ -137,7 +140,10 @@ export class CritiqueService {
     // #12: "câu hỏi sinh ra từ đây không làm tổng số câu hỏi tăng so với hiện tại".
     // Câu hỏi làm rõ = `Decision` chưa trả lời (`chosen_key = ''`), đúng như `analyze` đang làm.
     const openNow = await this.prisma.decision.count({
-      where: { project_id: version.project_id, chosen_key: '' },
+      // Phải lọc `step: 'S1'` — trần 4 câu lấy từ `analyzeOutputSchema.clarifying_questions`,
+      // vốn là hạn mức **của riêng S1**. Đếm cả mọi step thì một `Decision` S2 còn treo
+      // (`gap()` luôn để lại đúng một câu "chọn hướng nghiên cứu") sẽ ăn mất một slot của S1.
+      where: { project_id: version.project_id, step: 'S1', chosen_key: '' },
     });
     const budget = Math.max(0, MAX_OPEN_QUESTIONS - openNow);
     const selected = ranker(candidates, budget);
@@ -182,7 +188,12 @@ export class CritiqueService {
           terms: json(row.finding.terms),
           reason: row.finding.reason,
           previous_status: row.previousStatus,
-          question_decision_id: questionByCard.get(row.cardId) ?? null,
+          // Chỉ cờ **nặng nhất** của thẻ mới trỏ về câu hỏi. Gắn cho mọi cờ thì cờ `metric`
+          // lại trỏ vào một câu hỏi chỉ nói về `baseline` — sai với chính mô tả cột trong
+          // `schema.prisma` ("Decision chứa câu hỏi làm rõ sinh từ cờ này").
+          question_decision_id: row.isTop
+            ? (questionByCard.get(row.cardId) ?? null)
+            : null,
         })),
       });
 
@@ -242,9 +253,23 @@ export class CritiqueService {
     // mà cờ giữ `previous_status` thì có thể đã bị xoá — không còn đường lần lại.
     await this.prisma.$transaction(async (tx) => {
       for (const [status, cardIds] of byStatus) {
+        // `safeParse` chứ không `as`: `previous_status` là cột `String` trần nên không gì
+        // bảo đảm nó là một `CardStatus` hợp lệ, mà đích đến lại là cột enum
+        // (backend/CLAUDE.md §3). Giá trị lạ ⇒ bỏ qua nhóm đó, không làm hỏng cả transaction.
+        const parsed = cardStatusSchema.safeParse(status);
+        if (!parsed.success) {
+          this.logger.warn(
+            `previous_status không hợp lệ (${status}) trên ${cardIds.length} thẻ — bỏ qua khôi phục.`,
+          );
+          continue;
+        }
         await tx.card.updateMany({
-          where: { id: { in: cardIds } },
-          data: { status: status as CardStatus },
+          // Chỉ khôi phục thẻ **đang** `AMBIGUOUS`. Thiếu điều kiện này thì sửa tay của người
+          // dùng bị ghi đè: quét → thẻ thành `AMBIGUOUS` → người dùng `PATCH` đặt `CONFIRMED`
+          // → quét lại hoặc chỉ cần tắt cờ là thẻ bị ép về `previous_status` cũ, mất quyết
+          // định của người dùng mà không báo gì.
+          where: { id: { in: cardIds }, status: 'AMBIGUOUS' },
+          data: { status: parsed.data },
         });
       }
 
@@ -273,16 +298,21 @@ export class CritiqueService {
     });
     const titleOf = new Map(cards.map((c) => [c.id, c.title]));
 
-    return flags.map((f) => ({
-      id: f.id,
-      card_id: f.card_id,
-      card_title: titleOf.get(f.card_id) ?? '',
-      kind: f.kind,
-      field: f.field,
-      excerpt: f.excerpt,
-      terms: (f.terms as string[]) ?? [],
-      reason: f.reason,
-      question_decision_id: f.question_decision_id,
-    }));
+    // Bỏ **cờ ma**: `analyze` / `gaps` / `contributions` chạy lại sẽ `deleteMany` rồi tạo lại
+    // thẻ với uuid mới, mà `card_id` là scalar trần không FK nên cờ cũ vẫn còn và trỏ vào hư
+    // không. Trả chúng ra thì giao diện hiện cờ với `card_title` rỗng. Lượt quét sau tự dọn.
+    return flags
+      .filter((f) => titleOf.has(f.card_id))
+      .map((f) => ({
+        id: f.id,
+        card_id: f.card_id,
+        card_title: titleOf.get(f.card_id) ?? '',
+        kind: f.kind,
+        field: f.field,
+        excerpt: f.excerpt,
+        terms: (f.terms as string[]) ?? [],
+        reason: f.reason,
+        question_decision_id: f.question_decision_id,
+      }));
   }
 }

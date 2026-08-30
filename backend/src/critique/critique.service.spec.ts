@@ -87,7 +87,9 @@ describe('CritiqueService — cờ tắt', () => {
 
     expect(res.enabled).toBe(false);
     expect(tx.card.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['c-1'] } },
+      // `status: 'AMBIGUOUS'` trong `where` là bắt buộc: thiếu nó thì sửa tay của người dùng
+      // (PATCH đặt `CONFIRMED`) bị ép về `previous_status` cũ mà không báo gì.
+      where: { id: { in: ['c-1'] }, status: 'AMBIGUOUS' },
       data: { status: 'PROPOSED' },
     });
     expect(tx.ambiguityFlag.deleteMany).toHaveBeenCalled();
@@ -125,11 +127,11 @@ describe('CritiqueService — khôi phục trạng thái', () => {
     // Hai nhóm ⇒ hai lượt gọi, không phải ba.
     expect(tx.card.updateMany).toHaveBeenCalledTimes(2);
     expect(tx.card.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['c-1', 'c-3'] } },
+      where: { id: { in: ['c-1', 'c-3'] }, status: 'AMBIGUOUS' },
       data: { status: 'PROPOSED' },
     });
     expect(tx.card.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['c-2'] } },
+      where: { id: { in: ['c-2'] }, status: 'AMBIGUOUS' },
       data: { status: 'CONFIRMED' },
     });
   });
@@ -220,5 +222,122 @@ describe('CritiqueService — nguyên tử', () => {
     expect(res.skippedMissing).toBe(1);
     expect(res.flagged).toBe(0);
     expect(tx.card.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('CritiqueService — hành vi tiêu đề của cả PR', () => {
+  it('đường BẬT cờ thật sự ghi status = AMBIGUOUS xuống DB', async () => {
+    // Trước test này, đổi `'AMBIGUOUS'` thành `'PROPOSED'` vẫn 29/29 xanh — tức là điều PR
+    // tuyên bố làm ("backend cuối cùng cũng gán AMBIGUOUS") không có gì ghim.
+    const { prisma, tx } = makePrisma({
+      detectorOn: true,
+      cards: [vagueClaim],
+      openDecisions: 0,
+    });
+    await new CritiqueService(prisma as never).scanVersion('v-1');
+
+    expect(tx.card.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['c-1'] } },
+      data: { status: 'AMBIGUOUS' },
+    });
+  });
+
+  it('quét hai lần: lần sau đọc đúng cờ lần trước ghi, previous_status KHÔNG trôi', async () => {
+    // Vòng ghi → đọc. Các test khác nạp `flags` bằng tay nên hai phía không bao giờ nối nhau,
+    // và mutant ghi cứng `previous_status: 'AMBIGUOUS'` sống sót.
+    const { prisma, tx } = makePrisma({
+      detectorOn: true,
+      cards: [vagueClaim],
+      openDecisions: 0,
+    });
+    const service = new CritiqueService(prisma as never);
+
+    await service.scanVersion('v-1');
+    const written = tx.ambiguityFlag.createMany.mock.calls[0][0]
+      .data as unknown as {
+      card_id: string;
+      previous_status: string;
+      question_decision_id: string | null;
+    }[];
+    expect(written[0].previous_status).toBe('PROPOSED');
+
+    // Lần hai: thẻ nay đã là AMBIGUOUS trong DB, và cờ lần một được trả về cho clearForVersion.
+    prisma.ambiguityFlag.findMany.mockResolvedValue(written);
+    prisma.card.findMany.mockResolvedValue([
+      { ...vagueClaim, status: 'AMBIGUOUS' },
+    ]);
+
+    await service.scanVersion('v-1');
+
+    // Khôi phục phải dùng PROPOSED của lần một, không phải AMBIGUOUS vừa đọc được.
+    expect(tx.card.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['c-1'] }, status: 'AMBIGUOUS' },
+      data: { status: 'PROPOSED' },
+    });
+  });
+});
+
+describe('CritiqueService — nhiều thẻ', () => {
+  const vague = (id: string) => ({
+    id,
+    type: 'PROBLEM',
+    status: 'PROPOSED',
+    title: `card ${id}`,
+    body: 'The retriever is not effective on legal text.',
+    payload: null,
+  });
+
+  it('mỗi thẻ đúng MỘT câu hỏi, thẻ thua hạn mức thì cờ có question_decision_id = null', async () => {
+    const { prisma, tx } = makePrisma({
+      detectorOn: true,
+      cards: ['c-1', 'c-2', 'c-3', 'c-4', 'c-5', 'c-6'].map(vague),
+      openDecisions: 0,
+    });
+    const res = await new CritiqueService(prisma as never).scanVersion('v-1');
+
+    expect(res.flagged).toBe(6);
+    expect(res.questionsAsked).toBe(4); // trần
+    expect(res.questionsDropped).toBe(2);
+    expect(tx.decision.create).toHaveBeenCalledTimes(4);
+
+    const rows = tx.ambiguityFlag.createMany.mock.calls[0][0].data;
+    expect(rows).toHaveLength(6);
+    expect(rows.filter((r) => r.question_decision_id !== null)).toHaveLength(4);
+    expect(rows.filter((r) => r.question_decision_id === null)).toHaveLength(2);
+  });
+
+  it('thẻ CLAIM hai trường mơ hồ ⇒ hai cờ nhưng chỉ MỘT cờ trỏ về câu hỏi', async () => {
+    // Cờ `metric` mà trỏ vào câu hỏi chỉ nói về `baseline` là sai mô tả cột trong schema.
+    const { prisma, tx } = makePrisma({
+      detectorOn: true,
+      cards: [
+        {
+          ...vagueClaim,
+          payload: { baseline: 'existing methods', metric: 'performance' },
+        },
+      ],
+      openDecisions: 0,
+    });
+    await new CritiqueService(prisma as never).scanVersion('v-1');
+
+    const rows = tx.ambiguityFlag.createMany.mock.calls[0][0].data;
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((r) => r.question_decision_id !== null)).toHaveLength(1);
+  });
+});
+
+describe('CritiqueService — truy vấn hạn mức', () => {
+  it('chỉ đếm câu hỏi CHƯA trả lời của ĐÚNG project và ĐÚNG step S1', async () => {
+    // Mock trước giờ bỏ qua đối số nên bỏ `project_id` (đếm xuyên project) vẫn xanh.
+    const { prisma } = makePrisma({
+      detectorOn: true,
+      cards: [vagueClaim],
+      openDecisions: 0,
+    });
+    await new CritiqueService(prisma as never).scanVersion('v-1');
+
+    expect(prisma.decision.count).toHaveBeenCalledWith({
+      where: { project_id: 'p-1', step: 'S1', chosen_key: '' },
+    });
   });
 });

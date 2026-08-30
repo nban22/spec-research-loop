@@ -1,4 +1,5 @@
 import { detectAmbiguity, topFinding, type AmbiguityInput } from './ambiguity';
+import { analyzeOutputSchema } from '../contracts/llm-io/generator';
 import {
   MAX_OPEN_QUESTIONS,
   buildQuestion,
@@ -111,6 +112,20 @@ describe('GAP — bốn trường Bước 4', () => {
     ).toEqual([]);
   });
 
+  it('COMPARISON_MARKERS thật sự được dùng — so sánh mà không có chữ số nào', () => {
+    // Test cũ dùng fixture chứa `BM25`, có chữ số nên thoát qua `hasMeasurable` trước khi
+    // chạm `COMPARISON_MARKERS`. Nhánh đang muốn kiểm chưa bao giờ được chạy.
+    const f = detectAmbiguity(
+      gap({
+        prior_work: 'earlier retrieval systems',
+        limitation: 'recall stays low on statutes',
+        why_it_matters: 'lawyers miss the governing statute',
+        testable_experiment: 'Compare our method against prior work.',
+      }),
+    );
+    expect(f.some((x) => x.field === 'testable_experiment')).toBe(false);
+  });
+
   it('cờ trường chỉ toàn từ định tính', () => {
     const f = detectAmbiguity(
       gap({
@@ -143,6 +158,51 @@ describe('luật áp cho mọi thẻ', () => {
       body: 'This approach degrades on long documents.',
     });
     expect(f.some((x) => x.kind === 'DANGLING_PRONOUN')).toBe(false);
+  });
+
+  it('KHÔNG cờ danh từ bắt đầu bằng chuỗi trùng trợ động từ', () => {
+    // Bug thật: `AUX` không có `\b` đóng nhánh nên khớp như **tiền tố** —
+    // `do` ⊂ `document`, `can` ⊂ `candidate`, `is` ⊂ `issue`.
+    for (const body of [
+      'This document describes the retrieval pipeline.',
+      'This domain has no benchmark.',
+      'This candidate model was trained on ZaloLegal.',
+    ]) {
+      const f = detectAmbiguity({
+        type: 'PROBLEM',
+        status: 'PROPOSED',
+        title: 'x',
+        body,
+      });
+      expect(f.some((x) => x.kind === 'DANGLING_PRONOUN')).toBe(false);
+    }
+  });
+
+  it('KHÔNG cờ danh từ số ít kết thúc bằng -s', () => {
+    // `corpus`, `analysis`, `bias` không phải động từ chia số ít.
+    for (const body of [
+      'This corpus has 10k statute passages.',
+      'This analysis covers three datasets.',
+    ]) {
+      const f = detectAmbiguity({
+        type: 'PROBLEM',
+        status: 'PROPOSED',
+        title: 'x',
+        body,
+      });
+      expect(f.some((x) => x.kind === 'DANGLING_PRONOUN')).toBe(false);
+    }
+  });
+
+  it('CÓ cờ đại từ số nhiều đi với trợ động từ', () => {
+    // Chiều dương của nhánh số nhiều — trước đây chỉ có chiều âm nên nhánh này là code chết.
+    const f = detectAmbiguity({
+      type: 'PROBLEM',
+      status: 'PROPOSED',
+      title: 'x',
+      body: 'They are effective on legal text.',
+    });
+    expect(f.some((x) => x.kind === 'DANGLING_PRONOUN')).toBe(true);
   });
 
   it('KHÔNG cờ đại từ số nhiều đi với danh từ số nhiều', () => {
@@ -225,10 +285,20 @@ describe('hạn mức câu hỏi — tiêu chí hoàn thành của #12', () => {
     expect(picked[0].cardId).toBe('a');
   });
 
-  it('hạn mức bằng đúng số câu hỏi tối đa của bước analyze', () => {
-    // `analyzeOutputSchema.clarifying_questions` là `.min(1).max(4)`. B6 **giành chỗ** trong
-    // cùng ngần ấy slot chứ không được cấp thêm — đó là điều #12 đòi.
-    expect(MAX_OPEN_QUESTIONS).toBe(4);
+  it('hạn mức bám ĐÚNG trần của analyzeOutputSchema, không phải một số cứng', () => {
+    // Bản đầu là `expect(MAX_OPEN_QUESTIONS).toBe(4)` — hằng số so với chính nó. Đổi schema
+    // thành `.max(6)` thì bất biến mà comment tuyên bố vỡ **im lặng**. Đọc thẳng từ schema.
+    const shape = analyzeOutputSchema.shape.clarifying_questions;
+    const probe = Array.from({ length: MAX_OPEN_QUESTIONS }, () => ({
+      question: 'q',
+      options: [
+        { key: 'A' as const, label: 'a', explain: '', example: '' },
+        { key: 'B' as const, label: 'b', explain: '', example: '' },
+      ],
+    }));
+    // Đúng bằng trần ⇒ hợp lệ; thêm một câu nữa ⇒ vượt trần.
+    expect(shape.safeParse(probe).success).toBe(true);
+    expect(shape.safeParse([...probe, probe[0]]).success).toBe(false);
   });
 });
 
