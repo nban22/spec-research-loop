@@ -420,7 +420,8 @@ export const ModelName = {
   EvalMetric: 'EvalMetric',
   AuditorScore: 'AuditorScore',
   HumanCheck: 'HumanCheck',
-  OverclaimFlag: 'OverclaimFlag'
+  OverclaimFlag: 'OverclaimFlag',
+  AmbiguityFlag: 'AmbiguityFlag'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -436,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag"
+    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag" | "ambiguityFlag"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2216,6 +2217,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AmbiguityFlag: {
+      payload: Prisma.$AmbiguityFlagPayload<ExtArgs>
+      fields: Prisma.AmbiguityFlagFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AmbiguityFlagFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AmbiguityFlagFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>
+        }
+        findFirst: {
+          args: Prisma.AmbiguityFlagFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AmbiguityFlagFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>
+        }
+        findMany: {
+          args: Prisma.AmbiguityFlagFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>[]
+        }
+        create: {
+          args: Prisma.AmbiguityFlagCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>
+        }
+        createMany: {
+          args: Prisma.AmbiguityFlagCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AmbiguityFlagCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>[]
+        }
+        delete: {
+          args: Prisma.AmbiguityFlagDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>
+        }
+        update: {
+          args: Prisma.AmbiguityFlagUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>
+        }
+        deleteMany: {
+          args: Prisma.AmbiguityFlagDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AmbiguityFlagUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AmbiguityFlagUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>[]
+        }
+        upsert: {
+          args: Prisma.AmbiguityFlagUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AmbiguityFlagPayload>
+        }
+        aggregate: {
+          args: Prisma.AmbiguityFlagAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAmbiguityFlag>
+        }
+        groupBy: {
+          args: Prisma.AmbiguityFlagGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AmbiguityFlagGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AmbiguityFlagCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AmbiguityFlagCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2292,6 +2367,7 @@ export const ProjectScalarFieldEnum = {
   judge_round: 'judge_round',
   judge_rounds_total: 'judge_rounds_total',
   overclaim_detector: 'overclaim_detector',
+  ambiguity_detector: 'ambiguity_detector',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -2636,6 +2712,23 @@ export const OverclaimFlagScalarFieldEnum = {
 } as const
 
 export type OverclaimFlagScalarFieldEnum = (typeof OverclaimFlagScalarFieldEnum)[keyof typeof OverclaimFlagScalarFieldEnum]
+
+
+export const AmbiguityFlagScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  card_id: 'card_id',
+  kind: 'kind',
+  field: 'field',
+  excerpt: 'excerpt',
+  terms: 'terms',
+  reason: 'reason',
+  previous_status: 'previous_status',
+  question_decision_id: 'question_decision_id',
+  created_at: 'created_at'
+} as const
+
+export type AmbiguityFlagScalarFieldEnum = (typeof AmbiguityFlagScalarFieldEnum)[keyof typeof AmbiguityFlagScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3209,6 +3302,7 @@ export type GlobalOmitConfig = {
   auditorScore?: Prisma.AuditorScoreOmit
   humanCheck?: Prisma.HumanCheckOmit
   overclaimFlag?: Prisma.OverclaimFlagOmit
+  ambiguityFlag?: Prisma.AmbiguityFlagOmit
 }
 
 /* Types for Logging */

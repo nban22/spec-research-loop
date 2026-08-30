@@ -74,7 +74,8 @@ export const ModelName = {
   EvalMetric: 'EvalMetric',
   AuditorScore: 'AuditorScore',
   HumanCheck: 'HumanCheck',
-  OverclaimFlag: 'OverclaimFlag'
+  OverclaimFlag: 'OverclaimFlag',
+  AmbiguityFlag: 'AmbiguityFlag'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -130,6 +131,7 @@ export const ProjectScalarFieldEnum = {
   judge_round: 'judge_round',
   judge_rounds_total: 'judge_rounds_total',
   overclaim_detector: 'overclaim_detector',
+  ambiguity_detector: 'ambiguity_detector',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -474,6 +476,23 @@ export const OverclaimFlagScalarFieldEnum = {
 } as const
 
 export type OverclaimFlagScalarFieldEnum = (typeof OverclaimFlagScalarFieldEnum)[keyof typeof OverclaimFlagScalarFieldEnum]
+
+
+export const AmbiguityFlagScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  card_id: 'card_id',
+  kind: 'kind',
+  field: 'field',
+  excerpt: 'excerpt',
+  terms: 'terms',
+  reason: 'reason',
+  previous_status: 'previous_status',
+  question_decision_id: 'question_decision_id',
+  created_at: 'created_at'
+} as const
+
+export type AmbiguityFlagScalarFieldEnum = (typeof AmbiguityFlagScalarFieldEnum)[keyof typeof AmbiguityFlagScalarFieldEnum]
 
 
 export const SortOrder = {
