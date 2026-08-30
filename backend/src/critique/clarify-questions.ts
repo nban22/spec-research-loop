@@ -63,8 +63,25 @@ export const severityRanker: QuestionRanker = (candidates, budget) => {
     .map((x) => x.q);
 };
 
-/** Một thẻ chỉ hỏi **một** câu — hỏi hai câu về cùng một thẻ là làm phiền người dùng. */
+/**
+ * Một thẻ chỉ hỏi **một** câu — hỏi hai câu về cùng một thẻ là làm phiền người dùng.
+ *
+ * Câu hỏi mở đầu bằng chính `finding.reason`, tức **lý do thẻ bị cờ**. Không có nó thì người
+ * dùng chỉ thấy thẻ mang nhãn `AMBIGUOUS` và một câu hỏi trống ngữ cảnh — `reason` nằm trong
+ * `AmbiguityFlag` nhưng không đường nào ra tới giao diện, vì `Decision` chỉ có `question` và
+ * `options`. Ghép vào đây là chỗ duy nhất nó tới được người dùng.
+ */
 export function buildQuestion(
+  cardId: string,
+  cardTitle: string,
+  finding: AmbiguityFinding,
+): AmbiguityQuestion {
+  const q = buildQuestionCore(cardId, cardTitle, finding);
+  return { ...q, question: `${finding.reason} ${q.question}` };
+}
+
+/** Phần khung câu hỏi theo từng loại cờ, chưa gắn lý do. */
+function buildQuestionCore(
   cardId: string,
   cardTitle: string,
   finding: AmbiguityFinding,

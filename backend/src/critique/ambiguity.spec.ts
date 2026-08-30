@@ -316,6 +316,44 @@ describe('câu hỏi sinh ra', () => {
     expect(q.options.some((o) => o.recommended)).toBe(true);
   });
 
+  it('câu hỏi mang NGUYÊN reason của cờ — đường duy nhất lý do tới được người dùng', () => {
+    // `Decision` chỉ có `question` và `options`, không có chỗ cho `reason`. Không ghép vào
+    // `question` thì `AmbiguityFlag.reason` nằm im trong DB và người dùng chỉ thấy nhãn
+    // `AMBIGUOUS` trống ngữ cảnh.
+    const reason =
+      'Trường `baseline` ghi "existing methods" — không nêu tên phương pháp nào.';
+    const q = buildQuestion('c1', 'Cross-domain retrieval', {
+      kind: 'CLAIM_FIELD_VAGUE',
+      field: 'baseline',
+      excerpt: 'existing methods',
+      terms: [],
+      reason,
+    });
+    expect(q.question).toContain(reason);
+    // Và vẫn còn phần hỏi, không phải chỉ có lý do.
+    expect(q.question).toMatch(/so với cái gì/i);
+  });
+
+  it('mọi loại cờ đều mang reason, không riêng CLAIM', () => {
+    const kinds = [
+      { kind: 'GAP_FIELD_VAGUE' as const, field: 'testable_experiment' },
+      { kind: 'GAP_FIELD_VAGUE' as const, field: 'limitation' },
+      { kind: 'DANGLING_PRONOUN' as const, field: null },
+      { kind: 'VAGUE_TERM' as const, field: null },
+      { kind: 'CLAIM_FIELD_VAGUE' as const, field: 'metric' },
+    ];
+    for (const k of kinds) {
+      const q = buildQuestion('c1', 'thẻ X', {
+        ...k,
+        excerpt: 'x',
+        terms: ['effective'],
+        reason: `LÝ DO ${k.kind}/${k.field ?? 'body'}`,
+      });
+      expect(q.question).toContain(`LÝ DO ${k.kind}/${k.field ?? 'body'}`);
+      expect(q.options).toHaveLength(2);
+    }
+  });
+
   it('topFinding chọn cờ nặng nhất', () => {
     const top = topFinding([
       { kind: 'VAGUE_TERM', field: null, excerpt: 'x', terms: [], reason: 'r' },
