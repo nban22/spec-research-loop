@@ -73,6 +73,13 @@ export class CritiqueService {
     });
 
     if (!version.project.ambiguity_detector) {
+      // Tắt cờ thì phải **dọn dấu vết của lần bật trước**, không chỉ return.
+      //
+      // #22 nói cờ này chính là cần gạt để chạy ablation ở #13. Ablation là gạt qua gạt lại
+      // trên **cùng một dữ liệu**; return sớm mà không dọn thì thẻ vẫn `AMBIGUOUS` và câu hỏi
+      // vẫn chiếm hạn mức, nên nhánh đối chứng bị nhiễm bởi nhánh trước và số đo vô nghĩa.
+      // Đo tay ngày 2026-08-30 thấy đúng như vậy: tắt cờ xong vẫn còn 5 thẻ và 5 cờ.
+      await this.clearForVersion(specVersionId);
       return {
         enabled: false,
         scanned: 0,
@@ -137,27 +144,36 @@ export class CritiqueService {
     const dropped = candidates.length - selected.length;
 
     // ── ghi ────────────────────────────────────────────────────────────────
-    const questionByCard = new Map<string, string>();
-    for (const q of selected) {
-      const decision = await this.prisma.decision.create({
-        data: {
-          project_id: version.project_id,
-          spec_version_id: specVersionId,
-          step: 'S1',
-          question: q.question,
-          options: json(q.options),
-          chosen_key: '',
-          actor: 'USER',
-        },
-        select: { id: true },
-      });
-      questionByCard.set(q.cardId, decision.id);
-    }
+    /**
+     * Ba lệnh ghi phải **nguyên tử**.
+     *
+     * Chết giữa bước tạo `Decision` và bước tạo `AmbiguityFlag` thì còn lại những câu hỏi
+     * **không cờ nào trỏ tới**. `clearForVersion` chỉ xoá được decision với tới qua
+     * `question_decision_id`, nên chúng nằm mãi ở `chosen_key = ''` và vẫn bị đếm vào `openNow`.
+     * Hạn mức chỉ có 4 ⇒ vài câu mồ côi là B6 **câm vĩnh viễn** với project đó, không lỗi,
+     * không log. Các thứ tự khác đều tự lành, riêng chỗ này thì không.
+     */
+    const flaggedCards = new Set(flagRows.map((r) => r.cardId));
+    await this.prisma.$transaction(async (tx) => {
+      const questionByCard = new Map<string, string>();
+      for (const q of selected) {
+        const decision = await tx.decision.create({
+          data: {
+            project_id: version.project_id,
+            spec_version_id: specVersionId,
+            step: 'S1',
+            question: q.question,
+            options: json(q.options),
+            chosen_key: '',
+            actor: 'USER',
+          },
+          select: { id: true },
+        });
+        questionByCard.set(q.cardId, decision.id);
+      }
 
-    const flaggedCards = new Set<string>();
-    for (const row of flagRows) {
-      await this.prisma.ambiguityFlag.create({
-        data: {
+      await tx.ambiguityFlag.createMany({
+        data: flagRows.map((row) => ({
           spec_version_id: specVersionId,
           card_id: row.cardId,
           kind: row.finding.kind,
@@ -167,17 +183,16 @@ export class CritiqueService {
           reason: row.finding.reason,
           previous_status: row.previousStatus,
           question_decision_id: questionByCard.get(row.cardId) ?? null,
-        },
+        })),
       });
-      flaggedCards.add(row.cardId);
-    }
 
-    if (flaggedCards.size > 0) {
-      await this.prisma.card.updateMany({
-        where: { id: { in: [...flaggedCards] } },
-        data: { status: 'AMBIGUOUS' },
-      });
-    }
+      if (flaggedCards.size > 0) {
+        await tx.card.updateMany({
+          where: { id: { in: [...flaggedCards] } },
+          data: { status: 'AMBIGUOUS' },
+        });
+      }
+    });
 
     this.logger.log(
       `ambiguity scan ${specVersionId}: ${flaggedCards.size}/${cards.length} thẻ mơ hồ, ` +
@@ -210,24 +225,38 @@ export class CritiqueService {
     });
     if (flags.length === 0) return;
 
+    // Gom theo trạng thái cũ rồi `updateMany` mỗi nhóm một lần, thay vì N lượt `update`.
+    // `CardStatus` chỉ có 6 giá trị nên nhiều nhất 6 truy vấn, không phụ thuộc số thẻ.
+    const byStatus = new Map<string, string[]>();
     for (const f of flags) {
-      await this.prisma.card.update({
-        where: { id: f.card_id },
-        data: { status: f.previous_status as CardStatus },
-      });
+      const list = byStatus.get(f.previous_status) ?? [];
+      list.push(f.card_id);
+      byStatus.set(f.previous_status, list);
     }
 
     const decisionIds = flags
       .map((f) => f.question_decision_id)
       .filter((id): id is string => id !== null);
-    if (decisionIds.length > 0) {
-      await this.prisma.decision.deleteMany({
-        where: { id: { in: decisionIds }, chosen_key: '' },
-      });
-    }
 
-    await this.prisma.ambiguityFlag.deleteMany({
-      where: { spec_version_id: specVersionId },
+    // Nguyên tử: khôi phục dở dang thì một số thẻ về trạng thái cũ, một số kẹt `AMBIGUOUS`,
+    // mà cờ giữ `previous_status` thì có thể đã bị xoá — không còn đường lần lại.
+    await this.prisma.$transaction(async (tx) => {
+      for (const [status, cardIds] of byStatus) {
+        await tx.card.updateMany({
+          where: { id: { in: cardIds } },
+          data: { status: status as CardStatus },
+        });
+      }
+
+      if (decisionIds.length > 0) {
+        await tx.decision.deleteMany({
+          where: { id: { in: decisionIds }, chosen_key: '' },
+        });
+      }
+
+      await tx.ambiguityFlag.deleteMany({
+        where: { spec_version_id: specVersionId },
+      });
     });
   }
 
