@@ -4,11 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, api, qk } from './api';
+import { messageOf } from './error-code';
 import { useJob } from './use-job';
 import type {
   ApiCard,
   ApiDecision,
   ApiIssueGroup,
+  ApiJob,
   ApiJudgeRun,
   ApiOption,
   ApiProjectDetail,
@@ -181,13 +183,39 @@ export function useJobAction(projectId: string) {
   const queryClient = useQueryClient();
   const [jobId, setJobId] = useState<string | null>(null);
 
-  const onDone = useCallback(() => {
-    // Đổi dữ liệu xong thì invalidate đúng nhánh, không gọi `invalidateQueries()` trống.
-    void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-    void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
-  }, [queryClient, projectId]);
+  /**
+   * Job về đích ⇒ báo cho người dùng, rồi mới làm mới dữ liệu.
+   *
+   * `JobProgress` nằm **trên cùng** cột giữa, còn thứ vừa đổi thường nằm dưới màn hình — ví dụ
+   * ba cột nhận xét của bảng nghiên cứu liên quan. Xong việc mà không có gì báo thì người dùng
+   * phải tự cuộn đi tìm xem có gì khác không (#28).
+   *
+   * Dùng thẳng `job.message` vì backend đã viết sẵn câu riêng cho từng hành động, **kèm số
+   * lượng**: "Đã dựng 12 dòng nghiên cứu liên quan." Con số đó cũng vá luôn một đường hỏng im
+   * lặng — `relatedWork()` lọc `source_id` theo whitelist, model trả `source_id` bịa thì bảng
+   * còn ít dòng hơn trước mà job vẫn `DONE`; giờ nó hiện thành "Đã dựng 0 dòng…".
+   */
+  const onSettled = useCallback(
+    (job: ApiJob) => {
+      if (job.status === 'FAILED') {
+        // Ánh xạ `error_code`, **không** phân nhánh bằng `message` (STACK §3.1 luật 3).
+        toast.error(
+          messageOf(
+            job.error_code ?? undefined,
+            'Tiến trình đã dừng vì lỗi. Bạn vui lòng thử lại.',
+          ),
+        );
+        return;
+      }
+      toast.success(job.message ?? 'Đã xong.');
+      // Đổi dữ liệu xong thì invalidate đúng nhánh, không gọi `invalidateQueries()` trống.
+      void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
+    },
+    [queryClient, projectId],
+  );
 
-  const view = useJob(jobId, onDone);
+  const view = useJob(jobId, onSettled);
 
   const start = useMutation({
     mutationFn: (input: { path: string; body?: unknown }) =>

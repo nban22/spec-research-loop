@@ -81,7 +81,14 @@ function vagueTermsIn(text: string): string[] {
   return hits;
 }
 
-/** Tách câu thô — đủ dùng, vì ta chỉ cần biết đại lượng đo có **cùng câu** với từ mơ hồ không. */
+/**
+ * Tách câu thô — chỉ cần biết đại lượng đo có **cùng câu** với từ mơ hồ không.
+ *
+ * Cố ý **không** dùng `splitSentences()` của `common/text.ts` dù nó cùng mục đích: bản đó lọc
+ * `length >= 20` (hợp lý cho L3 của verifier, nơi câu ngắn không mang chứng cứ), còn ở đây câu
+ * ngắn mới đúng là thứ phải bắt — `"It is effective."` dài 16 ký tự và sẽ bị vứt mất. Bản này
+ * cũng tách theo `\n` vì `body` của thẻ có thể xuống dòng.
+ */
 function sentences(text: string): string[] {
   return text
     .split(/(?<=[.!?])\s+|\n+/)

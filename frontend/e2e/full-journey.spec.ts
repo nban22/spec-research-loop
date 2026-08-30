@@ -4,7 +4,9 @@ test.describe('End-to-End Research Spec Journey', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('redirects unauthenticated user from protected dashboard to login', async ({ page }) => {
-    await page.route('**/api/me', (route) =>
+    // Đường thật là `/api/auth/me` (`apiUrl('/auth/me')`), không phải `/api/me`.
+    // Khớp sai thì request lọt ra ngoài mock và test xanh vì lý do khác với lý do ta nghĩ.
+    await page.route('**/api/auth/me', (route) =>
       route.fulfill({ status: 401, json: { code: 'UNAUTHORIZED' } }),
     );
 
@@ -33,7 +35,11 @@ test.describe('End-to-End Research Spec Journey', () => {
         });
       }
 
-      if (url.includes('/api/me')) {
+      // `/api/auth/me`, không phải `/api/me` — trước đây khớp hụt nên mọi lời gọi `/auth/me`
+      // rơi xuống catch-all `{ status: 200, json: {} }` ở cuối, tức là **luôn** trông như đã
+      // đăng nhập. `(app)/layout.tsx` xanh nhờ tình cờ; `(auth)/layout.tsx` thì đọc đúng cái
+      // "thành công" giả đó rồi đá khỏi `/register`.
+      if (url.includes('/api/auth/me')) {
         if (!authenticated) {
           return route.fulfill({ status: 401, json: { code: 'UNAUTHORIZED' } });
         }

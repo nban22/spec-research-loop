@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { HealthController } from './common/health.controller';
@@ -39,7 +40,9 @@ import { CritiqueModule } from './critique/critique.module';
     DecisionModule,
     AuthModule,
     ProjectModule,
-    // làn B · #12 — thêm dòng vào cuối mảng theo luật chung 4.
+    // làn C · #17
+    AnalyticsModule,
+    // làn B · #12
     CritiqueModule,
   ],
   controllers: [HealthController],
