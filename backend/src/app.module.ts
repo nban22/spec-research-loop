@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { HealthController } from './common/health.controller';
@@ -38,6 +39,7 @@ import { VerifierModule } from './verifier/verifier.module';
     DecisionModule,
     AuthModule,
     ProjectModule,
+    AnalyticsModule,
   ],
   controllers: [HealthController],
   providers: [

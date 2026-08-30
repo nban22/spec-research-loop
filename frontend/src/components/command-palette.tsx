@@ -1,7 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { CornerDownLeft, FolderOpen, Home, LifeBuoy, Search, Workflow } from 'lucide-react';
+import {
+  Coins,
+  CornerDownLeft,
+  FolderOpen,
+  Home,
+  LifeBuoy,
+  Search,
+  Workflow,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -97,6 +105,17 @@ export function CommandPalette() {
       run: go(`/projects/${p.id}/step/${STEPS.find((s) => s.step === p.step)?.no ?? 1}`),
     }));
 
+    /* Màn hình chi phí (#17) không có mục nav riêng: `top-nav.tsx` nằm ngoài phạm vi sở hữu
+       của làn C. Bảng lệnh là đường vào hợp lệ và cũng là chỗ người dùng tìm nó tự nhiên nhất. */
+    const cost: Cmd[] = projects.map((p) => ({
+      id: `cost-${p.id}`,
+      label: `Chi phí · ${p.title}`,
+      hint: 'token · thời gian · tiền',
+      group: 'Chi phí',
+      icon: Coins,
+      run: go(`/projects/${p.id}/cost`),
+    }));
+
     // Nhảy bước chỉ có nghĩa khi đã có dự án — lấy dự án sửa gần nhất làm đích.
     const latest = projects[0];
     const jump: Cmd[] = latest
@@ -110,7 +129,7 @@ export function CommandPalette() {
         }))
       : [];
 
-    return [...nav, ...openProject, ...jump];
+    return [...nav, ...openProject, ...cost, ...jump];
   }, [data, router]);
 
   const results = useMemo(() => {
