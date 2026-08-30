@@ -8,9 +8,19 @@ import { CritiqueService } from './critique.service';
  * phải dọn dấu vết. Trước file này ba thứ đó chỉ được kiểm bằng tay trên DB thật, không gì ghim.
  */
 
+/** Chỉ khai phần `AmbiguityFlag.createMany` cần đọc lại trong assert. */
+type FlagRow = { card_id: string; question_decision_id: string | null };
+
+/**
+ * `createMany` được tham số hoá kiểu để `mock.calls[0][0]` **không phải `any`** — `jest.Mock`
+ * trần trả `any`, và đọc thành viên trên `any` bị `no-unsafe-member-access` chặn.
+ */
 type Tx = {
   decision: { create: jest.Mock; deleteMany: jest.Mock };
-  ambiguityFlag: { createMany: jest.Mock; deleteMany: jest.Mock };
+  ambiguityFlag: {
+    createMany: jest.Mock<unknown, [{ data: FlagRow[] }]>;
+    deleteMany: jest.Mock;
+  };
   card: { updateMany: jest.Mock };
 };
 
@@ -25,7 +35,10 @@ function makePrisma(opts: {
       create: jest.fn().mockImplementation(() => ({ id: `d-${seq++}` })),
       deleteMany: jest.fn(),
     },
-    ambiguityFlag: { createMany: jest.fn(), deleteMany: jest.fn() },
+    ambiguityFlag: {
+      createMany: jest.fn<unknown, [{ data: FlagRow[] }]>(),
+      deleteMany: jest.fn(),
+    },
     card: { updateMany: jest.fn() },
   };
   let seq = 1;
@@ -88,9 +101,21 @@ describe('CritiqueService — khôi phục trạng thái', () => {
     const { prisma, tx } = makePrisma({
       detectorOn: false,
       flags: [
-        { card_id: 'c-1', previous_status: 'PROPOSED', question_decision_id: null },
-        { card_id: 'c-2', previous_status: 'CONFIRMED', question_decision_id: null },
-        { card_id: 'c-3', previous_status: 'PROPOSED', question_decision_id: null },
+        {
+          card_id: 'c-1',
+          previous_status: 'PROPOSED',
+          question_decision_id: null,
+        },
+        {
+          card_id: 'c-2',
+          previous_status: 'CONFIRMED',
+          question_decision_id: null,
+        },
+        {
+          card_id: 'c-3',
+          previous_status: 'PROPOSED',
+          question_decision_id: null,
+        },
       ],
     });
     const service = new CritiqueService(prisma as never);
@@ -113,7 +138,11 @@ describe('CritiqueService — khôi phục trạng thái', () => {
     const { prisma, tx } = makePrisma({
       detectorOn: false,
       flags: [
-        { card_id: 'c-1', previous_status: 'PROPOSED', question_decision_id: 'd-9' },
+        {
+          card_id: 'c-1',
+          previous_status: 'PROPOSED',
+          question_decision_id: 'd-9',
+        },
       ],
     });
     await new CritiqueService(prisma as never).scanVersion('v-1');
@@ -151,9 +180,7 @@ describe('CritiqueService — hạn mức câu hỏi', () => {
 
     expect(res.questionsAsked).toBe(1);
     expect(res.questionsDropped).toBe(0);
-    const rows = tx.ambiguityFlag.createMany.mock.calls[0][0].data as {
-      question_decision_id: string | null;
-    }[];
+    const rows = tx.ambiguityFlag.createMany.mock.calls[0][0].data;
     expect(rows[0].question_decision_id).not.toBeNull();
   });
 });
