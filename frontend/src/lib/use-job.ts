@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, apiUrl, qk } from './api';
 import type { ApiJob } from './types';
 
@@ -20,7 +20,11 @@ export type JobView = {
  * vào đó. Mất kết nối thì poll vẫn chạy, nên màn hình không bao giờ đứng im không giải thích được.
  * Không giữ tiến độ trong `useState` của component — mất kết nối là mất luôn tiến độ.
  */
-export function useJob(jobId: string | null, onDone?: () => void): JobView {
+export function useJob(
+  jobId: string | null,
+  /** Gọi một lần khi job về trạng thái cuối. Nhận cả `job` để nơi gọi đọc `message` / `error_code`. */
+  onSettled?: (job: ApiJob) => void,
+): JobView {
   const queryClient = useQueryClient();
   const [connectionLost, setConnectionLost] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -79,10 +83,21 @@ export function useJob(jobId: string | null, onDone?: () => void): JobView {
     return () => es.close();
   }, [jobId, queryClient]);
 
-  // Chỉ chạy đúng một lần cho mỗi job, vì effect phụ thuộc cả `jobId` lẫn trạng thái.
+  /**
+   * Bắn **đúng một lần** cho mỗi job, ở trạng thái cuối — `DONE` hoặc `FAILED`.
+   *
+   * Không dựa vào deps để chống lặp: `onSettled` là callback của nơi gọi, đổi identity là
+   * effect chạy lại và người dùng ăn hai toast cho cùng một job. `notifiedRef` chốt theo
+   * `jobId` nên dù re-render kiểu gì cũng chỉ báo một lần.
+   */
+  const notifiedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (jobId && job?.status === 'DONE') onDone?.();
-  }, [jobId, job?.status, onDone]);
+    if (!jobId || !job) return;
+    if (job.status !== 'DONE' && job.status !== 'FAILED') return;
+    if (notifiedRef.current === jobId) return;
+    notifiedRef.current = jobId;
+    onSettled?.(job);
+  }, [jobId, job, onSettled]);
 
   return { job, elapsedMs: isRunning ? elapsedMs : 0, connectionLost, isRunning };
 }
