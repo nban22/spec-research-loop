@@ -7,23 +7,7 @@
  *
  *   npm run eval:build && node dist-eval/eval/seed-overclaim-demo.js
  */
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma/client';
-
-/** Prisma 7 bắt buộc driver adapter; `datasourceUrl` trong constructor đã bị bỏ. */
-function databaseUrl(): string {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  const raw = readFileSync(join(__dirname, '..', '..', '.env'), 'utf8');
-  const m = /^\s*DATABASE_URL\s*=\s*(.*)$/m.exec(raw);
-  if (!m) throw new Error('Không tìm thấy DATABASE_URL trong backend/.env');
-  return m[1].trim().replace(/^["'](.*)["']$/, '$1');
-}
-
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: databaseUrl() }),
-});
+import { boot } from './harness';
 
 /** Bốn khẳng định trải đủ ba nhánh của tầng luật, cộng một câu sạch làm đối chứng. */
 const CLAIMS = [
@@ -78,64 +62,71 @@ const PLAN = {
 
 async function main(): Promise<void> {
   const email = process.argv[2] ?? 'demo@local.test';
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    throw new Error(
-      `Chưa có tài khoản ${email}. Đăng ký trước ở http://localhost:3000/register`,
+  // `boot()` dựng Nest context thật ⇒ `ConfigModule` nạp và **kiểm** env, rồi trả `PrismaService`
+  // đã cấu hình. Không tự đọc `.env` và không `new PrismaClient()` (backend/CLAUDE.md §2).
+  const s = await boot();
+  try {
+    const user = await s.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new Error(
+        `Chưa có tài khoản ${email}. Đăng ký trước ở http://localhost:3000/register`,
+      );
+    }
+
+    const project = await s.prisma.project.create({
+      data: {
+        user_id: user.id,
+        title: 'Demo · cờ claim phóng đại',
+        raw_idea:
+          'Hybrid retrieval for Vietnamese legal question answering over statute passages.',
+        domain: 'Vietnamese legal QA',
+        step: 'S4',
+        status: 'IN_PROGRESS',
+        overclaim_detector: true,
+      },
+    });
+
+    const version = await s.prisma.specVersion.create({
+      data: {
+        project_id: project.id,
+        version_no: 1,
+        status: 'UNDER_REVIEW',
+        label: 'demo overclaim',
+      },
+    });
+
+    await s.prisma.card.createMany({
+      data: CLAIMS.map((c, i) => ({
+        spec_version_id: version.id,
+        type: 'CLAIM' as const,
+        status: 'PROPOSED' as const,
+        title: c.title,
+        body: c.body,
+        order_index: i,
+      })),
+    });
+
+    await s.prisma.experimentPlan.create({
+      data: { spec_version_id: version.id, plan: PLAN },
+    });
+
+    await s.prisma.project.update({
+      where: { id: project.id },
+      data: { current_spec_version_id: version.id },
+    });
+
+    console.log(`project  : ${project.id}`);
+    console.log(`version  : ${version.id}`);
+    console.log(
+      `mở       : http://localhost:3000/projects/${project.id}/step/4`,
     );
+    for (const c of CLAIMS) console.log(`  · ${c.title} — ${c.note}`);
+  } finally {
+    await s.app.close();
   }
-
-  const project = await prisma.project.create({
-    data: {
-      user_id: user.id,
-      title: 'Demo · cờ claim phóng đại',
-      raw_idea:
-        'Hybrid retrieval for Vietnamese legal question answering over statute passages.',
-      domain: 'Vietnamese legal QA',
-      step: 'S4',
-      status: 'IN_PROGRESS',
-      overclaim_detector: true,
-    },
-  });
-
-  const version = await prisma.specVersion.create({
-    data: {
-      project_id: project.id,
-      version_no: 1,
-      status: 'UNDER_REVIEW',
-      label: 'demo overclaim',
-    },
-  });
-
-  await prisma.card.createMany({
-    data: CLAIMS.map((c, i) => ({
-      spec_version_id: version.id,
-      type: 'CLAIM' as const,
-      status: 'PROPOSED' as const,
-      title: c.title,
-      body: c.body,
-      order_index: i,
-    })),
-  });
-
-  await prisma.experimentPlan.create({
-    data: { spec_version_id: version.id, plan: PLAN },
-  });
-
-  await prisma.project.update({
-    where: { id: project.id },
-    data: { current_spec_version_id: version.id },
-  });
-
-  console.log(`project  : ${project.id}`);
-  console.log(`version  : ${version.id}`);
-  console.log(`mở       : http://localhost:3000/projects/${project.id}/step/4`);
-  for (const c of CLAIMS) console.log(`  · ${c.title} — ${c.note}`);
 }
 
-main()
-  .catch((err: unknown) => {
-    console.error(err instanceof Error ? err.message : err);
-    process.exitCode = 1;
-  })
-  .finally(() => void prisma.$disconnect());
+main().catch((err: unknown) => {
+  console.error(err instanceof Error ? err.message : err);
+  process.exitCode = 1;
+});
