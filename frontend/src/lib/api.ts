@@ -123,4 +123,7 @@ export const qk = {
   job: (id: string) => ['jobs', id] as const,
   // làn B · #7 — thêm dòng vào cuối theo luật chung 4, không sửa dòng của ai.
   overclaim: (id: string) => ['spec-versions', id, 'overclaim'] as const,
+  // làn B · #9 — thêm dòng vào cuối theo luật chung 4.
+  agreement: (id: string) =>
+    ['spec-versions', id, 'judge-agreement'] as const,
 };
