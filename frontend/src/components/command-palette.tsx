@@ -8,6 +8,7 @@ import {
   Home,
   LifeBuoy,
   Search,
+  ShieldAlert,
   Workflow,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -105,8 +106,8 @@ export function CommandPalette() {
       run: go(`/projects/${p.id}/step/${STEPS.find((s) => s.step === p.step)?.no ?? 1}`),
     }));
 
-    /* Màn hình chi phí (#17) không có mục nav riêng: `top-nav.tsx` nằm ngoài phạm vi sở hữu
-       của làn C. Bảng lệnh là đường vào hợp lệ và cũng là chỗ người dùng tìm nó tự nhiên nhất. */
+    /* Hai màn của làn C không có mục nav riêng: `top-nav.tsx` nằm ngoài phạm vi sở hữu của
+       làn này. Bảng lệnh là đường vào hợp lệ và cũng là chỗ người dùng tìm chúng tự nhiên nhất. */
     const cost: Cmd[] = projects.map((p) => ({
       id: `cost-${p.id}`,
       label: `Chi phí · ${p.title}`,
@@ -114,6 +115,15 @@ export function CommandPalette() {
       group: 'Chi phí',
       icon: Coins,
       run: go(`/projects/${p.id}/cost`),
+    }));
+
+    const errors: Cmd[] = projects.map((p) => ({
+      id: `err-${p.id}`,
+      label: `Phân tích lỗi · ${p.title}`,
+      hint: 'cờ · nhãn · ngưỡng',
+      group: 'Phân tích',
+      icon: ShieldAlert,
+      run: go(`/projects/${p.id}/errors`),
     }));
 
     // Nhảy bước chỉ có nghĩa khi đã có dự án — lấy dự án sửa gần nhất làm đích.
@@ -129,7 +139,7 @@ export function CommandPalette() {
         }))
       : [];
 
-    return [...nav, ...openProject, ...cost, ...jump];
+    return [...nav, ...openProject, ...cost, ...errors, ...jump];
   }, [data, router]);
 
   const results = useMemo(() => {
