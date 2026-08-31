@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { SupportTag } from './support-tag';
+import type { SupportLabel } from '@/lib/types';
 
 describe('SupportTag', () => {
   it('renders SUPPORTED tag with ok-ink border styles', () => {
@@ -33,4 +34,10 @@ describe('SupportTag', () => {
     const container = screen.getByText('SUPPORTED').closest('.flex-wrap');
     expect(container).toHaveClass('custom-tag-container');
   });
+
+  it('renders an unknown support label verbatim instead of crashing', () => {
+    render(<SupportTag label={'PARTIAL' as SupportLabel} />);
+    expect(screen.getByText('PARTIAL')).toBeInTheDocument();
+  });
+
 });

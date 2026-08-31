@@ -18,6 +18,7 @@ import { HintBox } from '@/components/hint-box';
 import { StatusChip } from '@/components/status-chip';
 import { ApiError, api } from '@/lib/api';
 import { CARD_STATUS_STYLE } from '@/lib/status-style';
+import { styleOr } from '@/lib/unknown-style';
 import {
   CARD_STATUSES,
   CARD_TYPE_LABEL,
@@ -73,6 +74,28 @@ const STATUS_FILL: Record<CardStatus, string> = {
   UNSUPPORTED: 'fill-danger-ink',
   CONFLICT: 'fill-decide-ink',
 };
+
+/**
+ * Tra bảng nhãn/màu theo `status` **chịu được giá trị lạ**.
+ *
+ * `Record<CardStatus, …>` khiến TypeScript tin mọi khoá đều có, nhưng `status` ở đây đến từ
+ * **API lúc chạy**, không từ trình biên dịch: backend thêm một trạng thái thứ bảy trước khi
+ * frontend kịp đồng bộ enum là bảng tra trả `undefined`, và `.label` trên `undefined` làm trắng
+ * cả trang.
+ *
+ * Bản đồ này lộ ra chỗ đó rõ hơn `CardBoard`: `CardBoard` bọc thẻ trong accordion nên nhóm đang
+ * đóng **không được mount**, còn bản đồ vẽ **mọi** thẻ ngay lập tức.
+ *
+ * Cách xử: hiện nguyên văn giá trị lạ thay vì sập — người dùng thấy có gì đó chưa khớp, và
+ * lập trình viên đọc ra ngay giá trị nào gây chuyện.
+ */
+function labelOf(status: CardStatus): string {
+  return styleOr(CARD_STATUS_STYLE, status).label;
+}
+
+function fillOf(status: CardStatus): string {
+  return STATUS_FILL[status] ?? 'fill-neutral-line';
+}
 
 type Node = {
   card: ApiCard;
@@ -246,13 +269,13 @@ export function ConceptMap({
                   width={5}
                   height={34}
                   rx={2.5}
-                  className={STATUS_FILL[n.card.status]}
+                  className={fillOf(n.card.status)}
                 />
                 <text x={n.x - 62} y={n.y - 2} className="fill-ink-1 text-[11px] font-medium">
                   {short(n.card.title, 22)}
                 </text>
                 <text x={n.x - 62} y={n.y + 11} className="fill-ink-3 text-[9px]">
-                  {CARD_STATUS_STYLE[n.card.status].label}
+                  {labelOf(n.card.status)}
                 </text>
               </g>
             )),

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { SUPPORT_STYLE, VERIFIER_FLAG_LABEL } from '@/lib/status-style';
+import { styleOr } from '@/lib/unknown-style';
 import type { SupportLabel, VerifierFlag } from '@/lib/types';
 
 /**
@@ -17,7 +18,7 @@ export function SupportTag({
   flags?: VerifierFlag[] | null;
   className?: string;
 }) {
-  const style = SUPPORT_STYLE[label];
+  const style = styleOr(SUPPORT_STYLE, label);
   const Icon = style.icon;
   const reasons = (flags ?? []).map((f) => VERIFIER_FLAG_LABEL[f]).filter(Boolean);
 

@@ -88,6 +88,19 @@ describe('ConceptMap', () => {
     expect(screen.getByDisplayValue('Thân thẻ ban đầu')).toBeInTheDocument();
   });
 
+  /**
+   * `status` đến từ API lúc chạy, không từ trình biên dịch. Backend thêm một trạng thái thứ bảy
+   * trước khi frontend kịp đồng bộ enum là bảng tra trả `undefined` — và bản đồ vẽ **mọi** thẻ
+   * ngay lập tức nên nó chạm vào chỗ đó trước `CardBoard` (thẻ trong accordion đang đóng thì
+   * Radix chưa mount). Đây chính là lỗi làm trắng trang ở CI của PR này.
+   */
+  it('trạng thái lạ ngoài 6 giá trị thì hiện nguyên văn, không làm trắng trang', () => {
+    const weird = { ...card({ id: 'cx', title: 'Thẻ lạ' }), status: 'UNVERIFIED' as CardStatus };
+    expect(() => wrap(<ConceptMap projectId="p-1" meta={null} cards={[weird]} />)).not.toThrow();
+    expect(screen.getByText('UNVERIFIED')).toBeInTheDocument();
+    expect(screen.getByLabelText('Sửa thẻ Thẻ lạ')).toBeInTheDocument();
+  });
+
   it('không có thẻ nào thì nói rõ, không vẽ hình rỗng', () => {
     const { container } = wrap(<ConceptMap projectId="p-1" meta={null} cards={[]} />);
     expect(screen.getByText('Chưa có thẻ nào để dựng bản đồ.')).toBeInTheDocument();
