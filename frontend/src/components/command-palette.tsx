@@ -9,6 +9,7 @@ import {
   LifeBuoy,
   Map,
   Search,
+  SlidersHorizontal,
   ShieldAlert,
   Workflow,
 } from 'lucide-react';
@@ -138,6 +139,16 @@ export function CommandPalette() {
       run: go(`/projects/${p.id}/map`),
     }));
 
+    // Mô phỏng chi phí (#18) — cùng lý do với hai màn hình trên.
+    const sim: Cmd[] = projects.map((p) => ({
+      id: `sim-${p.id}`,
+      label: `Mô phỏng chi phí · ${p.title}`,
+      hint: 'VRAM · Pareto',
+      group: 'Mô phỏng chi phí',
+      icon: SlidersHorizontal,
+      run: go(`/projects/${p.id}/simulate`),
+    }));
+
     // Nhảy bước chỉ có nghĩa khi đã có dự án — lấy dự án sửa gần nhất làm đích.
     const latest = projects[0];
     const jump: Cmd[] = latest
@@ -151,7 +162,7 @@ export function CommandPalette() {
         }))
       : [];
 
-    return [...nav, ...openProject, ...cost, ...errors, ...map, ...jump];
+    return [...nav, ...openProject, ...cost, ...errors, ...map, ...sim, ...jump];
   }, [data, router]);
 
   const results = useMemo(() => {
