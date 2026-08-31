@@ -78,10 +78,10 @@ describe('JudgeAgreementPanel', () => {
     expect(screen.queryByText('1.000')).not.toBeInTheDocument();
   });
 
-  it('UNIFORM_MARGINALS ⇒ nói rõ không có cấu trúc nào, kèm hằng số −1/(R−1)', async () => {
+  it('IDENTICAL_ROWS ⇒ nói rõ không có cấu trúc nào, kèm hằng số −1/(R−1)', async () => {
     mount({
       ...base,
-      kappa: { ...base.kappa, kappa: -0.25, degenerate: 'UNIFORM_MARGINALS' },
+      kappa: { ...base.kappa, kappa: -0.25, degenerate: 'IDENTICAL_ROWS' },
     });
     await waitFor(() =>
       expect(screen.getByText(/không có cấu trúc chồng lấn nào/)).toBeInTheDocument(),

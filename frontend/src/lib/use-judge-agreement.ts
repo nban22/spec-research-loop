@@ -20,7 +20,8 @@ export type ApiKappa = {
   raters: number;
   items: number;
   unanimous: boolean;
-  degenerate: 'UNIFORM_MARGINALS' | null;
+  /** Phải khớp `KappaResult.degenerate` của backend — đây là bản chép tay, TS không gác được. */
+  degenerate: 'IDENTICAL_ROWS' | null;
 };
 
 export type ApiJaccardCell = { value: number | null; union: number };

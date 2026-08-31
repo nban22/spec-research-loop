@@ -75,7 +75,7 @@ export type KappaResult = {
   /** Mọi người cùng một nhãn trên mọi mục. Giữ riêng vì `NO_VARIANCE` làm mất thông tin này. */
   unanimous: boolean;
   /**
-   * `UNIFORM_MARGINALS`: mọi mục có cùng vector đếm ⇒ κ đúng bằng `−1/(R−1)`, **không mang tin**.
+   * `IDENTICAL_ROWS`: mọi mục có cùng vector đếm ⇒ κ đúng bằng `−1/(R−1)`, **không mang tin**.
    * Giao diện phải in "không có cấu trúc chồng lấn nào" thay vì một con số âm đáng sợ.
    */
   degenerate: 'IDENTICAL_ROWS' | null;

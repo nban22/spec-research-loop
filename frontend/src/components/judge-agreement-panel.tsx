@@ -102,7 +102,7 @@ function KappaHeadline({ a }: { a: ApiAgreement }) {
         </HintBox>
       )}
 
-      {k.degenerate === 'UNIFORM_MARGINALS' && (
+      {k.degenerate === 'IDENTICAL_ROWS' && (
         <HintBox tone="warn">
           Mọi thẻ có cùng dạng phân bố phiếu, nên hệ số bằng đúng{' '}
           <span className="tabular-nums">{(-1 / (k.raters - 1)).toFixed(2)}</span> bất kể judge

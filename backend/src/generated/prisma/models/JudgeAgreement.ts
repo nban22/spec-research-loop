@@ -651,7 +651,7 @@ export type $JudgeAgreementPayload<ExtArgs extends runtime.Types.Extensions.Inte
      */
     unanimous: boolean
     /**
-     * `UNIFORM_MARGINALS` khi κ là hằng số `−1/(raters−1)`, không mang tin.
+     * `IDENTICAL_ROWS` khi κ là hằng số `−1/(raters−1)`, không mang tin.
      */
     degenerate: string | null
     /**

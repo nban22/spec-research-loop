@@ -748,7 +748,7 @@ model JudgeAgreement {
   reason          String?
   /// Mọi người cùng một nhãn trên mọi mục — giữ riêng vì `NO_VARIANCE` làm mất thông tin này.
   unanimous       Boolean  @default(false)
-  /// `UNIFORM_MARGINALS` khi κ là hằng số `−1/(raters−1)`, không mang tin.
+  /// `IDENTICAL_ROWS` khi κ là hằng số `−1/(raters−1)`, không mang tin.
   degenerate      String?
   /// Tỉ lệ issue có gắn thẻ. Issue không gắn thẻ nằm ngoài tập mục.
   coverage        Float?
