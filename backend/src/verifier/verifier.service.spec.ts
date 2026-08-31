@@ -15,6 +15,8 @@ describe('VerifierService', () => {
   // `verifySpecVersion('v-1')` không kèm opts, nên hai hàm dưới không bao giờ bị chạm;
   // vẫn mock cho đủ arity thay vì dựa vào chỗ hở đó.
   const conflict = { clearForVersion: jest.fn(), scanVersion: jest.fn() };
+  // #2 — cùng lý do: `isEnabled` chỉ được gọi khi có `opts.projectId`.
+  const fulltext = { isEnabled: jest.fn(), beginRun: jest.fn() };
 
   const service = new VerifierService(
     prisma as never,
@@ -22,6 +24,7 @@ describe('VerifierService', () => {
     llm as never,
     sourceClient as never,
     conflict as never,
+    fulltext as never,
   );
 
   beforeEach(() => {

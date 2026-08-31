@@ -27,14 +27,14 @@ function makePrisma() {
         const w = where as unknown as { id: { in: string[] } };
         state.updateMany.push({
           ids: w.id.in,
-          data: data as unknown as Record<string, unknown>,
+          data: data,
         });
         return Promise.resolve({ count: w.id.in.length });
       }),
     },
     cardConflict: {
       create: jest.fn(({ data }: never) => {
-        state.conflicts.push(data as unknown as Record<string, unknown>);
+        state.conflicts.push(data);
         return Promise.resolve(data);
       }),
       deleteMany: jest.fn(() => {
@@ -252,9 +252,10 @@ describe('ConflictService', () => {
     const res = await service.scanVersion('v-1', 'p-1');
 
     expect(llm.completeJson).toHaveBeenCalledTimes(1);
-    expect(llm.completeJson.mock.calls[0][0]).toMatchObject({
-      promptId: 'conflict_pair',
-    });
+    // Prompt riêng, không dùng lại `verifier_entailment` — nếu không thì token của bộ này
+    // lẫn vào token L4 trong bảng chi phí.
+    const [call] = llm.completeJson.mock.calls as [{ promptId: string }][];
+    expect(call[0]).toMatchObject({ promptId: 'conflict_pair' });
     expect(res.intraCard).toBe(0);
     expect(state.conflicts).toHaveLength(0);
   });

@@ -19,7 +19,7 @@ const ID_OLD = /^([a-z-]+(?:\.[A-Z]{2})?\/\d{7})(?:v(\d+))?$/i;
 /** `10.48550/arXiv.2301.12345` — DOI mà arXiv tự cấp từ 2022. */
 const DOI_ARXIV = /^10\.48550\/arxiv\.(.+)$/i;
 
-/** `arxiv.org/abs/2301.12345v2`, `/pdf/…​.pdf`, `/html/…`, `/format/…`. */
+/** `arxiv.org/abs/2301.12345v2`, `/pdf/2301.12345.pdf`, `/html/…`, `/format/…`. */
 const URL_ARXIV =
   /arxiv\.org\/(?:abs|pdf|html|format)\/([^\s?#]+?)(?:\.pdf)?$/i;
 
@@ -97,10 +97,13 @@ function fromRawOpenAlex(raw: unknown): string | null {
   const viaDoi = fromDoi(asString(ids?.doi));
   if (viaDoi) return viaDoi;
 
+  const extra: unknown[] = Array.isArray(root.locations)
+    ? (root.locations as unknown[])
+    : [];
   const locations: unknown[] = [
     root.best_oa_location,
     root.primary_location,
-    ...(Array.isArray(root.locations) ? root.locations : []),
+    ...extra,
   ];
   for (const loc of locations) {
     const l = asRecord(loc);

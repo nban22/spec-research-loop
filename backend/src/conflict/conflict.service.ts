@@ -186,7 +186,7 @@ export class ConflictService {
       },
       orderBy: { id: 'asc' },
     });
-    return rows as UnitRow[];
+    return rows;
   }
 
   private toSide(u: UnitRow): ConflictSide {
