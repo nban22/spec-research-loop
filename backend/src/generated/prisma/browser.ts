@@ -159,3 +159,20 @@ export type OverclaimFlag = Prisma.OverclaimFlagModel
  *  * relation đòi thêm field ngược vào `Card`, mà luật chung 4 chỉ cho thêm dòng cuối file.
  */
 export type AmbiguityFlag = Prisma.AmbiguityFlagModel
+/**
+ * Model JudgeAgreement
+ * *
+ *  * Một bản ghi đo cho **một vòng judge**.
+ *  *
+ *  * Vì sao lưu chứ không tính lúc render: `SYSTEM_DESIGN_ANALYSIS` NFR-JDG-6 —
+ *  * *"Điểm đồng thuận phải cố định — không tính lại lúc render. F5 hai lần ra hai số là hỏng."*
+ *  * Và #13 cần bản ghi lịch sử để so κ trước/sau khi bật #8.
+ *  *
+ *  * Khoá theo `(spec_version_id, round)`, **không** theo `round` một mình: `apply` reset
+ *  * `Project.judge_round` về 0 cho version mới, nên "vòng 1" tồn tại trên nhiều version.
+ *  *
+ *  * `card_id` / `spec_version_id` để scalar trần, không relation — cùng lý do `OverclaimFlag` và
+ *  * `AmbiguityFlag`: relation đòi thêm field ngược vào model đang có, mà luật chung 4 chỉ cho thêm
+ *  * dòng vào cuối file.
+ */
+export type JudgeAgreement = Prisma.JudgeAgreementModel

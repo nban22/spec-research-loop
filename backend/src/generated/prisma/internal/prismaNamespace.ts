@@ -421,7 +421,8 @@ export const ModelName = {
   AuditorScore: 'AuditorScore',
   HumanCheck: 'HumanCheck',
   OverclaimFlag: 'OverclaimFlag',
-  AmbiguityFlag: 'AmbiguityFlag'
+  AmbiguityFlag: 'AmbiguityFlag',
+  JudgeAgreement: 'JudgeAgreement'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -437,7 +438,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag" | "ambiguityFlag"
+    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag" | "ambiguityFlag" | "judgeAgreement"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2291,6 +2292,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    JudgeAgreement: {
+      payload: Prisma.$JudgeAgreementPayload<ExtArgs>
+      fields: Prisma.JudgeAgreementFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.JudgeAgreementFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.JudgeAgreementFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>
+        }
+        findFirst: {
+          args: Prisma.JudgeAgreementFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.JudgeAgreementFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>
+        }
+        findMany: {
+          args: Prisma.JudgeAgreementFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>[]
+        }
+        create: {
+          args: Prisma.JudgeAgreementCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>
+        }
+        createMany: {
+          args: Prisma.JudgeAgreementCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.JudgeAgreementCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>[]
+        }
+        delete: {
+          args: Prisma.JudgeAgreementDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>
+        }
+        update: {
+          args: Prisma.JudgeAgreementUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>
+        }
+        deleteMany: {
+          args: Prisma.JudgeAgreementDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.JudgeAgreementUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.JudgeAgreementUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>[]
+        }
+        upsert: {
+          args: Prisma.JudgeAgreementUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAgreementPayload>
+        }
+        aggregate: {
+          args: Prisma.JudgeAgreementAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateJudgeAgreement>
+        }
+        groupBy: {
+          args: Prisma.JudgeAgreementGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.JudgeAgreementGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.JudgeAgreementCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.JudgeAgreementCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2368,6 +2443,7 @@ export const ProjectScalarFieldEnum = {
   judge_rounds_total: 'judge_rounds_total',
   overclaim_detector: 'overclaim_detector',
   ambiguity_detector: 'ambiguity_detector',
+  judge_agreement: 'judge_agreement',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -2729,6 +2805,25 @@ export const AmbiguityFlagScalarFieldEnum = {
 } as const
 
 export type AmbiguityFlagScalarFieldEnum = (typeof AmbiguityFlagScalarFieldEnum)[keyof typeof AmbiguityFlagScalarFieldEnum]
+
+
+export const JudgeAgreementScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  round: 'round',
+  raters: 'raters',
+  items: 'items',
+  kappa: 'kappa',
+  reason: 'reason',
+  unanimous: 'unanimous',
+  degenerate: 'degenerate',
+  coverage: 'coverage',
+  matrix: 'matrix',
+  patterns: 'patterns',
+  created_at: 'created_at'
+} as const
+
+export type JudgeAgreementScalarFieldEnum = (typeof JudgeAgreementScalarFieldEnum)[keyof typeof JudgeAgreementScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3303,6 +3398,7 @@ export type GlobalOmitConfig = {
   humanCheck?: Prisma.HumanCheckOmit
   overclaimFlag?: Prisma.OverclaimFlagOmit
   ambiguityFlag?: Prisma.AmbiguityFlagOmit
+  judgeAgreement?: Prisma.JudgeAgreementOmit
 }
 
 /* Types for Logging */

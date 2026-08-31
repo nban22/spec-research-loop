@@ -75,7 +75,8 @@ export const ModelName = {
   AuditorScore: 'AuditorScore',
   HumanCheck: 'HumanCheck',
   OverclaimFlag: 'OverclaimFlag',
-  AmbiguityFlag: 'AmbiguityFlag'
+  AmbiguityFlag: 'AmbiguityFlag',
+  JudgeAgreement: 'JudgeAgreement'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -132,6 +133,7 @@ export const ProjectScalarFieldEnum = {
   judge_rounds_total: 'judge_rounds_total',
   overclaim_detector: 'overclaim_detector',
   ambiguity_detector: 'ambiguity_detector',
+  judge_agreement: 'judge_agreement',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -493,6 +495,25 @@ export const AmbiguityFlagScalarFieldEnum = {
 } as const
 
 export type AmbiguityFlagScalarFieldEnum = (typeof AmbiguityFlagScalarFieldEnum)[keyof typeof AmbiguityFlagScalarFieldEnum]
+
+
+export const JudgeAgreementScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  round: 'round',
+  raters: 'raters',
+  items: 'items',
+  kappa: 'kappa',
+  reason: 'reason',
+  unanimous: 'unanimous',
+  degenerate: 'degenerate',
+  coverage: 'coverage',
+  matrix: 'matrix',
+  patterns: 'patterns',
+  created_at: 'created_at'
+} as const
+
+export type JudgeAgreementScalarFieldEnum = (typeof JudgeAgreementScalarFieldEnum)[keyof typeof JudgeAgreementScalarFieldEnum]
 
 
 export const SortOrder = {

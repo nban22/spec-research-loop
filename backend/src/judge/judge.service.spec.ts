@@ -21,11 +21,13 @@ describe('JudgeService', () => {
   const spec = { buildSpecJson: jest.fn() };
   const sources = { sourcesForPrompt: jest.fn() };
 
+  const agreement = { recompute: jest.fn().mockResolvedValue(undefined) };
   const service = new JudgeService(
     prisma as never,
     llm as never,
     spec as never,
     sources as never,
+    agreement as never,
   );
 
   beforeEach(() => {

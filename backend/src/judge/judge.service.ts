@@ -13,6 +13,7 @@ import { GeneratorService } from '../generator/generator.service';
 import { LlmService } from '../llm/llm.service';
 import { SourcesService } from '../sources/sources.service';
 import { SpecService } from '../spec/spec.service';
+import { AgreementService } from './agreement/agreement.service';
 import { groupIssues, type RawIssue } from './issue-grouping';
 import type { JudgeKey } from './judge.types';
 
@@ -40,6 +41,7 @@ export class JudgeService {
     private readonly llm: LlmService,
     private readonly spec: SpecService,
     private readonly sources: SourcesService,
+    private readonly agreement: AgreementService,
   ) {}
 
   async runRound(
@@ -208,6 +210,17 @@ export class JudgeService {
       data: { status: 'UNDER_REVIEW' },
     });
 
+    // Chốt số đo bất đồng **ngay lúc chạy**, không để lần đầu ai đó mở màn hình mới chốt
+    // (NFR-JDG-6). Lỗi ở đây không được làm rơi cả vòng judge vừa tốn tiền thật — cùng lý lẽ
+    // với `Promise.allSettled` ở trên.
+    await this.agreement
+      .recompute(specVersionId, round)
+      .catch((err: unknown) => {
+        this.logger.warn(
+          `không chốt được số đo bất đồng vòng ${round}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      });
+
     return { round, completed, failed, inputDigest, groupCount };
   }
 
@@ -266,6 +279,12 @@ export class JudgeService {
       where: {
         judge_run: { spec_version_id: specVersionId, round, status: 'OK' },
       },
+      // `orderBy` là **bắt buộc**, không phải cho đẹp. `groupIssues` gộp tham lam: nó lấy khớp
+      // *đầu tiên* và đổi `canonicalTitle` giữa chừng, nên đổi thứ tự đầu vào là ra tập nhóm
+      // khác — và `agreement_count` là con số đi vào báo cáo. Không có `orderBy` thì Postgres
+      // trả thứ tự nào cũng được, tức NFR-JDG-6 ("không tính lại ra hai số") chỉ là lời khẳng
+      // định chứ chưa phải sự thật.
+      orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
       include: { judge_run: { select: { judge_key: true } } },
     });
 
