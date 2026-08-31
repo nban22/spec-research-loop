@@ -124,12 +124,16 @@ describe('JudgeAgreementPanel', () => {
   it('ô cỡ mẫu nhỏ bị LÀM MỜ, ô đủ mẫu và trùng cao thì tô đậm', async () => {
     // Màu ở đây là kênh truyền tin, không phải trang trí: đậm = trùng cao và đủ mẫu, mờ = đừng
     // tin. `status-chip.test.tsx` cũng assert class vì cùng lý do.
+    // Hai ô có **cùng giá trị 1.00**, chỉ khác cỡ hợp — nên chênh lệch màu chỉ có thể do cỡ mẫu.
+    // Bản trước lấy ô đường chéo làm ô "đủ mẫu", mà đường chéo là judge so với chính nó: nó luôn
+    // 1.00 nên không tách được hiệu ứng nào.
     mount({
       ...base,
-      raters: ['J1', 'J2'],
+      raters: ['J1', 'J2', 'J3'],
       matrix: {
-        J1: { J1: cell(1, 9), J2: cell(1, 2) },
-        J2: { J1: cell(1, 2), J2: cell(1, 9) },
+        J1: { J2: cell(1, 9), J3: cell(1, 2) },
+        J2: { J1: cell(1, 9), J3: cell(0.1, 9) },
+        J3: { J1: cell(1, 2), J2: cell(0.1, 9) },
       },
     });
     await waitFor(() => expect(screen.getAllByText('1.00').length).toBe(4));
@@ -138,6 +142,31 @@ describe('JudgeAgreementPanel', () => {
     const big = screen.getAllByText('n=9')[0].parentElement;
     expect(small).toHaveClass('bg-sunken');
     expect(big).toHaveClass('bg-brand-ink');
+  });
+
+  it('đường chéo là ô TRUNG TÍNH — không số, không màu nhiệt, không n', async () => {
+    // Judge so với chính mình luôn bằng 1.00 theo định nghĩa. Tô nó bậc đậm nhất là làm nhiễu đúng
+    // kênh màu đang dùng để truyền tin: khi J1 và J2 trùng thật, màn hình hiện khối 2×2 đậm và
+    // người đọc không biết ô nào có nghĩa. Tệ hơn, đường chéo của judge nêu ít nhóm lại bị LÀM MỜ,
+    // nên cùng một ô-vô-nghĩa được vẽ hai màu khác nhau tuỳ dữ liệu.
+    mount({
+      ...base,
+      raters: ['J1', 'J2'],
+      matrix: {
+        J1: { J1: cell(1, 9), J2: cell(0.9, 9) },
+        J2: { J1: cell(0.9, 9), J2: cell(1, 3) },
+      },
+    });
+    await waitFor(() => expect(screen.getAllByText('0.90').length).toBe(2));
+
+    // Chỉ hai ô ngoài đường chéo có số và có n; hai ô chéo hiện '—' và không có n.
+    expect(screen.getAllByText('n=9').length).toBe(2);
+    expect(screen.queryByText('n=3')).not.toBeInTheDocument();
+    expect(screen.queryByText('1.00')).not.toBeInTheDocument();
+    const diag = screen.getAllByText('—');
+    expect(diag.length).toBe(2);
+    expect(diag[0].parentElement).toHaveClass('bg-canvas');
+    expect(diag[0].parentElement).not.toHaveClass('bg-brand-ink');
   });
 
   it('cờ tắt ⇒ nói rõ đang tắt, KHÁC với "chưa chạy judge"', async () => {
