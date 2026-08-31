@@ -136,12 +136,10 @@ export type HumanCheck = Prisma.HumanCheckModel
  * Model OverclaimFlag
  * *
  *  * Một cờ phóng đại trên một `Card(CLAIM)`.
- *  *
  *  * `card_id` / `spec_version_id` cố ý để **scalar trần, không khai relation**. Relation của Prisma
  *  * đòi thêm field ngược ở `Card` và `SpecVersion`, mà luật chung 4 chỉ cho thêm dòng vào cuối
  *  * `schema.prisma`, không cho sửa model đang có. Đánh đổi: mất cascade delete — `OverclaimFlag`
  *  * phải xoá tay khi xoá version (xem `OverclaimService.clearForVersion`).
- *  *
  *  * `Issue` **không** bị sửa (ràng buộc của #7). Cờ này sinh ra `Issue` qua judge run riêng chứ
  *  * không thêm cột vào bảng đó.
  */
@@ -150,12 +148,56 @@ export type OverclaimFlag = Prisma.OverclaimFlagModel
  * Model AmbiguityFlag
  * *
  *  * Một cờ mơ hồ trên một `Card`.
- *  *
  *  * `Card.status` được gán `AMBIGUOUS` (giá trị enum **đã có**, không thêm giá trị mới — luật
  *  * chung 2). Nhưng gán đè là **xoá mất trạng thái cũ**, nên `previous_status` giữ lại giá trị
  *  * trước đó để `clearForVersion` khôi phục được. Không có nó thì quét lần hai là mất dữ liệu.
- *  *
  *  * `card_id` / `spec_version_id` để scalar trần, không relation — cùng lý do với `OverclaimFlag`:
  *  * relation đòi thêm field ngược vào `Card`, mà luật chung 4 chỉ cho thêm dòng cuối file.
  */
 export type AmbiguityFlag = Prisma.AmbiguityFlagModel
+/**
+ * Model SourceScore
+ * *
+ *  * Điểm tin cậy của một `Source`, 1-1 theo `source_id`.
+ *  * Tính bằng **luật thuần, 0 token** (`src/sources/credibility.ts`) và chấm lại sau mỗi lần
+ *  * `SourcesService.searchAndStore` upsert nguồn. Bảng riêng chứ không thêm cột vào `Source`:
+ *  * luật chung 2 cấm sửa model đang có, và tách ra thì xoá điểm đi chấm lại cũng không đụng nguồn.
+ *  * `total` và `components` **không hiện cho người dùng** — thứ hiện ra là `tier` + `reason`.
+ *  * Giữ lại vì #1 đòi đo tương quan giữa điểm tin cậy và nhãn `UNSUPPORTED` của verifier.
+ */
+export type SourceScore = Prisma.SourceScoreModel
+/**
+ * Model SourceFullText
+ * *
+ *  * Cache toàn văn của một `Source`, khoá theo `source_id`.
+ *  * Cache **cả lần thất bại** mới là điểm chính: phần lớn nguồn không bao giờ có bản HTML mở, và
+ *  * không có dòng `NOT_FOUND` thì mỗi lần chạy lại đều gọi HTTP cho đúng những nguồn đó.
+ *  * `status` chính là "cờ chẩn đoán" mà #2 đòi, nhưng ở dạng truy vấn được — thay vì thêm giá trị
+ *  * vào `verifierFlagSchema` cho **mọi** cặp mang theo. `fulltext_hit_rate` của #6 đọc thẳng từ đây.
+ *  * `source_id` để scalar trần, không relation — luật chung 4 chỉ cho thêm dòng vào cuối file, mà
+ *  * relation đòi thêm field ngược ở `Source`. Đánh đổi: mất cascade delete, dọn bằng `expires_at`.
+ */
+export type SourceFullText = Prisma.SourceFullTextModel
+/**
+ * Model VerifierPassage
+ * *
+ *  * Những đoạn toàn văn **thật sự gửi lên L4** cho một cặp `CardSource`, và đoạn nào chứa câu
+ *  * chứng cứ cuối cùng.
+ *  * Đây là dữ liệu của trang "vì sao nhãn này" (#5): một nhãn sinh từ toàn văn mà không có bảng này
+ *  * thì không kiểm lại được, mà "kiểm lại được" là toàn bộ lý do verifier tồn tại.
+ *  * Một dòng một đoạn chứ không gộp `Json`: trang giải trình cần lọc theo `is_evidence` và sắp theo
+ *  * `rank`. Chỉ cặp **leo thang xuống toàn văn** mới ghi, nên số dòng ≤ 5 × số cặp leo thang.
+ */
+export type VerifierPassage = Prisma.VerifierPassageModel
+/**
+ * Model CardConflict
+ * *
+ *  * Một xung đột chứng cứ trên một `Card`.
+ *  * `Card.status` được gán `CONFLICT` — giá trị enum **đã có sẵn** trong schema và đã có màu ở
+ *  * `frontend/src/lib/status-style.ts`, nhưng trước issue này **không dòng backend nào gán nó**,
+ *  * y hệt câu chuyện `AMBIGUOUS` của #12. §5 đề bài liệt đây là chức năng bắt buộc.
+ *  * `previous_status` giữ trạng thái trước khi gán đè: thiếu nó thì lần quét thứ hai đọc `CONFLICT`
+ *  * như "trạng thái trước" và trạng thái thật mất vĩnh viễn (bài học của `AmbiguityFlag`).
+ *  * Mọi khoá ngoài để scalar trần, không relation — luật chung 4.
+ */
+export type CardConflict = Prisma.CardConflictModel
