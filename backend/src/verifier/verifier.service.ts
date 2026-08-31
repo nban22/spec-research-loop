@@ -4,6 +4,7 @@ import { VERIFIABLE_CARD_TYPES } from '../contracts/card';
 import type { VerifierFlag } from '../contracts/enums';
 import { PrismaService } from '../common/prisma.service';
 import { collapseWhitespace, splitSentences } from '../common/text';
+import { ConflictService } from '../conflict/conflict.service';
 import { LlmService } from '../llm/llm.service';
 import { SourceClient } from '../sources/source.client';
 import { EmbedderService, cosine } from './embedder.service';
@@ -46,6 +47,7 @@ export class VerifierService {
     private readonly embedder: EmbedderService,
     private readonly llm: LlmService,
     private readonly sourceClient: SourceClient,
+    private readonly conflict: ConflictService,
   ) {}
 
   async verifySpecVersion(
@@ -155,7 +157,27 @@ export class VerifierService {
       data: { units_l4: unitsL4, label_counts: labelCounts },
     });
 
-    await this.propagateCardStatus(specVersionId);
+    /*
+      Thứ tự **dọn → lan → quét** là bắt buộc, đừng "dọn cho gọn" thành hai dòng (#3):
+
+      1. `clearForVersion` khôi phục `Card.status` về giá trị trước khi bị gán `CONFLICT`. Sau
+         bước này không thẻ nào còn `CONFLICT`.
+      2. Vì vậy nhánh `card.status === 'UNSUPPORTED' ? 'PROPOSED' : card.status` của
+         `propagateCardStatus` không thể ghi đè lên một xung đột, cũng không thể để sót một
+         xung đột đã cũ. Nhờ đó `propagateCardStatus` **không phải sửa một dòng nào**.
+      3. `scanVersion` chạy sau cùng, trên nhãn đã chốt.
+
+      Gói trong `if (opts.projectId)` vì cờ `conflict_detector` nằm trên `Project`: lời gọi
+      không kèm project (chỉ có trong test) giữ nguyên hành vi cũ.
+    */
+    if (opts.projectId) {
+      await this.conflict.clearForVersion(specVersionId);
+      await this.propagateCardStatus(specVersionId);
+      await this.conflict.scanVersion(specVersionId, opts.projectId);
+    } else {
+      await this.propagateCardStatus(specVersionId);
+    }
+
     await opts.onProgress?.(
       units.length,
       units.length,
