@@ -9,6 +9,8 @@ import {
   LifeBuoy,
   Map,
   Search,
+  ClipboardCheck,
+  ShieldQuestion,
   SlidersHorizontal,
   ShieldAlert,
   Workflow,
@@ -149,6 +151,26 @@ export function CommandPalette() {
       run: go(`/projects/${p.id}/simulate`),
     }));
 
+    /* Hai màn hình của làn A (#5, #4) — cùng lý do với các màn của làn C: `top-nav.tsx` chỉ
+       chứa link toàn cục, không mang được `projectId`, nên bảng lệnh là đường vào hợp lệ. */
+    const evidence: Cmd[] = projects.map((p) => ({
+      id: `ev-${p.id}`,
+      label: `Vì sao nhãn này · ${p.title}`,
+      hint: 'tầng · ngưỡng · câu trích',
+      group: 'Bằng chứng',
+      icon: ShieldQuestion,
+      run: go(`/projects/${p.id}/evidence`),
+    }));
+
+    const label: Cmd[] = projects.map((p) => ({
+      id: `lb-${p.id}`,
+      label: `Gán nhãn chứng cứ · ${p.title}`,
+      hint: 'chấm mù · hiệu chỉnh ngưỡng',
+      group: 'Bằng chứng',
+      icon: ClipboardCheck,
+      run: go(`/projects/${p.id}/label`),
+    }));
+
     // Nhảy bước chỉ có nghĩa khi đã có dự án — lấy dự án sửa gần nhất làm đích.
     const latest = projects[0];
     const jump: Cmd[] = latest
@@ -162,7 +184,17 @@ export function CommandPalette() {
         }))
       : [];
 
-    return [...nav, ...openProject, ...cost, ...errors, ...map, ...sim, ...jump];
+    return [
+      ...nav,
+      ...openProject,
+      ...cost,
+      ...errors,
+      ...map,
+      ...sim,
+      ...evidence,
+      ...label,
+      ...jump,
+    ];
   }, [data, router]);
 
   const results = useMemo(() => {

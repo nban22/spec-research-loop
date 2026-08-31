@@ -16,6 +16,7 @@ import {
 import type {
   CardStatus,
   ConfidenceLevel,
+  CredibilityTier,
   Severity,
   SupportLabel,
 } from './types';
@@ -155,4 +156,70 @@ export const VERIFIER_FLAG_LABEL: Record<string, string> = {
   FABRICATED_QUOTE: 'Câu trích dẫn không nằm trong abstract',
   DOI_UNVERIFIED: 'Chưa kiểm được DOI (registry không trả lời)',
   LLM_UNAVAILABLE: 'Không kiểm được bằng mô hình ở bước này',
+  // Làn A · #2 — hai cờ của tầng đọc toàn văn.
+  FULLTEXT_USED: 'Nhãn này đọc từ toàn văn bài báo, không chỉ abstract',
+  FULLTEXT_UNAVAILABLE:
+    'Không lấy được toàn văn — đã lùi về đối chiếu abstract',
 };
+
+/**
+ * Làn A · #1 — mức tin cậy của nguồn.
+ *
+ * Ba mức, và **không mức nào dùng `danger`**: nguồn yếu không phải là *lỗi*, nó là thứ cần người
+ * đọc cân nhắc. Dùng `danger` ở đây sẽ tranh chỗ với `UNSUPPORTED` — thứ thật sự chặn xuất bản.
+ *
+ * Điểm số không bao giờ hiện ra; thứ hiện ra là `label` cộng câu `reason` backend sinh sẵn
+ * (tiêu chí hoàn thành của #1).
+ */
+export const CREDIBILITY_STYLE: Record<
+  CredibilityTier,
+  { label: string; className: string }
+> = {
+  HIGH: {
+    label: 'Đáng tin',
+    className: 'bg-ok-soft text-ok-strong border-ok-line',
+  },
+  MEDIUM: {
+    label: 'Trung bình',
+    className: 'bg-neutral-soft text-neutral-strong border-neutral-line',
+  },
+  REVIEW: {
+    label: 'Cần cân nhắc',
+    className: 'bg-warn-soft text-warn-strong border-warn-line',
+  },
+};
+
+/** Làn A · #3 — nhãn tiếng Việt cho hai phạm vi xung đột và bốn tín hiệu phát hiện. */
+export const CONFLICT_SCOPE_LABEL: Record<string, string> = {
+  INTRA_CARD: 'Hai nguồn của cùng một thẻ nói ngược nhau',
+  CROSS_CARD: 'Hai thẻ dùng cùng một bài báo theo hai chiều',
+};
+
+export const CONFLICT_SIGNAL_LABEL: Record<string, string> = {
+  POLARITY: 'Trái chiều kết luận',
+  NUMERIC: 'Lệch số liệu',
+  DIRECTION: 'Trái chiều diễn đạt',
+  LLM: 'Mô hình xác nhận',
+};
+
+/** Làn A · #5 — tên bảy tầng của verifier, hiện trên thanh truy vết. */
+export const VERIFIER_LAYER_LABEL: Record<string, string> = {
+  L0: 'Nguồn có thật',
+  L1: 'Đủ dữ liệu',
+  L2: 'Đối chiếu số',
+  L3: 'Độ tương đồng',
+  L3b: 'Đọc toàn văn',
+  L4: 'Hỏi mô hình',
+  L4b: 'Chống bịa trích',
+};
+
+/** Thứ tự hiển thị của thanh tầng — cũng là thứ tự chạy thật trong verifier. */
+export const VERIFIER_LAYER_ORDER = [
+  'L0',
+  'L1',
+  'L2',
+  'L3',
+  'L3b',
+  'L4',
+  'L4b',
+] as const;
