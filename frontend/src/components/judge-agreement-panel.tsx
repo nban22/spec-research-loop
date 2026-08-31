@@ -204,8 +204,28 @@ function Patterns({ a }: { a: ApiAgreement }) {
   })();
 
   const loner = a.solo.find((s) => s.rate !== null && s.rate > 0) ?? null;
-  const harsh = a.bias.find((b) => b.bias !== null && b.bias > 0) ?? null;
-  const disruptive = a.leaveOneOut.find((l) => l.delta !== null && l.delta > 0) ?? null;
+
+  // Hai dòng dưới **buộc tội một judge cụ thể**, nên chúng đi qua kiểm định null hoán vị.
+  //
+  // Không có nó thì cả hai luôn tìm ra một người: cực đại của năm số thực gần như chắc chắn dương.
+  // Đo thật dưới null năm judge thống kê giống nhau: "gây nhiễu nhất" bắn **100%** lượt,
+  // "chấm nặng tay nhất" **98.2%**. Panel khi đó luôn chỉ ra một kẻ có tội, và #8 dồn tài nguyên
+  // đắt vào đó kể cả khi không có ai đáng bị chỉ.
+  //
+  // `draws === 0` là bản ghi lưu **trước khi** có kiểm định ⇒ *chưa kiểm*, khác hẳn *đã kiểm và
+  // không đáng kể*. Cả hai đều không nêu tên, nhưng nói khác nhau.
+  const nt = a.nullTest;
+  const untested = nt.draws === 0;
+  const harsh = nt.harsh?.significant ? nt.harsh : null;
+  const disruptive = nt.disruptive?.significant ? nt.disruptive : null;
+
+  /** Vì sao dòng này không nêu tên ai. */
+  const why = (v: { p: number } | null | undefined) =>
+    untested
+      ? 'chưa kiểm định'
+      : v
+        ? `không đáng kể (p = ${v.p.toFixed(3)})`
+        : 'không có';
 
   return (
     <div className="space-y-1.5 pt-1">
@@ -233,19 +253,19 @@ function Patterns({ a }: { a: ApiAgreement }) {
           label="Chấm nặng tay nhất"
           value={
             harsh
-              ? `${harsh.judgeKey} — +${harsh.bias?.toFixed(2)} bậc (n=${harsh.n})`
-              : 'không lệch rõ'
+              ? `${harsh.judgeKey} — +${harsh.value.toFixed(2)} bậc (p = ${harsh.p.toFixed(3)})`
+              : why(nt.harsh)
           }
-          hint="Chênh bậc mức độ so với các judge cùng nêu một nhóm. Dương là nặng tay hơn."
+          hint="Chênh bậc mức độ so với các judge cùng nêu một nhóm. Dương là nặng tay hơn. Chỉ nêu tên khi p < 0.05 dưới null hoán vị nhãn judge — không thì cực đại của năm số luôn dương và dòng này luôn buộc tội một người."
         />
         <Row
           label="Gây nhiễu nhất"
           value={
             disruptive
-              ? `${disruptive.judgeKey} — bỏ ra thì κ tăng ${disruptive.delta?.toFixed(3)}`
-              : 'không ai nổi trội'
+              ? `${disruptive.judgeKey} — bỏ ra thì κ tăng ${disruptive.value.toFixed(3)} (p = ${disruptive.p.toFixed(3)})`
+              : why(nt.disruptive)
           }
-          hint="Bỏ từng judge ra rồi tính lại. Đây là con số B2 (#8) dùng để chọn judge nào cần chạy tự nhất quán — thay vì bật cho cả năm."
+          hint="Bỏ từng judge ra rồi tính lại. Đây là con số B2 (#8) dùng để chọn judge nào cần chạy tự nhất quán — thay vì bật cho cả năm. Chỉ nêu tên khi p < 0.05: Δκ dương nhỏ là chuyện bình thường kể cả khi năm judge giống nhau hoàn toàn."
         />
         <Row
           label="Nhóm cả hội đồng cùng nêu"

@@ -42,7 +42,15 @@ const base: ApiAgreement = {
   leaveOneOut: [],
   unanimousGroups: 1,
   raters: ['J1', 'J2'],
+  nullTest: { draws: 1000, seed: 1, disruptive: null, harsh: null },
 };
+
+const verdict = (judgeKey: string, value: number, p: number) => ({
+  judgeKey,
+  value,
+  p,
+  significant: p < 0.05,
+});
 
 const cell = (value: number | null, union: number) => ({ value, union });
 
@@ -166,24 +174,72 @@ describe('JudgeAgreementPanel', () => {
         { judgeKey: 'J5', delta: 0.139, kappaWithout: 0.32 },
         { judgeKey: 'J1', delta: -0.02, kappaWithout: 0.16 },
       ],
+      nullTest: {
+        draws: 1000,
+        seed: 1,
+        harsh: verdict('J4', 1.5, 0.004),
+        disruptive: verdict('J5', 0.139, 0.012),
+      },
     });
 
     await waitFor(() => expect(screen.getByText(/J5 — 75%/)).toBeInTheDocument());
-    expect(screen.getByText(/J4 — \+1.50 bậc/)).toBeInTheDocument();
-    expect(screen.getByText(/J5 — bỏ ra thì κ tăng 0.139/)).toBeInTheDocument();
+    expect(screen.getByText(/J4 — \+1.50 bậc \(p = 0.004\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/J5 — bỏ ra thì κ tăng 0.139 \(p = 0.012\)/),
+    ).toBeInTheDocument();
+  });
+
+  it('Δκ dương nhưng p KHÔNG đáng kể ⇒ không nêu tên ai, in p ra', async () => {
+    // Chốt chặn quan trọng nhất mới thêm. Đo thật dưới null năm judge giống nhau: dòng
+    // "gây nhiễu nhất" bắn 100% lượt, "chấm nặng tay nhất" 98.2%. Không có chốt này thì panel
+    // luôn chỉ ra một kẻ có tội, và #8 dồn tài nguyên đắt vào đó.
+    mount({
+      ...base,
+      bias: [{ judgeKey: 'J4', bias: 0.9, n: 3 }],
+      leaveOneOut: [{ judgeKey: 'J2', delta: 0.011, kappaWithout: 0.43 }],
+      nullTest: {
+        draws: 1000,
+        seed: 1,
+        harsh: verdict('J4', 0.9, 0.412),
+        disruptive: verdict('J2', 0.011, 0.868),
+      },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText('không đáng kể (p = 0.868)')).toBeInTheDocument(),
+    );
+    expect(screen.getByText('không đáng kể (p = 0.412)')).toBeInTheDocument();
+    // Tên judge KHÔNG được xuất hiện ở hai dòng đó.
+    expect(screen.queryByText(/J2 — bỏ ra thì/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/J4 — \+0.90 bậc/)).not.toBeInTheDocument();
+  });
+
+  it('bản ghi CŨ chưa kiểm định ⇒ nói "chưa kiểm định", khác "không đáng kể"', async () => {
+    mount({
+      ...base,
+      leaveOneOut: [{ judgeKey: 'J2', delta: 0.5, kappaWithout: 0.9 }],
+      nullTest: { draws: 0, seed: 0, disruptive: null, harsh: null },
+    });
+    await waitFor(() =>
+      expect(screen.getAllByText('chưa kiểm định').length).toBe(2),
+    );
+    // Δκ = 0.5 rất lớn, nhưng chưa kiểm định thì vẫn KHÔNG được nêu tên.
+    // Matcher phải hẹp: `/J2/` trần khớp cả nhãn trục của ma trận.
+    expect(screen.queryByText(/J2 — bỏ ra thì/)).not.toBeInTheDocument();
   });
 
   it('judge NHẸ tay không bị gọi là "chấm nặng tay nhất"', async () => {
-    // Bỏ chốt `> 0` là một judge nhẹ tay bị dán nhãn nặng tay nhất.
+    // Chốt dấu nay ở **backend** (`permutationNull` chỉ xét ứng viên `bias > 0`), nên panel chỉ
+    // cần không tự bịa ra ứng viên từ `a.bias`. Ca này: `a.bias` có người, `nullTest` không —
+    // panel phải im. Đảo lại thì panel đọc `a.bias` và dán nhãn nặng tay cho một judge nhẹ tay.
     mount({
       ...base,
       bias: [{ judgeKey: 'J2', bias: -0.8, n: 4 }],
       leaveOneOut: [{ judgeKey: 'J2', delta: -0.1, kappaWithout: 0.1 }],
+      nullTest: { draws: 1000, seed: 1, disruptive: null, harsh: null },
     });
-    await waitFor(() =>
-      expect(screen.getByText('không lệch rõ')).toBeInTheDocument(),
-    );
-    expect(screen.getByText('không ai nổi trội')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText('không có').length).toBe(3));
+    expect(screen.queryByText(/J2 — /)).not.toBeInTheDocument();
   });
 
   it('thang nhiệt phân biệt đủ các bậc, không chỉ hai đầu', async () => {

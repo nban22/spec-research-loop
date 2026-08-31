@@ -41,6 +41,24 @@ export type ApiAgreement = {
   }[];
   unanimousGroups: number;
   raters: string[];
+  /**
+   * Kiểm định null cho hai dòng buộc tội. `draws: 0` = bản ghi cũ chưa kiểm định.
+   * `p` là dạng cộng-một nên không bao giờ bằng 0, và thống kê là **max trên các judge** —
+   * đã hiệu chỉnh cho việc panel chỉ in ra người dẫn đầu.
+   */
+  nullTest: {
+    draws: number;
+    seed: number;
+    disruptive: NullVerdict | null;
+    harsh: NullVerdict | null;
+  };
+};
+
+export type NullVerdict = {
+  judgeKey: string;
+  value: number;
+  p: number;
+  significant: boolean;
 };
 
 /** Dưới ngưỡng này Jaccard là ngẫu nhiên — phải khớp `MIN_UNION` của backend. */

@@ -25,6 +25,13 @@ const storedMatrixSchema = z.record(
     z.object({ value: z.number().nullable(), union: z.number() }),
   ),
 );
+const verdictSchema = z.object({
+  judgeKey: z.string(),
+  value: z.number(),
+  p: z.number(),
+  significant: z.boolean(),
+});
+
 const storedPatternsSchema = z.object({
   solo: z.array(
     z.object({
@@ -50,6 +57,20 @@ const storedPatternsSchema = z.object({
   ),
   unanimousGroups: z.number(),
   raters: z.array(z.string()),
+  /**
+   * `.optional()` là **có chủ ý**: bản ghi lưu trước khi có kiểm định null không có field này, và
+   * `storedPatternsSchema` là một khối `z.object` duy nhất — thiếu một field là **cả** khối fail,
+   * nên bắt buộc field mới sẽ làm mọi bản ghi cũ thoái hoá thành `solo: []`, `bias: []`. Tức là
+   * thêm một phép đo lại xoá sạch các phép đo cũ.
+   */
+  nullTest: z
+    .object({
+      draws: z.number(),
+      seed: z.number(),
+      disruptive: verdictSchema.nullable(),
+      harsh: verdictSchema.nullable(),
+    })
+    .optional(),
 });
 
 export type AgreementView = AgreementReport & {
@@ -244,6 +265,9 @@ export class AgreementService {
       votes,
       totalIssues: issues.length,
       groups,
+      // Seed suy từ `(version, vòng)` ⇒ p-value **cố định** cho một vòng (NFR-JDG-6). Dùng
+      // `Math.random` ở đây là F5 hai lần ra hai con số p khác nhau.
+      seedKey: `${specVersionId}:${round}`,
     });
   }
 
@@ -298,6 +322,7 @@ export class AgreementService {
         bias: report.bias,
         leaveOneOut: report.leaveOneOut,
         unanimousGroups: report.unanimousGroups,
+        nullTest: report.nullTest,
         raters: report.raters,
       }),
     };
@@ -348,6 +373,14 @@ export class AgreementService {
       bias: patterns?.bias ?? [],
       leaveOneOut: patterns?.leaveOneOut ?? [],
       unanimousGroups: patterns?.unanimousGroups ?? 0,
+      // Bản ghi cũ chưa có kiểm định ⇒ `draws: 0`. Panel đọc `draws === 0` là "chưa kiểm định"
+      // và **không** nêu tên ai — khác hẳn với "đã kiểm và không đáng kể".
+      nullTest: patterns?.nullTest ?? {
+        draws: 0,
+        seed: 0,
+        disruptive: null,
+        harsh: null,
+      },
       raters: patterns?.raters ?? [],
     };
   }

@@ -1,10 +1,15 @@
 import {
+  AgreementInput,
+  CardVote,
+  GroupVote,
   bucketOf,
   cardLabelCounts,
   fleissKappa,
   jaccardMatrix,
   judgeAgreement,
   leaveOneOut,
+  permutationNull,
+  seedFrom,
   severityBias,
   soloRates,
   type CardVote,
@@ -513,5 +518,164 @@ describe('judgeAgreement — báo cáo đầy đủ', () => {
     expect(JSON.stringify(judgeAgreement(input))).toBe(
       JSON.stringify(judgeAgreement(input)),
     );
+  });
+});
+
+/* ------------------------------------------------------------------ null hoán vị */
+
+/**
+ * Hai dòng "gây nhiễu nhất" / "chấm nặng tay nhất" luôn tìm ra một người, vì cực đại của năm số
+ * thực gần như chắc chắn dương. Không có kiểm định này thì panel **luôn** chỉ ra một kẻ có tội,
+ * và #8 dồn tài nguyên đắt vào đó kể cả khi năm judge giống nhau hoàn toàn.
+ */
+describe('permutationNull', () => {
+  const RATERS = ['J1', 'J2', 'J3', 'J4', 'J5'];
+
+  /** Năm judge **thống kê giống nhau**: nhãn rải đều, không ai gây nhiễu, không ai nặng tay. */
+  function nullData(): AgreementInput {
+    const cardIds = Array.from({ length: 12 }, (_, i) => `c${i}`);
+    const votes: CardVote[] = [];
+    // Mỗi thẻ đúng 2 judge nêu, cuốn vòng tròn cho mọi judge nêu số lần bằng nhau và mức bằng nhau.
+    cardIds.forEach((cardId, i) => {
+      votes.push({
+        cardId,
+        judgeKey: RATERS[i % 5],
+        severity: i % 2 === 0 ? 'MAJOR' : 'MINOR',
+      });
+      votes.push({
+        cardId,
+        judgeKey: RATERS[(i + 1) % 5],
+        severity: i % 2 === 0 ? 'MINOR' : 'MAJOR',
+      });
+    });
+    return {
+      raters: RATERS,
+      cardIds,
+      votes,
+      totalIssues: votes.length,
+      groups: [],
+    };
+  }
+
+  it('năm judge giống nhau ⇒ KHÔNG nêu tên ai (p không đáng kể)', () => {
+    const r = permutationNull(nullData(), 200, 'seed-a');
+    // Có thể vẫn có một judge dẫn đầu — điều bắt buộc là nó **không** được gắn cờ đáng kể.
+    expect(r.disruptive?.significant ?? false).toBe(false);
+  });
+
+  it('một judge gây nhiễu THẬT ⇒ p đáng kể (kiểm định có LỰC, không phải luôn-âm)', () => {
+    // J5 nêu đúng những thẻ không ai nêu và im ở thẻ mọi người nêu — bất đồng cực đại.
+    // Không có ca này thì `significant` luôn `false` cũng làm mọi test kia xanh, tức là đã đổi
+    // "luôn buộc tội" thành "không bao giờ buộc tội" — vẫn vô dụng, chỉ theo chiều khác.
+    const cardIds = Array.from({ length: 12 }, (_, i) => `c${i}`);
+    const votes: CardVote[] = [];
+    cardIds.forEach((cardId, i) => {
+      if (i % 2 === 0) {
+        for (const j of ['J1', 'J2', 'J3', 'J4'])
+          votes.push({ cardId, judgeKey: j, severity: 'MAJOR' });
+      } else votes.push({ cardId, judgeKey: 'J5', severity: 'MAJOR' });
+    });
+    const r = permutationNull(
+      { raters: RATERS, cardIds, votes, totalIssues: votes.length, groups: [] },
+      300,
+      'seed-sig',
+    );
+    expect(r.disruptive?.judgeKey).toBe('J5');
+    expect(r.disruptive?.value).toBeCloseTo(0.8, 2);
+    expect(r.disruptive?.significant).toBe(true);
+  });
+
+  it('Δκ nhỏ nhưng dẫn đầu ⇒ KHÔNG đáng kể — đây là cả lý do tồn tại của kiểm định', () => {
+    // Δκ ≈ 0.011 trên năm judge giống nhau. Nó dương và nó dẫn đầu, nên panel cũ in nó ra như
+    // "kẻ gây nhiễu nhất". Kiểm định nói p ≈ 0.87 — chỉ là cực đại của năm số nhiễu.
+    const r = permutationNull(nullData(), 300, 'seed-weak');
+    expect(r.disruptive!.value).toBeGreaterThan(0);
+    expect(r.disruptive!.p).toBeGreaterThan(0.5);
+    expect(r.disruptive!.significant).toBe(false);
+  });
+
+  it('một judge chấm nặng tay THẬT ⇒ p đáng kể', () => {
+    // J4 luôn CRITICAL, bốn người còn lại luôn MINOR, trên 12 nhóm. Đây là tín hiệu thật.
+    const groups: GroupVote[] = Array.from({ length: 12 }, (_, i) => ({
+      groupId: `g${i}`,
+      severityByJudge: {
+        J1: 'MINOR',
+        J2: 'MINOR',
+        J3: 'MINOR',
+        J4: 'CRITICAL',
+      },
+    }));
+    const r = permutationNull({ ...nullData(), groups }, 200, 'seed-b');
+    expect(r.harsh?.judgeKey).toBe('J4');
+    expect(r.harsh?.significant).toBe(true);
+  });
+
+  it('MỌI judge đều nhẹ tay ⇒ không có ứng viên nặng tay, harsh = null', () => {
+    // Chốt dấu nằm ở đây, không ở panel. Bỏ nó là một judge **nhẹ tay** thành "nặng tay nhất"
+    // chỉ vì là người nhẹ ít nhất trong năm.
+    const groups: GroupVote[] = Array.from({ length: 6 }, (_, i) => ({
+      groupId: `g${i}`,
+      severityByJudge: { J1: 'MINOR', J2: 'MINOR', J3: 'MINOR' },
+    }));
+    const r = permutationNull({ ...nullData(), groups }, 50, 'seed-lenient');
+    expect(r.harsh).toBeNull();
+  });
+
+  it('p không bao giờ bằng 0 — dạng cộng-một', () => {
+    const groups: GroupVote[] = Array.from({ length: 12 }, (_, i) => ({
+      groupId: `g${i}`,
+      severityByJudge: {
+        J1: 'MINOR',
+        J2: 'MINOR',
+        J3: 'MINOR',
+        J4: 'CRITICAL',
+      },
+    }));
+    const r = permutationNull({ ...nullData(), groups }, 100, 'seed-c');
+    // `0/100` nghĩa là "chưa thấy trong 100 lượt", không phải "không thể".
+    expect(r.harsh!.p).toBeGreaterThan(0);
+    expect(r.harsh!.p).toBeCloseTo(1 / 101, 10);
+  });
+
+  it('CÙNG seed ⇒ cùng p (NFR-JDG-6: F5 hai lần không được ra hai số)', () => {
+    const d = nullData();
+    const a = permutationNull(d, 150, 'v-1:2');
+    const b = permutationNull(d, 150, 'v-1:2');
+    expect(a).toEqual(b);
+  });
+
+  it('KHÁC seed ⇒ p được phép khác — chứng minh seed thật sự vào PRNG', () => {
+    // Nếu seed bị bỏ qua thì hai lượt dưới ra y hệt nhau và mọi test tất định ở trên thành vô nghĩa.
+    const groups: GroupVote[] = Array.from({ length: 8 }, (_, i) => ({
+      groupId: `g${i}`,
+      severityByJudge: { J1: 'MINOR', J2: 'MAJOR', J3: 'CRITICAL' },
+    }));
+    const d = { ...nullData(), groups };
+    const seeds = ['s1', 's2', 's3', 's4', 's5', 's6'].map(
+      (s) => permutationNull(d, 60, s).harsh?.p,
+    );
+    expect(new Set(seeds).size).toBeGreaterThan(1);
+  });
+
+  it('hoán vị KHÔNG làm đổi dữ liệu gốc của lời gọi', () => {
+    const d = nullData();
+    const before = JSON.stringify(d);
+    permutationNull(d, 50, 'seed-d');
+    expect(JSON.stringify(d)).toBe(before);
+  });
+
+  it('thiếu mục ⇒ không có phán quyết nào, không nổ', () => {
+    const r = permutationNull(
+      { raters: RATERS, cardIds: [], votes: [], totalIssues: 0, groups: [] },
+      50,
+      'seed-e',
+    );
+    expect(r.disruptive).toBeNull();
+    expect(r.harsh).toBeNull();
+  });
+
+  it('seedFrom tản đều và ổn định giữa các lần chạy', () => {
+    expect(seedFrom('v-1:1')).toBe(seedFrom('v-1:1'));
+    expect(seedFrom('v-1:1')).not.toBe(seedFrom('v-1:2'));
   });
 });

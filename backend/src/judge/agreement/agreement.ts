@@ -381,6 +381,181 @@ export function leaveOneOut(
     .sort((a, b) => (b.delta ?? -Infinity) - (a.delta ?? -Infinity));
 }
 
+/* ------------------------------------------------------------------ null hoán vị */
+
+/**
+ * PRNG có seed. **Bắt buộc phải có seed**, không được dùng `Math.random`: NFR-JDG-6 đòi số đo cố
+ * định, mà p-value tính bằng mô phỏng thì mỗi lần chạy ra một số khác nếu nguồn ngẫu nhiên tự do.
+ * Seed suy từ `(spec_version_id, round)` ⇒ cùng một vòng luôn ra cùng một p.
+ */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** FNV-1a — chỉ cần ổn định và tản đều, không cần chống đối kháng. */
+export function seedFrom(key: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/** Fisher–Yates, tại chỗ trên **bản sao** của lời gọi. */
+function shuffle<T>(arr: T[], rnd: () => number): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export type NullVerdict = {
+  judgeKey: string;
+  /** Giá trị quan sát được của judge dẫn đầu. */
+  value: number;
+  /**
+   * `P(thống kê lớn nhất dưới null ≥ giá trị quan sát)`, dạng cộng-một nên **không bao giờ bằng 0**
+   * — `0/1000` không có nghĩa là "không thể", chỉ nghĩa là "chưa thấy trong 1000 lượt".
+   * Thống kê là **max trên các judge**, không phải từng judge riêng: panel chỉ in ra người dẫn
+   * đầu, nên phải hiệu chỉnh cho việc đã chọn ra người lớn nhất trong 5 người.
+   */
+  p: number;
+  /** `p < 0.05`. Sai thì panel **không được** nêu tên ai. */
+  significant: boolean;
+};
+
+export type NullTest = {
+  draws: number;
+  seed: number;
+  /** `null` khi không tính được (thiếu mục, thiếu người chấm, mọi Δ đều `null`). */
+  disruptive: NullVerdict | null;
+  harsh: NullVerdict | null;
+};
+
+export const NULL_DRAWS = 1000;
+export const NULL_ALPHA = 0.05;
+
+/**
+ * Hai dòng "gây nhiễu nhất" và "chấm nặng tay nhất" **luôn tìm ra một người** — cực đại của năm
+ * số thực gần như chắc chắn dương kể cả khi năm judge giống nhau hoàn toàn. Tôi đã đo: dưới null
+ * năm judge thống kê đồng nhất (11 thẻ, p_nêu = 0.35, 2000 lượt), dòng thứ nhất bắn **100%** lượt
+ * và dòng thứ hai **98.2%**. Nghĩa là nếu in thẳng, panel luôn chỉ ra một kẻ có tội — và #8 sẽ
+ * dồn tài nguyên đắt vào đó, kể cả khi không có ai đáng bị chỉ.
+ *
+ * Null đúng ở đây là **danh tính judge có thể đổi chỗ cho nhau**:
+ * - Δκ: trong **mỗi thẻ**, xáo việc ai giữ nhãn nào. Vector đếm của từng thẻ **không đổi**, nên
+ *   `κ(đủ)` là bất biến và chỉ các số hạng bỏ-một-người thay đổi — đúng thứ đang được kiểm.
+ * - Độ lệch mức: trong **mỗi nhóm**, xáo việc ai chấm mức nào. Cỡ nhóm và tập mức giữ nguyên,
+ *   chỉ "ai nặng tay" bị phá.
+ *
+ * 0 lời gọi LLM, chạy một lần lúc lưu.
+ */
+export function permutationNull(
+  input: AgreementInput,
+  draws: number = NULL_DRAWS,
+  seedKey = '',
+): NullTest {
+  const { raters, cardIds, votes, groups } = input;
+  const seed = seedFrom(seedKey);
+  const rnd = mulberry32(seed);
+
+  const obsLoo = leaveOneOut(cardIds, raters, votes);
+  const obsBias = severityBias(raters, groups);
+  const topLoo = obsLoo.find((l) => l.delta !== null) ?? null;
+  const topBias = obsBias.find((b) => b.bias !== null && b.bias > 0) ?? null;
+
+  // Nhãn theo (thẻ → judge). Judge không nêu thẻ nào thì khuyết, và `cardLabelCounts` coi là NONE.
+  const byCard = new Map<string, Map<string, string>>();
+  for (const v of votes) {
+    let m = byCard.get(v.cardId);
+    if (!m) {
+      // Type argument tường minh: `new Map()` trần suy ra `Map<any, any>`, và `any` len vào đây là
+      // mất luôn chỗ compiler bắt được lỗi hoán vị gán sai kiểu nhãn.
+      m = new Map<string, string>();
+      byCard.set(v.cardId, m);
+    }
+    const cur = m.get(v.judgeKey);
+    // Cùng luật `cardLabelCounts`: một judge nêu hai issue trên một thẻ ⇒ lấy nặng nhất.
+    if (cur === undefined || SEVERITY_RANK[v.severity] > SEVERITY_RANK[cur]) {
+      m.set(v.judgeKey, v.severity);
+    }
+  }
+
+  let looHits = 0;
+  let biasHits = 0;
+  const needLoo = topLoo?.delta != null;
+  const needBias = topBias?.bias != null;
+
+  for (let d = 0; d < draws; d++) {
+    if (needLoo) {
+      const permuted: CardVote[] = [];
+      for (const cardId of cardIds) {
+        const m = byCard.get(cardId);
+        if (!m) continue;
+        // Danh sách nhãn dài đúng R (khuyết = không nêu), rồi xáo cho cả R judge.
+        const slots = raters.map((r) => m.get(r));
+        const shuffled = shuffle(slots, rnd);
+        raters.forEach((judgeKey, i) => {
+          const sev = shuffled[i];
+          if (sev !== undefined)
+            permuted.push({ cardId, judgeKey, severity: sev });
+        });
+      }
+      const best = leaveOneOut(cardIds, raters, permuted).find(
+        (l) => l.delta !== null,
+      );
+      if (best?.delta != null && best.delta >= topLoo.delta!) looHits++;
+    }
+
+    if (needBias) {
+      const permGroups: GroupVote[] = groups.map((g) => {
+        const keys = Object.keys(g.severityByJudge);
+        const sevs = shuffle(Object.values(g.severityByJudge), rnd);
+        const severityByJudge: Record<string, string> = {};
+        keys.forEach((k, i) => (severityByJudge[k] = sevs[i]));
+        return { ...g, severityByJudge };
+      });
+      const best = severityBias(raters, permGroups).find(
+        (b) => b.bias !== null,
+      );
+      if (best?.bias != null && best.bias >= topBias.bias!) biasHits++;
+    }
+  }
+
+  const pOf = (hits: number) => (1 + hits) / (1 + draws);
+  return {
+    draws,
+    seed,
+    disruptive:
+      needLoo && topLoo?.delta != null
+        ? {
+            judgeKey: topLoo.judgeKey,
+            value: topLoo.delta,
+            p: pOf(looHits),
+            significant: pOf(looHits) < NULL_ALPHA,
+          }
+        : null,
+    harsh:
+      needBias && topBias?.bias != null
+        ? {
+            judgeKey: topBias.judgeKey,
+            value: topBias.bias,
+            p: pOf(biasHits),
+            significant: pOf(biasHits) < NULL_ALPHA,
+          }
+        : null,
+  };
+}
+
 export type AgreementReport = {
   kappa: KappaResult;
   /** Tỉ lệ issue có gắn thẻ. Issue không gắn thẻ nằm ngoài tập mục — và tỉ lệ đó là hành vi judge. */
@@ -392,6 +567,8 @@ export type AgreementReport = {
   /** Nhóm mà **mọi** judge hoàn thành đều nêu. */
   unanimousGroups: number;
   raters: string[];
+  /** Kiểm định null cho hai dòng buộc tội. Xem `permutationNull`. */
+  nullTest: NullTest;
 };
 
 export type AgreementInput = {
@@ -404,6 +581,8 @@ export type AgreementInput = {
   /** Tổng số issue của vòng, kể cả chưa gắn thẻ — mẫu số của `coverage`. */
   totalIssues: number;
   groups: GroupVote[];
+  /** Khoá sinh seed — truyền `${spec_version_id}:${round}` để p cố định theo vòng (NFR-JDG-6). */
+  seedKey?: string;
 };
 
 export function judgeAgreement(input: AgreementInput): AgreementReport {
@@ -419,5 +598,6 @@ export function judgeAgreement(input: AgreementInput): AgreementReport {
       (g) => Object.keys(g.severityByJudge).length === raters.length,
     ).length,
     raters,
+    nullTest: permutationNull(input, NULL_DRAWS, input.seedKey ?? ''),
   };
 }
