@@ -7,6 +7,7 @@ import {
   FolderOpen,
   Home,
   LifeBuoy,
+  Map,
   Search,
   ShieldAlert,
   Workflow,
@@ -126,6 +127,17 @@ export function CommandPalette() {
       run: go(`/projects/${p.id}/errors`),
     }));
 
+    /* Bản đồ nguồn (#16) — cùng lý do với màn hình chi phí: `top-nav.tsx` nằm ngoài phạm vi
+       sở hữu của làn C, nên bảng lệnh là đường vào hợp lệ. */
+    const map: Cmd[] = projects.map((p) => ({
+      id: `map-${p.id}`,
+      label: `Bản đồ nguồn · ${p.title}`,
+      hint: 'timeline · chủ đề',
+      group: 'Bản đồ nguồn',
+      icon: Map,
+      run: go(`/projects/${p.id}/map`),
+    }));
+
     // Nhảy bước chỉ có nghĩa khi đã có dự án — lấy dự án sửa gần nhất làm đích.
     const latest = projects[0];
     const jump: Cmd[] = latest
@@ -139,7 +151,7 @@ export function CommandPalette() {
         }))
       : [];
 
-    return [...nav, ...openProject, ...cost, ...errors, ...jump];
+    return [...nav, ...openProject, ...cost, ...errors, ...map, ...jump];
   }, [data, router]);
 
   const results = useMemo(() => {
