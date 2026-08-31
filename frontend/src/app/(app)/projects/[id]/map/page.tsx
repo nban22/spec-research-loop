@@ -80,7 +80,7 @@ export default function SourceMapPage({ params }: PageProps<'/projects/[id]/map'
           ]}
         />
         <HintBox tone="info">
-          Chấm nằm xa mọi chấm khác nghĩa là chủ đề đó ít paper vây quanh. Đó là **gợi ý** chỗ nên
+          Chấm nằm xa mọi chấm khác nghĩa là chủ đề đó ít paper vây quanh. Đó là <strong>gợi ý</strong> chỗ nên
           soi kỹ khi tìm research gap, không phải kết luận — bạn vẫn cần đọc để xác nhận là khoảng
           trống thật chứ không phải do từ khoá tìm chưa trúng.
         </HintBox>

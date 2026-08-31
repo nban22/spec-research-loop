@@ -125,4 +125,7 @@ export const qk = {
   overclaim: (id: string) => ['spec-versions', id, 'overclaim'] as const,
   // làn C · #16 — thêm dòng vào cuối theo luật chung 4.
   sourceMap: (id: string) => ['projects', id, 'source-map'] as const,
+  // làn C · #18 — khoá theo chuỗi query vì preview là hàm thuần: một cấu hình một kết quả.
+  estimatePreview: (id: string, query: string) =>
+    ['projects', id, 'estimate-preview', query] as const,
 };
