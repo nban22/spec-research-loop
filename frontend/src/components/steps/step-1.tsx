@@ -2,11 +2,13 @@
 
 import { ClipboardList, Lightbulb, ListChecks, MessageCircleQuestion } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { HintBox } from '@/components/hint-box';
 import { IdeaInput, TopicChipList } from '@/components/idea-input';
 import { JobProgress } from '@/components/job-progress';
 import { OptionList } from '@/components/option-list';
 import { Panel } from '@/components/panel';
+import { ConceptMap, ViewToggle } from '@/components/concept-map';
 import { CardBoard } from '@/components/spec-cards';
 import { CardSkeleton, EmptyState } from '@/components/states';
 import { SummaryBar } from '@/components/summary-bar';
@@ -37,6 +39,9 @@ export function Step1({ projectId }: { projectId: string }) {
   const { data: pendingData } = usePendingDecisions(projectId);
   const job = useJobAction(projectId);
   const answer = useAnswerDecision(projectId);
+  /* Bản đồ là mặc định — đề gợi ý trả lời câu "tôi hiểu đúng chưa" bằng hình, và đường
+     đọc-văn-bản vẫn giữ nguyên ở tab thứ hai chứ không bị thay thế (#14). */
+  const [view, setView] = useState<'map' | 'board'>('map');
 
   const meta = detail?.currentVersion?.meta ?? null;
   const cards = cardData?.cards ?? [];
@@ -110,8 +115,13 @@ export function Step1({ projectId }: { projectId: string }) {
             accent="neutral"
             icon={ClipboardList}
             title="Bảng thẻ phân rã — 8 loại × 6 trạng thái"
+            action={<ViewToggle view={view} onChange={setView} />}
           >
-            <CardBoard cards={cards} />
+            {view === 'map' ? (
+              <ConceptMap projectId={projectId} meta={meta} cards={cards} />
+            ) : (
+              <CardBoard cards={cards} />
+            )}
           </Panel>
         </>
       )}
