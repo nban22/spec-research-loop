@@ -33,10 +33,20 @@ const CAP_WEAK_FLAGS: VerifierFlag[] = [
 ];
 
 /**
- * `STALE_SOURCE` là cảnh báo thuần, không chặn đường tắt L3 — đúng như `verifyUnit` làm.
- * `DOI_UNVERIFIED` cũng vậy: L0 cố ý **không** hạ nhãn khi registry không tra được.
+ * Cờ **thuần chẩn đoán** — có mặt cũng không hạ nhãn, đúng như `verifyUnit` làm.
+ *
+ * `STALE_SOURCE`: cảnh báo nguồn cũ. `DOI_UNVERIFIED`: L0 cố ý không hạ nhãn khi registry không
+ * tra được. `FULLTEXT_USED` / `FULLTEXT_UNAVAILABLE`: chỉ kể lại verifier đã đi đường nào.
+ *
+ * Thiếu hai cờ toàn văn ở đây thì replay đọc chúng như cờ chặn, và một cặp đi đường toàn văn sẽ
+ * được chấm lại khác hẳn lúc chạy thật — hỏng đúng thứ `calibrate.ts` dựa vào.
  */
-const NON_BLOCKING_FLAGS: VerifierFlag[] = ['STALE_SOURCE', 'DOI_UNVERIFIED'];
+const NON_BLOCKING_FLAGS: VerifierFlag[] = [
+  'STALE_SOURCE',
+  'DOI_UNVERIFIED',
+  'FULLTEXT_USED',
+  'FULLTEXT_UNAVAILABLE',
+];
 
 export function replayLabel(
   input: ReplayInput,

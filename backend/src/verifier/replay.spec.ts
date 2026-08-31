@@ -37,6 +37,21 @@ describe('chấm lại nhãn ở bộ ngưỡng khác', () => {
     expect(r.label).toBe('SUPPORTED');
   });
 
+  it('cờ toàn văn là chẩn đoán, không phải cờ chặn', () => {
+    // Thiếu luật này thì cặp đi đường toàn văn bị chấm lại khác hẳn lúc chạy thật,
+    // và cả `calibrate.ts` dựa trên một phép suy sai.
+    expect(
+      replayLabel(pair({ similarity: 0.9, flags: ['FULLTEXT_USED'] }), TH)
+        .label,
+    ).toBe('SUPPORTED');
+    expect(
+      replayLabel(
+        pair({ similarity: 0.9, flags: ['FULLTEXT_UNAVAILABLE'] }),
+        TH,
+      ).label,
+    ).toBe('SUPPORTED');
+  });
+
   it('cờ thiếu số liệu hạ trần xuống mức yếu dù mô hình nói ENTAILS', () => {
     const r = replayLabel(
       pair({
