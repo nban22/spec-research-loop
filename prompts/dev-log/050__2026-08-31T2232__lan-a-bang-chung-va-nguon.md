@@ -80,10 +80,28 @@ nằm trong danh sách cờ không-chặn, đã sửa kèm test.
 
 **#6 · ablation** — 4 khoá metric mới viết ở `src/verifier/metrics.ts` (chỗ jest thấy được), gọi từ
 **cả** `score.ts` lẫn `ablation-evidence.ts` nên hai bảng không nói lệch nhau. Script chạy 3 cấu
-hình **xen kẽ theo ý tưởng**. Mục "Phụ lục A" trong `docs/evaluation_report.md` báo cả những chỗ
-**không** cải thiện: độ phủ toàn văn thấp (chỉ arXiv có HTML mở, PDF bị cắt có chủ ý vì text bẩn
-làm gãy chính tầng chống bịa trích dẫn), và `evidence_precision_human` **chưa có số** vì cần 30 cặp
-gán tay chấm mù — việc tay không code thay được.
+hình **xen kẽ theo ý tưởng**.
+
+Đã chạy thật 2 ý tưởng × 3 cấu hình (~36 phút). **Bảng ra gần như không nói được gì, và điều đó đã
+được viết thẳng vào báo cáo** thay vì đánh bóng:
+
+- `fulltext_hit_rate = 0` vì hai dự án của nhánh toàn văn có **0 nguồn arXiv** trên tổng 33. Tầng
+  L3b vẫn leo thang đúng 14 lần, cả 14 đều dừng ở `NOT_ARXIV`. Đã kiểm riêng để loại khả năng lỗi
+  nhận diện: `detectArxivId` bắt đúng 10/10 nguồn có dấu vết arXiv trong `raw`, không sót cái nào.
+  Trên cả 115 nguồn thì arXiv chiếm 8,7% — đó là trần thật của cơ chế này.
+- Chênh lệch `unsupported_rate` giữa ba nhánh là **nhiễu**, và nó lộ ra một khiếm khuyết thiết kế
+  của chính script: mỗi nhánh tự chạy lại generator nên ba nhánh **không dùng chung tập khẳng
+  định**. Muốn so đúng thì phải verify lại trên cùng một `SpecVersion`. Đã ghi vào báo cáo là việc
+  sửa cho lượt sau.
+- `conflict_detected = 0` là hệ quả trực tiếp của `unsupported_rate ≈ 1`: không có cặp PRO–CON nào
+  để mà mâu thuẫn. Đúng thiết kế — "mọi nguồn cùng phản bác" thì chúng đồng ý với nhau.
+
+Bằng chứng ba cơ chế chạy đúng đến từ dự án demo dựng sẵn và lượt đo trên "Attention Is All You
+Need", **không** đến từ bảng ablation. Nói đúng như vậy trong báo cáo còn hơn khoe một bảng số mà
+không giải thích được nó.
+
+`evidence_precision_human` **chưa có số** vì cần 30 cặp gán tay chấm mù — việc tay không code thay
+được.
 
 Ba thứ đáng ghi lại vì chúng đổi thiết kế:
 

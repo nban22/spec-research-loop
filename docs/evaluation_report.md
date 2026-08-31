@@ -206,7 +206,48 @@ phải vì toàn văn rẻ.
 
 ## A.3 Ablation ba cấu hình
 
-<!-- BẢNG-ABLATION -->
+Batch `a0000000-…-00000000000a` · 2 ý tưởng (I01, I02) × 3 cấu hình · 2026-09-01 ·
+kết quả thô ở `backend/eval/results/a0000000-0000-4000-8000-00000000000a-evidence.json`.
+
+| cấu hình | n | unsupported_rate | fabrication_rate | l4_llm_ratio | fulltext_hit_rate | conflict_detected | low_credibility_claim_rate | evidence_precision_human |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| abstract (như MVP) | 2 | 0,800 | 0,000 | 0,944 | 0,000 | 0,0 | 0,000 | — |
+| abstract + chấm tin cậy | 2 | 1,000 | 0,000 | 1,000 | 0,000 | 0,0 | 0,000 | — |
+| toàn văn đầy đủ | 2 | 0,962 | 0,000 | 1,000 | 0,000 | 0,0 | 0,000 | — |
+
+**Bảng này gần như không nói được gì, và dưới đây là lý do — đọc phần này chứ đừng đọc bảng.**
+
+**① `fulltext_hit_rate = 0` vì hai dự án của nhánh toàn văn không có lấy một nguồn arXiv nào.**
+Đếm cụ thể: I01 có 10 nguồn, **0** là arXiv; I02 có 23 nguồn, **0** là arXiv. Tầng L3b vẫn leo
+thang đúng 14 lần (4 + 10) và cả 14 lần đều dừng ở `NOT_ARXIV` — tức cơ chế chạy đúng, chỉ là
+không có gì để đọc. Trên toàn bộ 115 nguồn của cả 6 lượt thì có 10 nguồn arXiv (**8,7%**), nhưng
+chúng rơi vào bốn dự án của hai nhánh còn lại, nơi cờ đang tắt nên không thử lần nào.
+
+Đã kiểm riêng để chắc đây **không** phải lỗi nhận diện: `detectArxivId` bắt được đúng 10/10 nguồn
+có dấu vết arXiv trong `raw`, không sót cái nào.
+
+**② Chênh lệch `unsupported_rate` giữa ba dòng là nhiễu, không phải tín hiệu.** Đây là **khiếm
+khuyết thiết kế của chính script ablation này**, phải nói ra: mỗi nhánh tự chạy lại generator nên
+**ba nhánh không dùng chung một tập khẳng định**. Ba cờ của làn A về nguyên tắc chỉ đổi được
+`unsupported_rate` qua đường toàn văn, mà đường đó không chạy lần nào (xem ①) — nên 0,800 / 1,000
+/ 0,962 chỉ là dao động của LLM giữa các lượt sinh thẻ. Muốn so đúng thì ba nhánh phải verify lại
+trên **cùng một** `SpecVersion`, và đó là việc sửa cho lượt chạy sau.
+
+**③ `conflict_detected = 0` là hệ quả trực tiếp của `unsupported_rate` ≈ 1.** Tín hiệu cực chỉ
+kích hoạt khi có **một nguồn hỗ trợ và một nguồn phản bác** trên cùng một thẻ. Khi gần như mọi cặp
+đều `UNSUPPORTED` thì không tồn tại cặp PRO–CON nào — và theo đúng thiết kế, "mọi nguồn cùng phản
+bác" **không** phải mâu thuẫn, chúng đồng ý với nhau. Cơ chế đã được kiểm là chạy đúng trên dữ liệu
+dựng sẵn (`seed-evidence-demo.ts`): 3 thẻ `CONFLICT`, 2 có `conflict_with_card_id`, 0 token.
+
+**④ `low_credibility_claim_rate = 0`** — không thẻ nào bị chống lưng **hoàn toàn** bằng nguồn mức
+thấp. Với n = 2 thì đây là số thật nhưng chưa nói được gì.
+
+**⑤ `evidence_precision_human = —`** vì bảng `HumanCheck` đang trống. Xem §A.4 ②.
+
+**Kết luận trung thực:** ở cỡ mẫu này, ablation **không đủ sức đo** ba cơ chế của làn A. Bằng chứng
+rằng chúng chạy đúng đến từ dự án demo dựng sẵn và từ lượt đo trên "Attention Is All You Need"
+(§A.2), không đến từ bảng trên. Việc còn lại là thời gian máy: chạy đủ 10 ý tưởng (~3 giờ) và sửa
+khiếm khuyết ② để ba nhánh dùng chung một tập khẳng định.
 
 ## A.4 Những chỗ **không** cải thiện — đọc kỹ mục này
 
