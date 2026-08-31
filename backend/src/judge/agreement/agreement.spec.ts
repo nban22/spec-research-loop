@@ -31,7 +31,7 @@ describe('fleissKappa — sàn phụ thuộc số người chấm', () => {
     ];
     const r = fleissKappa(counts, 5);
     expect(r.kappa).toBeCloseTo(-0.25, 10);
-    expect(r.degenerate).toBe('UNIFORM_MARGINALS');
+    expect(r.degenerate).toBe('IDENTICAL_ROWS');
     expect(r.raters).toBe(5);
     expect(r.items).toBe(4);
   });
@@ -114,6 +114,46 @@ describe('fleissKappa — đồng thuận hoàn hảo và các ca suy biến', (
     expect(r.reason).toBe('INSUFFICIENT_ITEMS');
   });
 
+  it('unanimous vẫn đúng khi trả null vì INSUFFICIENT_ITEMS', () => {
+    // Comment trong code lập luận phải tính `unanimous` TRƯỚC chốt `items < 2`. Nhánh
+    // NO_VARIANCE có test, nhánh này thì chưa — cùng một ý định, test một nửa.
+    expect(fleissKappa([[5, 0, 0]], 5).unanimous).toBe(true);
+    expect(fleissKappa([[3, 0, 2]], 5).unanimous).toBe(false);
+  });
+
+  it('unanimous là MỌI mục đồng thuận, không phải CÓ mục nào đồng thuận', () => {
+    // Bảng Fleiss công bố có mục 1 = [0,0,0,0,14] (đồng thuận hoàn toàn) nhưng các mục khác thì
+    // không. `every → some` sẽ cho true và trước đây không gì bắt được.
+    const published = [
+      [0, 0, 0, 0, 14],
+      [0, 2, 6, 4, 2],
+    ];
+    expect(fleissKappa(published, 14).unanimous).toBe(false);
+  });
+
+  it('ma trận méo ⇒ null MALFORMED_COUNTS, không trả số trông hợp lý', () => {
+    // Hàng không tổng bằng raters cho ra −0.3333 rất hợp lý mà sai; hàng ngắn hơn cho NaN lọt
+    // vào cột Float của Prisma.
+    expect(
+      fleissKappa(
+        [
+          [3, 0, 2],
+          [3, 0, 2],
+        ],
+        4,
+      ).reason,
+    ).toBe('MALFORMED_COUNTS');
+    const ragged = fleissKappa(
+      [
+        [3, 0, 2],
+        [3, 0],
+      ],
+      5,
+    );
+    expect(ragged.reason).toBe('MALFORMED_COUNTS');
+    expect(ragged.kappa).toBeNull();
+  });
+
   it('0 mục ⇒ null NO_ITEMS', () => {
     expect(fleissKappa([], 5).reason).toBe('NO_ITEMS');
   });
@@ -122,14 +162,20 @@ describe('fleissKappa — đồng thuận hoàn hảo và các ca suy biến', (
     expect(fleissKappa([[1, 0, 0]], 1).reason).toBe('INSUFFICIENT_RATERS');
   });
 
-  it('tất định — gọi hai lần ra cùng kết quả (NFR-JDG-6)', () => {
+  it('κ BẤT BIẾN theo thứ tự mục và thứ tự nhãn — không chỉ là "hàm thuần"', () => {
+    // Bản trước gọi hai lần trên CÙNG một mảng, tức chỉ chứng minh hàm thuần — đúng cái khuyết
+    // điểm mà PR này chỉ ra ở test cũ của `groupIssues` rồi lặp lại y nguyên. Bất biến thật là:
+    // đảo thứ tự mục, hoặc hoán vị nhãn, thì κ không đổi.
     const counts = [
       [3, 1, 1],
       [1, 2, 2],
+      [0, 5, 0],
     ];
-    expect(JSON.stringify(fleissKappa(counts, 5))).toBe(
-      JSON.stringify(fleissKappa(counts, 5)),
-    );
+    const base = fleissKappa(counts, 5).kappa as number;
+    expect(fleissKappa([...counts].reverse(), 5).kappa).toBeCloseTo(base, 12);
+    // Hoán vị cột (đổi tên nhãn) cũng không được đổi κ.
+    const permuted = counts.map(([a, b, c]) => [c, a, b]);
+    expect(fleissKappa(permuted, 5).kappa).toBeCloseTo(base, 12);
   });
 });
 
@@ -179,6 +225,53 @@ describe('cardLabelCounts — nhãn trên tập thẻ', () => {
       ],
     );
     expect(counts).toEqual([[0, 0, 1]]);
+  });
+
+  it('MINOR ra nhãn MINOR — ba nhãn thật sự phân biệt được', () => {
+    // Mutation chỉ ra: gộp ternary thành `rank===0 ? NONE : BLOCKING` vẫn xanh, vì KHÔNG fixture
+    // nào có phiếu mà mức nặng nhất là MINOR. Cả lập luận "ba nhãn, không phải bốn" của PR dựa
+    // trên một phân biệt mà test không nhìn thấy.
+    expect(
+      cardLabelCounts(
+        ['c1'],
+        ['J1'],
+        [{ judgeKey: 'J1', cardId: 'c1', severity: 'MINOR' }],
+      ),
+    ).toEqual([[0, 1, 0]]);
+    expect(
+      cardLabelCounts(
+        ['c1'],
+        ['J1'],
+        [{ judgeKey: 'J1', cardId: 'c1', severity: 'MAJOR' }],
+      ),
+    ).toEqual([[0, 0, 1]]);
+  });
+
+  it('severity lạ ⇒ BLOCKING (giả định xấu nhất), có phiếu là có phiếu', () => {
+    // `bucketOf` coi mọi thứ khác MINOR là BLOCKING, nên chuỗi lạ rơi vào BLOCKING chứ không
+    // biến mất. Hướng an toàn: thà đánh dấu quá còn hơn im lặng bỏ một phiếu. Thực tế không
+    // xảy ra vì `Issue.severity` là enum Prisma — đây là hành vi biên, ghi lại cho rõ.
+    expect(
+      cardLabelCounts(
+        ['c1'],
+        ['J1'],
+        [{ judgeKey: 'J1', cardId: 'c1', severity: 'BLOCKER' }],
+      ),
+    ).toEqual([[0, 0, 1]]);
+  });
+
+  it('mọi hàng luôn tổng bằng số người chấm', () => {
+    const counts = cardLabelCounts(
+      ['c1', 'c2'],
+      ['J1', 'J2', 'J3'],
+      [
+        { judgeKey: 'J1', cardId: 'c1', severity: 'MINOR' },
+        { judgeKey: 'J9', cardId: 'c2', severity: 'MAJOR' },
+      ],
+    );
+    for (const row of counts) {
+      expect(row.reduce((a, b) => a + b, 0)).toBe(3);
+    }
   });
 
   it('bỏ qua judge không nằm trong danh sách người chấm (ví dụ judge FAILED)', () => {
@@ -257,8 +350,54 @@ describe('severityBias — nặng tay / nhẹ tay, chỉ trên nhóm ≥2 ngư�
     ];
     const [top] = severityBias(['J1', 'J2'], groups);
     expect(top.judgeKey).toBe('J1');
-    expect(top.bias).toBeCloseTo(2, 10); // CRITICAL(3) − MINOR(1)
+    // CRITICAL(3) − mean(3,1)=2 ⇒ +1. So với trung bình CẢ NHÓM, không phải của "người khác".
+    expect(top.bias).toBeCloseTo(1, 10);
     expect(top.n).toBe(2);
+  });
+
+  it('độ lớn SO ĐƯỢC giữa các judge dù cỡ nhóm khác nhau', () => {
+    // Đây là lỗi thật của bản trước: so với trung bình "những người khác" là bộ khuếch đại
+    //   r_j − mean(khác) = m/(m−1) · (r_j − mean(cả nhóm))
+    // nên nhóm 2 người nhân 2×, nhóm 5 người chỉ 1.25×. JP lệch +0.8 so với trung bình nhóm 5
+    // và JQ lệch +0.5 so với trung bình nhóm 2 khi đó ra CÙNG một số — hai mức nặng tay khác
+    // nhau bị san bằng chỉ vì cỡ nhóm. Giao diện xếp hạng theo đúng con số này.
+    const pair = severityBias(
+      ['JQ', 'JR'],
+      [{ severityByJudge: { JQ: 'CRITICAL', JR: 'MAJOR' } }],
+    );
+    const five = severityBias(
+      ['JP', 'A', 'B', 'C', 'D'],
+      [
+        {
+          severityByJudge: {
+            JP: 'CRITICAL',
+            A: 'MAJOR',
+            B: 'MAJOR',
+            C: 'MAJOR',
+            D: 'MAJOR',
+          },
+        },
+      ],
+    );
+    // JQ lệch +0.5 so với trung bình nhóm; JP lệch +0.8. JP phải LỚN HƠN.
+    const jq = pair.find((b) => b.judgeKey === 'JQ');
+    const jp = five.find((b) => b.judgeKey === 'JP');
+    expect(jq?.bias).toBeCloseTo(0.5, 10);
+    expect(jp?.bias).toBeCloseTo(0.8, 10);
+  });
+
+  it('judge KHÔNG nêu nhóm nào thì không thành "judge ma" nhẹ tay nhất', () => {
+    // Bỏ chốt `mine === undefined` là sinh ra người không chấm gì mà bị xếp nhẹ tay nhất.
+    const r = severityBias(
+      ['J1', 'J2', 'J3'],
+      [
+        { severityByJudge: { J1: 'CRITICAL', J2: 'CRITICAL' } },
+        { severityByJudge: { J1: 'CRITICAL', J2: 'CRITICAL' } },
+      ],
+    );
+    const ghost = r.find((b) => b.judgeKey === 'J3');
+    expect(ghost?.n).toBe(0);
+    expect(ghost?.bias).toBeNull();
   });
 
   it('bỏ qua nhóm chỉ một người nêu — không có ai để so', () => {
@@ -281,10 +420,30 @@ describe('leaveOneOut — Δκ, đầu vào cho #8', () => {
     votes.push({ judgeKey: 'J4', cardId: 'c3', severity: 'MAJOR' });
     votes.push({ judgeKey: 'J4', cardId: 'c4', severity: 'MAJOR' });
 
-    const [top] = leaveOneOut(cardIds, ['J1', 'J2', 'J3', 'J4'], votes);
+    const all = leaveOneOut(cardIds, ['J1', 'J2', 'J3', 'J4'], votes);
+    const [top] = all;
     expect(top.judgeKey).toBe('J4');
-    expect(top.delta).not.toBeNull();
-    expect(top.delta as number).toBeGreaterThan(0);
+    // Ghi thẳng giá trị. `toBeGreaterThan(0)` là dạng yếu nhất và để lọt ba mutant: bỏ phép
+    // trừ baseline, fallback null→0, và dùng R thay vì R−1 cho bảng đã bỏ một người.
+    expect(top.delta).toBeCloseTo(1, 10);
+    expect(top.kappaWithout).toBeCloseTo(1, 10);
+  });
+
+  it('bảng đã bỏ một judge phải tính với R−1, không phải R', () => {
+    // Đây chính là lập luận "mọi phép bỏ đều còn R−1 người nên các Δ so được với nhau". Dùng
+    // sai R là mọi Δ tính trên một cái sàn sai.
+    const cardIds = ['c1', 'c2', 'c3'];
+    const votes = [
+      { judgeKey: 'J1', cardId: 'c1', severity: 'MAJOR' },
+      { judgeKey: 'J2', cardId: 'c1', severity: 'MAJOR' },
+      { judgeKey: 'J3', cardId: 'c2', severity: 'MAJOR' },
+    ];
+    const out = leaveOneOut(cardIds, ['J1', 'J2', 'J3'], votes);
+    // Bỏ J3 còn J1+J2, cả hai nêu c1 và cùng im trên c2,c3 ⇒ đồng thuận hoàn hảo ⇒ κ = 1.
+    expect(out.find((l) => l.judgeKey === 'J3')?.kappaWithout).toBeCloseTo(
+      1,
+      10,
+    );
   });
 });
 
@@ -298,6 +457,24 @@ describe('judgeAgreement — báo cáo đầy đủ', () => {
       groups: [{ severityByJudge: { J1: 'MAJOR' } }],
     });
     expect(r.coverage).toBeCloseTo(0.25, 10);
+  });
+
+  it('nối đúng dây: κ của báo cáo tính theo SỐ NGƯỜI CHẤM, không theo số thẻ', () => {
+    // Mutation `fleissKappa(..., cardIds.length)` sống sót vì describe này chưa bao giờ assert
+    // `.kappa` — tức phần nối giữa các mảnh đã test thì lại không được test.
+    const r = judgeAgreement({
+      raters: ['J1', 'J2'],
+      cardIds: ['c1', 'c2'],
+      votes: [
+        { judgeKey: 'J1', cardId: 'c1', severity: 'MAJOR' },
+        { judgeKey: 'J2', cardId: 'c1', severity: 'MAJOR' },
+      ],
+      totalIssues: 2,
+      groups: [{ severityByJudge: { J1: 'MAJOR', J2: 'MAJOR' } }],
+    });
+    expect(r.kappa.raters).toBe(2);
+    expect(r.kappa.items).toBe(2);
+    expect(r.kappa.kappa).toBeCloseTo(1, 10);
   });
 
   it('không có issue nào ⇒ coverage null, không chia cho 0', () => {

@@ -45,11 +45,17 @@ export type ApiAgreement = {
 /** Dưới ngưỡng này Jaccard là ngẫu nhiên — phải khớp `MIN_UNION` của backend. */
 export const MIN_UNION = 5;
 
+export type ApiAgreementResponse = {
+  /** `false` khi `Project.judge_agreement` tắt — cờ chỉ gác phần hiển thị. */
+  enabled: boolean;
+  agreement: ApiAgreement | null;
+};
+
 export function useJudgeAgreement(versionId: string | undefined) {
   return useQuery({
     queryKey: qk.agreement(versionId ?? 'none'),
     queryFn: () =>
-      api.get<{ agreement: ApiAgreement | null }>(
+      api.get<ApiAgreementResponse>(
         `/spec-versions/${versionId}/judge-agreement`,
       ),
     enabled: Boolean(versionId),

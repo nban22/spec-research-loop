@@ -20,14 +20,22 @@ export class AgreementController {
   @Get('spec-versions/:id/judge-agreement')
   async latest(@Param('id') id: string, @UserId() userId: string) {
     await this.spec.assertVersionOwned(id, userId);
-    // `null` khi chưa chạy judge vòng nào — giao diện tự hiện trạng thái rỗng.
-    return { agreement: await this.agreement.forLatestRound(id) };
+    // Trả kèm `enabled` — cờ `Project.judge_agreement` gác phần hiển thị. `agreement` là `null`
+    // khi chưa chạy judge vòng nào; giao diện phân biệt hai trạng thái đó.
+    return this.agreement.forDisplay(id);
   }
 
-  /** Tính lại vòng mới nhất — dùng cho vòng đã chạy trước khi có tính năng này. */
+  /**
+   * **Tính lại và ghi đè** vòng mới nhất.
+   *
+   * Bản trước gọi `forLatestRound`, mà hàm đó trả bản đã lưu nếu có — nên `POST` không tính lại
+   * gì, và `recompute()` không với tới được từ HTTP. Hệ quả: **không có đường sửa** cho một bản
+   * ghi đã lỗi thời, mà lỗi thời là chuyện chắc chắn xảy ra — `POST /projects/:id/analyze` xoá
+   * sạch thẻ, `Issue.target_card_id` bị `ON DELETE SET NULL`, và số đo cũ thành sai vĩnh viễn.
+   */
   @Post('spec-versions/:id/judge-agreement')
   async recompute(@Param('id') id: string, @UserId() userId: string) {
     await this.spec.assertVersionOwned(id, userId);
-    return { agreement: await this.agreement.forLatestRound(id) };
+    return { agreement: await this.agreement.recomputeLatest(id) };
   }
 }

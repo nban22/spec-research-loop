@@ -46,8 +46,8 @@ const base: ApiAgreement = {
 
 const cell = (value: number | null, union: number) => ({ value, union });
 
-function mount(agreement: ApiAgreement | null) {
-  get.mockResolvedValue({ agreement });
+function mount(agreement: ApiAgreement | null, enabled = true) {
+  get.mockResolvedValue({ enabled, agreement });
   return render(<JudgeAgreementPanel versionId="v-1" />, { wrapper });
 }
 
@@ -130,6 +130,77 @@ describe('JudgeAgreementPanel', () => {
     const big = screen.getAllByText('n=9')[0].parentElement;
     expect(small).toHaveClass('bg-sunken');
     expect(big).toHaveClass('bg-brand-ink');
+  });
+
+  it('cờ tắt ⇒ nói rõ đang tắt, KHÁC với "chưa chạy judge"', async () => {
+    mount(null, false);
+    await waitFor(() =>
+      expect(screen.getByText('Số đo đang tắt')).toBeInTheDocument(),
+    );
+    expect(screen.queryByText('Chưa có số đo')).not.toBeInTheDocument();
+  });
+
+  it('gọi ĐÚNG endpoint — mock trước đây bỏ qua đối số nên sai đường dẫn vẫn xanh', async () => {
+    mount(base);
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    expect(get).toHaveBeenCalledWith('/spec-versions/v-1/judge-agreement');
+  });
+
+  it('ba dòng mẫu hình hiện dữ liệu thật, không phải chuỗi dự phòng', async () => {
+    // Trước đây `solo`/`bias`/`leaveOneOut` là `[]` trong MỌI test, nên cả ba dòng chỉ từng
+    // render chuỗi "không có". Chính ba con số PR đưa ra làm bằng chứng thì không có test nào.
+    mount({
+      ...base,
+      raters: ['J1', 'J5'],
+      // Judge thứ hai phải có rate DƯƠNG nhưng thấp hơn: nếu nó là 0 thì chốt `> 0` tự loại
+      // và việc lấy phần tử đầu hay cuối cho cùng kết quả — mutation sẽ sống sót.
+      solo: [
+        { judgeKey: 'J5', solo: 3, raised: 4, rate: 0.75 },
+        { judgeKey: 'J3', solo: 1, raised: 4, rate: 0.25 },
+      ],
+      bias: [
+        { judgeKey: 'J4', bias: 1.5, n: 2 },
+        { judgeKey: 'J1', bias: -0.05, n: 5 },
+      ],
+      leaveOneOut: [
+        { judgeKey: 'J5', delta: 0.139, kappaWithout: 0.32 },
+        { judgeKey: 'J1', delta: -0.02, kappaWithout: 0.16 },
+      ],
+    });
+
+    await waitFor(() => expect(screen.getByText(/J5 — 75%/)).toBeInTheDocument());
+    expect(screen.getByText(/J4 — \+1.50 bậc/)).toBeInTheDocument();
+    expect(screen.getByText(/J5 — bỏ ra thì κ tăng 0.139/)).toBeInTheDocument();
+  });
+
+  it('judge NHẸ tay không bị gọi là "chấm nặng tay nhất"', async () => {
+    // Bỏ chốt `> 0` là một judge nhẹ tay bị dán nhãn nặng tay nhất.
+    mount({
+      ...base,
+      bias: [{ judgeKey: 'J2', bias: -0.8, n: 4 }],
+      leaveOneOut: [{ judgeKey: 'J2', delta: -0.1, kappaWithout: 0.1 }],
+    });
+    await waitFor(() =>
+      expect(screen.getByText('không lệch rõ')).toBeInTheDocument(),
+    );
+    expect(screen.getByText('không ai nổi trội')).toBeInTheDocument();
+  });
+
+  it('thang nhiệt phân biệt đủ các bậc, không chỉ hai đầu', async () => {
+    mount({
+      ...base,
+      raters: ['J1', 'J2', 'J3', 'J4'],
+      matrix: {
+        J1: { J2: cell(0.9, 9), J3: cell(0.6, 9), J4: cell(0.3, 9) },
+        J2: { J1: cell(0.9, 9) },
+        J3: { J1: cell(0.6, 9) },
+        J4: { J1: cell(0.3, 9) },
+      },
+    });
+    await waitFor(() => expect(screen.getAllByText('0.90').length).toBeGreaterThan(0));
+    expect(screen.getAllByText('0.90')[0].parentElement).toHaveClass('bg-brand-ink');
+    expect(screen.getAllByText('0.60')[0].parentElement).toHaveClass('bg-brand-line');
+    expect(screen.getAllByText('0.30')[0].parentElement).toHaveClass('bg-brand-soft');
   });
 
   it('coverage dưới 100% ⇒ nói rõ phần nằm ngoài phép đo', async () => {
