@@ -8,6 +8,7 @@ chứng**, và **không bước nào tự chốt thay người dùng**.
 - Công nghệ: `docs/STACK.md` · ERD/API/thuật toán: `docs/ARCHITECTURE.md`
 - Giao diện: `docs/DESIGN_SYSTEM.md` · Đánh đổi & điểm vỡ: `docs/SYSTEM_DESIGN_ANALYSIS.md`
 - **Bàn giao & nộp bài: `docs/handover.md`** — đối chiếu 10 sản phẩm bàn giao, kịch bản video, việc còn lại
+- Bản đồ luồng sản phẩm: `docs/product-flow-map.html` · Bản đồ làn C: `docs/lane-c-map.html` (mở bằng trình duyệt)
 
 ---
 

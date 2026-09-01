@@ -110,6 +110,7 @@ nguyên và nói ra. Người chấm phân biệt được "demo thật có như
 | --- | --- |
 | Chạy thử tại máy | `README.md` |
 | Hệ thống làm gì, luồng ra sao | `docs/product-flow-map.html` (mở bằng trình duyệt) |
+| Làn C đã thêm gì, sáng tạo UI/UX nào, dựng bằng gì | `docs/lane-c-map.html` (mở bằng trình duyệt) |
 | ERD, API surface | `docs/ARCHITECTURE.md` |
 | Chọn công nghệ gì và **vì sao loại cái khác** | `docs/STACK.md` |
 | Chỗ hệ thống có thể vỡ, đánh đổi đã chấp nhận | `docs/SYSTEM_DESIGN_ANALYSIS.md` |
