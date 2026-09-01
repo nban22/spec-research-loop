@@ -79,7 +79,8 @@ export const ModelName = {
   SourceScore: 'SourceScore',
   SourceFullText: 'SourceFullText',
   VerifierPassage: 'VerifierPassage',
-  CardConflict: 'CardConflict'
+  CardConflict: 'CardConflict',
+  JudgeAgreement: 'JudgeAgreement'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -568,6 +569,25 @@ export const CardConflictScalarFieldEnum = {
 } as const
 
 export type CardConflictScalarFieldEnum = (typeof CardConflictScalarFieldEnum)[keyof typeof CardConflictScalarFieldEnum]
+
+
+export const JudgeAgreementScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  round: 'round',
+  raters: 'raters',
+  items: 'items',
+  kappa: 'kappa',
+  reason: 'reason',
+  unanimous: 'unanimous',
+  degenerate: 'degenerate',
+  coverage: 'coverage',
+  matrix: 'matrix',
+  patterns: 'patterns',
+  created_at: 'created_at'
+} as const
+
+export type JudgeAgreementScalarFieldEnum = (typeof JudgeAgreementScalarFieldEnum)[keyof typeof JudgeAgreementScalarFieldEnum]
 
 
 export const SortOrder = {

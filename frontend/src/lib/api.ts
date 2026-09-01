@@ -137,4 +137,7 @@ export const qk = {
   conflicts: (id: string) => ['spec-versions', id, 'conflicts'] as const,
   // làn A · #4 — hàng đợi chấm mù.
   labelQueue: (id: string) => ['spec-versions', id, 'label-queue'] as const,
+  // làn B · #9 — thêm dòng vào cuối theo luật chung 4.
+  agreement: (id: string) =>
+    ['spec-versions', id, 'judge-agreement'] as const,
 };

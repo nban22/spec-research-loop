@@ -11,7 +11,7 @@ describe('JudgeService', () => {
       createMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
-      findMany: jest.fn(),
+      findMany: jest.fn<Promise<unknown>, [{ orderBy?: unknown }]>(),
     },
     card: { findMany: jest.fn() },
     project: { update: jest.fn() },
@@ -21,11 +21,13 @@ describe('JudgeService', () => {
   const spec = { buildSpecJson: jest.fn() };
   const sources = { sourcesForPrompt: jest.fn() };
 
+  const agreement = { recompute: jest.fn().mockResolvedValue(undefined) };
   const service = new JudgeService(
     prisma as never,
     llm as never,
     spec as never,
     sources as never,
+    agreement as never,
   );
 
   beforeEach(() => {
@@ -111,6 +113,38 @@ describe('JudgeService', () => {
       where: { id: 'p-1' },
       data: { judge_round: 1, judge_rounds_total: { increment: 1 } },
     });
+
+    // #9 · số đo bất đồng phải được **chốt ngay lúc chạy** với ĐÚNG vòng vừa xong. Mutation
+    // testing cho thấy xoá thẳng lời gọi này, hay gọi với `round − 1`, đều để suite xanh.
+    expect(agreement.recompute).toHaveBeenCalledWith('v-1', 1);
+  });
+
+  it('gộp nhóm phải đọc issue có orderBy — không có thì NFR-JDG-6 chỉ là lời khẳng định', async () => {
+    // `groupIssues` gộp tham lam: lấy khớp đầu tiên và đổi `canonicalTitle` giữa chừng, nên đổi
+    // thứ tự đầu vào là ra tập nhóm khác — mà `agreement_count` là con số đi vào báo cáo.
+    // Không có `orderBy` thì Postgres trả thứ tự nào cũng được.
+    prisma.specVersion.findUniqueOrThrow.mockResolvedValue({
+      id: 'v-1',
+      project_id: 'p-1',
+      project: { judge_round: 0, judge_rounds_total: 0 },
+    });
+    prisma.judgeRun.count.mockResolvedValue(0);
+    spec.buildSpecJson.mockResolvedValue({ title: 'Spec' });
+    sources.sourcesForPrompt.mockResolvedValue([]);
+    prisma.card.findMany.mockResolvedValue([]);
+    prisma.issue.findMany.mockClear();
+    prisma.issue.findMany.mockResolvedValue([]);
+    llm.completeJson.mockResolvedValue({
+      promptHash: 'phash',
+      attempts: 1,
+      data: { issues: [] },
+    });
+    prisma.judgeRun.create.mockResolvedValue({ id: 'jr-1' });
+
+    await service.runRound('v-1');
+
+    const call = prisma.issue.findMany.mock.calls.at(-1)?.[0];
+    expect(call?.orderBy).toEqual([{ created_at: 'asc' }, { id: 'asc' }]);
   });
 
   it('listIssueGroups returns sorted issue groups with child issues', async () => {
