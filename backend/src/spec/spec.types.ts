@@ -17,6 +17,22 @@ export const experimentPlanBlobSchema = z.object({
   baselines_and_metrics: z.string().default(''),
   ablation_plan: z.string().default(''),
   risks_and_limitations: z.string().default(''),
+  /**
+   * **Vì sao** kế hoạch này có hoặc không có ước lượng tài nguyên.
+   *
+   * Ghi xuống chứ không để giao diện suy ra từ việc `ResourceEstimate` vắng mặt: sự vắng mặt
+   * gộp bốn ca khác nhau — không áp dụng · tham số hỏng · job đang chạy · lỗi ghi DB — và bốn
+   * ca đó cần bốn câu nói khác nhau. Suy đoán thì có lúc nói đúng, có lúc nói dối.
+   *
+   * `optional`: hàng ghi trước khi có trường này thì `undefined`, và giao diện phải xử lý nó
+   * như **"chưa rõ"** chứ không mặc định về `NOT_APPLICABLE` — 3 hàng cũ trong DB thật ra
+   * thuộc ca `INVALID_PARAMS`, gán nhầm nhãn là dán một câu sai lên dữ liệu cũ.
+   */
+  estimate_status: z
+    .enum(['OK', 'NOT_APPLICABLE', 'INVALID_PARAMS'])
+    .optional(),
+  /** Nút thắt tài nguyên thật, do model nêu, khi kế hoạch không chạy trên mô hình nào. */
+  estimate_note: z.string().optional(),
 });
 export type ExperimentPlanBlob = z.infer<typeof experimentPlanBlobSchema>;
 

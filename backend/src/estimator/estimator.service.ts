@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { z } from 'zod';
 
 /**
  * Bước 7 của đề: ước lượng tài nguyên và **đề xuất giảm quy mô nếu vượt RTX 3090**.
@@ -11,16 +10,13 @@ import { z } from 'zod';
  * (kim-chỉ-nam §5) — module này là một calculator, không cần GPU nào cả.
  */
 
-export const estimatorInputSchema = z.object({
-  model_params_b: z.number().positive().max(2000),
-  quantization: z.enum(['fp16', 'int8', 'int4']),
-  candidates: z.number().int().positive().max(10_000),
-  rounds: z.number().int().positive().max(1_000),
-  eval_samples: z.number().int().positive().max(1_000_000),
-  avg_prompt_tokens: z.number().int().positive().max(200_000),
-  avg_output_tokens: z.number().int().positive().max(200_000),
-});
-export type EstimatorInput = z.infer<typeof estimatorInputSchema>;
+/* Schema chuyển sang `contracts/estimator.ts` — ba nơi cùng dùng nó, và trước đây tồn tại một
+   bản chép tay lỏng hơn trong schema output của LLM. Re-export để nơi gọi cũ không phải đổi. */
+export {
+  estimatorInputSchema,
+  type EstimatorInput,
+} from '../contracts/estimator';
+import type { EstimatorInput } from '../contracts/estimator';
 
 export type DownscaleSuggestion = {
   field: keyof EstimatorInput;

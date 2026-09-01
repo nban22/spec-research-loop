@@ -311,4 +311,14 @@ export type ApiExperimentPlan = {
   baselines_and_metrics: string;
   ablation_plan: string;
   risks_and_limitations: string;
+  /**
+   * **Why** this plan does or does not have a resource estimate — matches
+   * `backend/src/contracts/estimator.ts`.
+   *
+   * `undefined` on rows written before this field existed. The UI must read that as **"unknown"**
+   * and must not default to `NOT_APPLICABLE`: the old rows in the DB actually belong to the
+   * `INVALID_PARAMS` case, so that label would stick a false sentence on them.
+   */
+  estimate_status?: 'OK' | 'NOT_APPLICABLE' | 'INVALID_PARAMS';
+  estimate_note?: string;
 };

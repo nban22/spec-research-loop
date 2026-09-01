@@ -10,6 +10,7 @@ import { OptionList } from '@/components/option-list';
 import { Panel } from '@/components/panel';
 import { SpecCard } from '@/components/spec-cards';
 import { EmptyState, StatTileSkeleton } from '@/components/states';
+import { EstimateForm } from '@/components/estimate-form';
 import { EstimateRows, ExperimentPlanList, StatTileGrid } from '@/components/spec-views';
 import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
@@ -51,11 +52,14 @@ export function Step3({ projectId }: { projectId: string }) {
     .flatMap((c) => c.card_sources)
     .filter((cs) => cs.verifier_run_id === null).length;
   const hasPlan = detail?.currentVersion?.has_experiment_plan ?? false;
-  const hasEstimate = detail?.currentVersion?.has_estimate ?? false;
 
   const { data: planData } = usePlanAndEstimate(versionId);
+  /* Read the status that was **written down**, do not infer it from a missing `estimate`: that
+     absence merges four cases which need four different sentences
+     (`backend/src/contracts/estimator.ts`). */
   const plan = planData?.plan ?? null;
   const estimate = planData?.estimate ? toApiEstimate(planData.estimate) : null;
+  const status = plan?.estimate_status;
 
   const context = (
     <>
@@ -157,10 +161,43 @@ export function Step3({ projectId }: { projectId: string }) {
             />
             <EstimateRows estimate={estimate} />
           </>
-        ) : hasPlan ? (
-          /* A plan without an estimate ⇒ phase 2 of the job is running: show the four-tile frame
-             that is coming, not a sentence implying nothing is happening. */
+        ) : status === 'NOT_APPLICABLE' ? (
+          /* The model **explicitly** says this plan does not run on any model (prompt rule 8).
+             This is the only sentence allowed to assert that — the other three cases say otherwise. */
+          <HintBox tone="info">
+            This plan does not run on any model, so there is nothing to estimate.
+            {plan?.estimate_note ? ` ${plan.estimate_note}` : ''}
+          </HintBox>
+        ) : status === 'INVALID_PARAMS' ? (
+          /* The plan DOES have a compute part; the parameters the model returned are simply
+             unusable. That number exists — inviting the user to enter it is the right move,
+             not passing the buck. */
+          <div className="space-y-2">
+            <HintBox tone="warn">
+              This plan does run on a model, but the estimator parameters the system received are
+              not valid, so nothing could be computed. Enter the seven parameters by hand and the
+              estimate appears immediately.
+            </HintBox>
+            <EstimateForm projectId={projectId} />
+          </div>
+        ) : hasPlan && job.busy ? (
+          /* Phase 2 of the job is **running**: show the four-tile frame that is coming. */
           <StatTileSkeleton />
+        ) : hasPlan ? (
+          /* Why there is no estimate is unknown here: either the row predates `estimate_status`,
+             or the job is running and the page was just reloaded so the client lost track of it.
+
+             **Assert nothing** in this branch. The first patch stated flatly that "this plan is
+             not a compute experiment" for all three cases — and for the old DB rows that sentence
+             is false, because they actually belong to the broken-parameters case. */
+          <div className="space-y-2">
+            <StatTileSkeleton />
+            <p className="text-ink-3 text-xs">
+              No resource estimate yet. If you have just built the plan, the system may still be
+              computing it — reload in a few seconds. If it stays empty, enter the values by hand below.
+            </p>
+            <EstimateForm projectId={projectId} />
+          </div>
         ) : (
           <p className="text-ink-3 text-xs">
             The estimate appears once the experiment plan exists. It is pure arithmetic — no model
@@ -170,7 +207,11 @@ export function Step3({ projectId }: { projectId: string }) {
       </Panel>
 
       {/* A decision block added over mockup 3 — without it this step would confirm itself. */}
-      {hasEstimate && (
+      {/* The gate opens on `hasPlan`, **not** on `hasEstimate`. The decision here is *settling the
+          experiment plan*, not settling the resource estimate. Locking it behind `hasEstimate`
+          would leave a study that runs on no model — a clinical trial, a user survey —
+          **stuck at step 3 forever**, because the confirm button would never appear. */}
+      {hasPlan && (
         <Panel accent="decide" icon={Beaker} title="Approve the plan">
           <OptionList
             question="How do you want to settle the experiment plan?"
@@ -182,7 +223,12 @@ export function Step3({ projectId }: { projectId: string }) {
                 example: 'Run exactly the candidate count and evaluation sample size estimated here.',
                 recommended: estimate?.fits_rtx3090 ?? true,
               },
-              {
+              /* Shown only when an estimate EXISTS. Without one there is no suggestion to apply
+                 and no scale to reduce — and `Decision` rows feed `eval/` and the evaluation
+                 report, so writing a meaningless choice there pollutes the very table used to
+                 measure. */
+              ...(estimate
+                ? [{
                 key: 'B',
                 label: 'Downscale as suggested',
                 explain: 'Apply the downscaling suggestions so it fits the available resources.',
@@ -190,7 +236,8 @@ export function Step3({ projectId }: { projectId: string }) {
                   estimate?.downscale_suggestion?.[0]?.reason ??
                   'Reduce the candidate count or lower the quantisation.',
                 recommended: !(estimate?.fits_rtx3090 ?? true),
-              },
+                  }]
+                : []),
             ]}
             variant="compact"
             submitting={answer.isPending}
@@ -231,13 +278,18 @@ export function Step3({ projectId }: { projectId: string }) {
       context={context}
       content={content}
       decide={decide}
-      decideCount={hasEstimate ? 1 : 0}
-      decideSummary={hasEstimate ? 'Approve the experiment plan' : undefined}
+      decideCount={hasPlan ? 1 : 0}
+      decideSummary={hasPlan ? 'Approve the experiment plan' : undefined}
       summaryBar={
         <SummaryBar
           round={1}
           nodes={['Contribution', 'Experiments', 'Estimate', 'Confirm']}
-          activeIndex={claims.length === 0 ? 0 : !hasPlan ? 1 : !hasEstimate ? 2 : 3}
+          /* `estimate`, not `hasEstimate`: when a plan has no compute part the backend
+             deliberately produces no estimate. Keying off the `has_estimate` flag would leave
+             the progress bar parked on "Estimate" for a stage that will never arrive. */
+          activeIndex={
+            claims.length === 0 ? 0 : !hasPlan ? 1 : job.busy && !estimate ? 2 : 3
+          }
           hint="Every claim needs a refutation condition — the field most often forgotten."
         />
       }

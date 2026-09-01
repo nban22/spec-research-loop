@@ -11,9 +11,12 @@ import {
   relatedWorkOutputSchema,
 } from '../contracts/llm-io/generator';
 import {
-  EstimatorService,
+  ESTIMATE_STATUS,
   estimatorInputSchema,
-} from '../estimator/estimator.service';
+  type EstimateStatus,
+  type EstimatorInput,
+} from '../contracts/estimator';
+import { EstimatorService } from '../estimator/estimator.service';
 import { LlmService } from '../llm/llm.service';
 import { SourcesService } from '../sources/sources.service';
 import { SpecService } from '../spec/spec.service';
@@ -408,6 +411,44 @@ export class GeneratorService {
       link: { projectId, specVersionId: version.id },
     });
 
+    /**
+     * Quyết trạng thái ước lượng **trước** khi ghi, rồi ghi **một lần**.
+     *
+     * Trước đây kế hoạch được `upsert` ngay rồi mới parse tham số. Parse ném thì job chết sau
+     * khi kế hoạch đã vào DB — để lại một hàng không mang thông tin nào về việc vì sao nó thiếu
+     * ước lượng, và giao diện buộc phải đoán. Đã xảy ra thật với 5 job.
+     *
+     * Ba trạng thái, ba câu nói khác nhau với người dùng — xem `contracts/estimator.ts`.
+     */
+    const raw = out.data.estimator_inputs;
+
+    let status: EstimateStatus;
+    let inputs: EstimatorInput | null = null;
+
+    if (raw === null) {
+      // Mô hình **chủ động** nói kế hoạch này không chạy trên model nào (prompt rule 8).
+      status = ESTIMATE_STATUS.NOT_APPLICABLE;
+    } else {
+      /* Lưới cuối. Schema output đã dùng chung `estimatorInputSchema` nên nhánh này về lý
+         thuyết không xảy ra — giữ lại vì "về lý thuyết" không phải là một bảo đảm, và cái giá
+         của việc sai ở đây là mất cả kế hoạch thí nghiệm. */
+      const parsed = estimatorInputSchema.safeParse(raw);
+      if (parsed.success) {
+        status = ESTIMATE_STATUS.OK;
+        inputs = parsed.data;
+      } else {
+        status = ESTIMATE_STATUS.INVALID_PARAMS;
+        // Log `path` + `code`, **không** log giá trị nhận được: `message` của một custom error
+        // map có thể kèm giá trị, và đó là output model lọt vào log (backend/CLAUDE.md §5).
+        this.logger.warn(
+          `Resource estimate skipped for version ${version.id} — ` +
+            `estimator_inputs is not valid: ${parsed.error.issues
+              .map((i) => `${i.path.join('.') || '(root)'}[${i.code}]`)
+              .join(' · ')}`,
+        );
+      }
+    }
+
     const blob: ExperimentPlanBlob = {
       experiments: out.data.experiments.map((e) => ({
         code: e.code,
@@ -418,6 +459,11 @@ export class GeneratorService {
       baselines_and_metrics: out.data.baselines_and_metrics,
       ablation_plan: out.data.ablation_plan,
       risks_and_limitations: out.data.risks_and_limitations,
+      estimate_status: status,
+      estimate_note:
+        status === ESTIMATE_STATUS.NOT_APPLICABLE
+          ? out.data.estimator_note
+          : undefined,
     };
 
     await this.prisma.experimentPlan.upsert({
@@ -427,8 +473,19 @@ export class GeneratorService {
     });
 
     await onProgress?.(1, 2, 'Estimating resources…');
+
+    if (inputs === null) {
+      await onProgress?.(
+        2,
+        2,
+        status === ESTIMATE_STATUS.NOT_APPLICABLE
+          ? 'The experiment plan is ready. It does not run on any model, so no resource estimate is needed.'
+          : 'The experiment plan is ready. The estimator inputs are not valid — you can enter them yourself in the right column.',
+      );
+      return;
+    }
+
     // Ước lượng là **công thức thuần, 0 LLM** — model chỉ cung cấp tham số (S4).
-    const inputs = estimatorInputSchema.parse(out.data.estimator_inputs);
     await this.saveEstimate(version.id, inputs);
     await onProgress?.(
       2,
@@ -437,10 +494,7 @@ export class GeneratorService {
     );
   }
 
-  async saveEstimate(
-    specVersionId: string,
-    inputs: ReturnType<typeof estimatorInputSchema.parse>,
-  ) {
+  async saveEstimate(specVersionId: string, inputs: EstimatorInput) {
     const result = this.estimator.estimate(inputs);
     await this.prisma.resourceEstimate.upsert({
       where: { spec_version_id: specVersionId },
