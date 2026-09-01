@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useMemo } from 'react';
 import type { ApiEstimate } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -98,6 +99,7 @@ export function ParetoChart({
   suggested: GridPoint | null;
   onPick: (input: SimInput) => void;
 }) {
+  const reduced = useReducedMotion();
   const front = useMemo(() => {
     return paretoFront(points).sort((a, b) => a.estimate.cost_usd - b.estimate.cost_usd);
   }, [points]);
@@ -122,6 +124,8 @@ export function ParetoChart({
   const py = (gb: number) => H - PAD.bottom - (gb / maxVram) * (H - PAD.top - PAD.bottom);
 
   const front3090 = py(RTX3090_GB);
+  /** Đổi khi **tập** cấu hình trên frontier đổi — dùng để biết lúc nào phải hoà mờ sang đường mới. */
+  const frontKey = front.map((p) => `${p.input.model_params_b}${p.input.quantization}`).join('|');
   const key = (p: GridPoint) =>
     `${p.input.model_params_b}-${p.input.quantization}-${p.input.candidates}-${p.input.rounds}-${p.input.eval_samples}`;
 
@@ -183,15 +187,28 @@ export function ParetoChart({
             ← VRAM (GB)
           </text>
 
-          {/* Đường Pareto vẽ trước để chấm nằm đè lên nó. */}
-          {front.length > 1 && (
-            <polyline
-              points={front.map((p) => `${px(p.estimate.cost_usd)},${py(p.estimate.vram_gb)}`).join(' ')}
-              className="stroke-brand-ink"
-              fill="none"
-              strokeWidth={1.5}
-            />
-          )}
+          {/* Đường Pareto vẽ trước để chấm nằm đè lên nó.
+              Không tween được thuộc tính `points` — số đỉnh của frontier đổi theo lưới, mà
+              `motion` chỉ nội suy được khi hai bên cùng số điểm. Nên chuyển bằng **hoà mờ**:
+              đường cũ mờ đi, đường mới hiện lên. Không đúng bằng trượt, nhưng thà hoà mờ còn
+              hơn một đường thẳng giật sang hình khác trong một khung hình. */}
+          <AnimatePresence mode="wait" initial={false}>
+            {front.length > 1 && (
+              <motion.polyline
+                key={frontKey}
+                points={front
+                  .map((p) => `${px(p.estimate.cost_usd)},${py(p.estimate.vram_gb)}`)
+                  .join(' ')}
+                className="stroke-brand-ink"
+                fill="none"
+                strokeWidth={1.5}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: reduced ? 0 : 0.18 }}
+              />
+            )}
+          </AnimatePresence>
 
           {points.map((p) => {
             const onFront = front.includes(p);
@@ -214,10 +231,22 @@ export function ParetoChart({
                   }
                 }}
               >
-                <circle
+                {/* Chấm **trượt** tới vị trí mới thay vì nhảy. Đây là chỗ ăn thua của cả màn
+                    hình: kéo thanh trượt là cả lưới đổi toạ độ, mà nhảy tức thì thì mắt mất dấu
+                    điểm mình đang theo dõi và không đọc được nó dịch theo hướng nào. */}
+                <motion.circle
                   cx={px(p.estimate.cost_usd)}
                   cy={py(p.estimate.vram_gb)}
-                  r={isCurrent ? 7 : isSuggested ? 6 : onFront ? 4.5 : 3}
+                  animate={{
+                    cx: px(p.estimate.cost_usd),
+                    cy: py(p.estimate.vram_gb),
+                    r: isCurrent ? 7 : isSuggested ? 6 : onFront ? 4.5 : 3,
+                  }}
+                  transition={
+                    reduced
+                      ? { duration: 0 }
+                      : { type: 'spring', stiffness: 300, damping: 30, mass: 0.6 }
+                  }
                   className={cn(
                     isCurrent
                       ? 'fill-brand-ink'

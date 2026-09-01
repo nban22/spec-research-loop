@@ -1,6 +1,7 @@
 'use client';
 
 import { CircleDot, Clock } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useState } from 'react';
 import { EmptyState } from '@/components/states';
 import { cn } from '@/lib/utils';
@@ -58,6 +59,7 @@ function radiusOf(citations: number | null): number {
 export function SourceMapView({ data }: { data: SourceMapData }) {
   const [tab, setTab] = useState<'similarity' | 'timeline'>('similarity');
   const [focus, setFocus] = useState<string | null>(null);
+  const reduced = useReducedMotion();
 
   if (data.nodes.length === 0) {
     return (
@@ -81,11 +83,23 @@ export function SourceMapView({ data }: { data: SourceMapData }) {
         )}
       </div>
 
-      {tab === 'similarity' ? (
-        <SimilarityMap nodes={data.nodes} focus={focus} onFocus={setFocus} />
-      ) : (
-        <Timeline rows={data.timeline} />
-      )}
+      {/* `mode="wait"` chứ không phải chồng hai view lên nhau: hai hình này cao khác nhau, cho
+          chúng cùng tồn tại một nhịp làm cả trang giật chiều cao. */}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: reduced ? 0 : 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: reduced ? 0 : -8 }}
+          transition={{ duration: reduced ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {tab === 'similarity' ? (
+            <SimilarityMap nodes={data.nodes} focus={focus} onFocus={setFocus} />
+          ) : (
+            <Timeline rows={data.timeline} />
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
@@ -149,6 +163,7 @@ function SimilarityMap({
   const sx = (x: number) => PAD + ((x + 1) / 2) * (W - PAD * 2);
   const sy = (y: number) => PAD + ((y + 1) / 2) * (H - PAD * 2);
   const picked = nodes.find((n) => n.id === focus) ?? null;
+  const reduced = useReducedMotion();
 
   return (
     <div className="space-y-2">
@@ -171,14 +186,24 @@ function SimilarityMap({
             />
           )}
 
-          {nodes.map((n) => {
+          {nodes.map((n, i) => {
             const on = n.id === focus;
             const pick = () => onFocus(on ? null : n.id);
             return (
               /* `<g role="button">` thay vì `<circle onClick>`: phần tử bấm được phải tới được
-                 bằng bàn phím và có tên (frontend/CLAUDE.md §7). Cùng khuôn với `concept-map`. */
-              <g
+                 bằng bàn phím và có tên (frontend/CLAUDE.md §7). Cùng khuôn với `concept-map`.
+                 Nở ra lệch pha theo thứ tự: bản đồ hiện dần cho mắt kịp bắt cụm, thay vì đổ ập
+                 vài chục chấm cùng lúc rồi phải quét lại từ đầu. */
+              <motion.g
                 key={n.id}
+                initial={{ opacity: 0, scale: reduced ? 1 : 0.4 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                  duration: reduced ? 0 : 0.32,
+                  delay: reduced ? 0 : Math.min(i, 24) * 0.022,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                style={{ transformOrigin: `${sx(n.x)}px ${sy(n.y)}px` }}
                 role="button"
                 tabIndex={0}
                 aria-label={`Xem chi tiết nguồn ${n.title}`}
@@ -218,7 +243,7 @@ function SimilarityMap({
                 >
                   {short(n.title, 26)}
                 </text>
-              </g>
+              </motion.g>
             );
           })}
         </svg>
@@ -226,10 +251,20 @@ function SimilarityMap({
 
       <Legend />
 
-      {/* Chi tiết hiện bằng CHỮ dưới bản đồ, không phải tooltip — xem chú thích của hàm này. */}
-      {picked && (
-        <div className="border-hairline bg-surface space-y-1 rounded-md border px-3 py-2">
-          <p className="text-ink-1 text-sm font-medium">{picked.title}</p>
+      {/* Chi tiết hiện bằng CHỮ dưới bản đồ, không phải tooltip — xem chú thích của hàm này.
+          Hộp này **đẩy nội dung dưới nó xuống**, nên phải mở bằng chiều cao chứ không phải chỉ
+          mờ dần: hiện tức thì thì cả trang nhảy một nhịp mỗi lần bấm sang nguồn khác. */}
+      <AnimatePresence initial={false}>
+        {picked && (
+          <motion.div
+            key={picked.id}
+            className="border-hairline bg-surface space-y-1 overflow-hidden rounded-md border px-3 py-2"
+            initial={{ opacity: 0, height: reduced ? 'auto' : 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: reduced ? 'auto' : 0 }}
+            transition={{ duration: reduced ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p className="text-ink-1 text-sm font-medium">{picked.title}</p>
           <p className="text-ink-3 text-xs">
             {picked.year ?? 'không rõ năm'}
             {picked.venue ? ` · ${picked.venue}` : ''} · {picked.citation_count ?? 0} trích dẫn ·{' '}
@@ -240,9 +275,10 @@ function SimilarityMap({
             {picked.nearest
               ? `gần nhất: ${short(picked.nearest.title, 48)} (${(picked.nearest.score * 100).toFixed(0)}%)`
               : 'không nguồn nào cùng từ khoá'}
-          </p>
-        </div>
-      )}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -276,22 +312,31 @@ function Legend() {
  */
 function Timeline({ rows }: { rows: SourceMapData['timeline'] }) {
   const max = Math.max(...rows.map((r) => r.count), 1);
+  const reduced = useReducedMotion();
 
   return (
     <div className="border-hairline bg-surface space-y-2 rounded-lg border px-3 py-3">
       <div className="flex items-end gap-2 overflow-x-auto pb-1">
-        {rows.map((r) => (
+        {rows.map((r, i) => (
           <div key={String(r.year)} className="flex min-w-9 flex-1 flex-col items-center gap-1">
             <span className="text-ink-3 text-2xs">{r.count}</span>
-            <div
-              className="bg-brand-soft flex w-full flex-col justify-end rounded-t"
-              style={{ height: `${(r.count / max) * 120 + 4}px` }}
+            {/* Cột mọc từ đáy lên, lệch pha theo thứ tự năm — mắt đọc được chiều của trục thời
+                gian ngay trong lúc hình đang dựng, thay vì thấy cả bảng hiện ra một lúc. */}
+            <motion.div
+              className="bg-brand-soft flex w-full flex-col justify-end overflow-hidden rounded-t"
+              initial={{ height: reduced ? `${(r.count / max) * 120 + 4}px` : 4 }}
+              animate={{ height: `${(r.count / max) * 120 + 4}px` }}
+              transition={{
+                duration: reduced ? 0 : 0.4,
+                delay: reduced ? 0 : Math.min(i, 12) * 0.035,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
               <div
                 className="bg-brand-ink w-full rounded-t"
                 style={{ height: `${(r.cited / r.count) * 100}%` }}
               />
-            </div>
+            </motion.div>
             <span className="text-ink-3 text-2xs whitespace-nowrap">
               {r.year ?? 'không rõ'}
             </span>

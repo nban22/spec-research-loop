@@ -238,7 +238,20 @@ File này chỉ chốt cách *dùng* ORM:
   - Chi tiết bố cục 3 tầng, bảng → card list, bottom sheet, vùng chạm: `docs/DESIGN_SYSTEM.md` §6. Không quyết ở file này.
 - Thêm 2 component shadcn cho mobile: `sheet` và `drawer`. Không phải dependency mới, vẫn nằm trong shadcn.
 
-Không làm: i18n (chuỗi tiếng Việt viết thẳng, không dựng hệ thống dịch), dark mode, animation phức tạp. Đề §4 không yêu cầu — đừng tốn thời gian.
+Không làm: i18n (chuỗi tiếng Việt viết thẳng, không dựng hệ thống dịch), dark mode. Đề §4 không yêu cầu — đừng tốn thời gian.
+
+**Animation: đã đảo quyết định (2026-09-01).** Bản đầu ghi "không animation phức tạp". Giai đoạn
+demo đặt lại ưu tiên: phần lớn giá trị của làn C là **hình** — bản đồ khái niệm, bản đồ nguồn,
+đường Pareto — và hình mà đổi trạng thái bằng cách nhảy phắt sang hình khác thì người xem mất dấu
+thứ mình đang theo dõi. Nên `motion` (Framer Motion v13) **được phép**, kèm ba ràng buộc:
+
+1. Chuyển động phải **mang thông tin**: cho biết thứ gì vừa đổi, đổi theo hướng nào, hoặc cái này
+   biến thành cái kia. Chuyển động chỉ để đẹp thì bỏ.
+2. **Luôn** đọc `useReducedMotion()` và cho `duration: 0` khi người dùng đã tắt hiệu ứng — không
+   phải làm chậm lại, mà là tắt hẳn.
+3. Không bọc `motion` quanh thứ đang chạy tốt bằng CSS transition. `motion` để dành cho ba việc
+   CSS không làm được: hoạt cảnh **ra** (`AnimatePresence`), animation **layout**, và lò xo nhận
+   được vận tốc đang có khi bị ngắt giữa chừng.
 
 > **Đã đổi 2026-08-16:** bản trước của file này ghi "không làm responsive mobile". Luật đó **đã bỏ**.
 > Đề bài không *đòi* responsive nhưng cũng không cấm; chủ dự án quyết định app phải chạy được trên

@@ -60,7 +60,10 @@ describe('SourceMapView', () => {
     expect(screen.getByRole('img', { name: 'Bản đồ chủ đề của 1 nguồn' })).toBeInTheDocument();
   });
 
-  it('chuyển sang dòng thời gian thì hiện cột năm thay cho bản đồ', () => {
+  /* Bất đồng bộ vì `AnimatePresence mode="wait"`: bản đồ cũ phải chạy xong hoạt cảnh ra thì
+     dòng thời gian mới được gắn vào. Đó là hành vi cố ý — hai hình cao khác nhau, cho chúng
+     cùng tồn tại một nhịp sẽ làm trang giật chiều cao. */
+  it('chuyển sang dòng thời gian thì hiện cột năm thay cho bản đồ', async () => {
     render(
       <SourceMapView
         data={data({
@@ -73,7 +76,7 @@ describe('SourceMapView', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Dòng thời gian' }));
 
-    expect(screen.getByText('2019')).toBeInTheDocument();
+    expect(await screen.findByText('2019')).toBeInTheDocument();
     // Nguồn không rõ năm vẫn phải xuất hiện, không bị nuốt mất khỏi trục.
     expect(screen.getByText('không rõ')).toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
