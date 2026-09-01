@@ -7,6 +7,7 @@ scope:
     backend/src/generator/generator.service.ts,
     backend/src/generator/generator.service.spec.ts,
     frontend/src/components/steps/step-3.tsx,
+    frontend/e2e/step3-no-estimate.spec.ts,
   ]
 ---
 
@@ -40,5 +41,15 @@ Sửa ba chỗ, tất cả đều **ngoài phạm vi làn C** — đã báo trư
 Thêm 4 test hồi quy: tham số hợp lệ lưu cả hai; không hợp lệ thì giữ kế hoạch bỏ ước lượng và
 **không ném**; thiếu hẳn `estimator_inputs` cũng không chết; báo tiến độ nói rõ lý do.
 
+**Người dùng hỏi lại "đã test bảo đảm work chưa" — câu trả lời trung thực lúc đó là *chưa*.**
+Backend có 4 test, còn hai thay đổi ở frontend thì không có test nào, mà đó lại chính là phần
+người dùng nhìn thấy hỏng. Bổ sung `e2e/step3-no-estimate.spec.ts` dựng đúng trạng thái
+`has_experiment_plan: true` + `estimate: null`, khoá cả ba điều: nói rõ lý do thay vì skeleton,
+vẫn chốt được kế hoạch, và kế hoạch không bị mất theo ước lượng.
+
+Test đầu tiên viết ra **flaky**: đếm `.animate-pulse` trên cả trang nên bắt nhầm skeleton thoáng
+qua của panel khác khi máy chậm — xanh khi chạy một mình, đỏ khi chạy song song. Khoanh vùng vào
+đúng panel đang xét thì hết; đã chạy song song 4 lần liên tiếp, 6/6 mỗi lần.
+
 backend `lint 0 · build 0 · jest 436/436` · frontend `tsc 0 · lint 0 · vitest 126/126 · build 0 ·
-playwright 3/3`.
+playwright 6/6`.
