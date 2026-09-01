@@ -25,6 +25,7 @@
     "eval:run": "npm run eval:build && node dist-eval/eval/run-eval.js",
     "eval:score": "npm run eval:build && node dist-eval/eval/score.js",
     "eval:audit": "npm run eval:build && node dist-eval/eval/audit.js",
+    "eval:cost": "npm run eval:build && node dist-eval/eval/cost-report.js",
     "seed": "npm run eval:build && node dist-eval/eval/seed.js"
   },
   "dependencies": {

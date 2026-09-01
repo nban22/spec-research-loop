@@ -161,8 +161,10 @@ Cả hai đều làm sai lệch chính metric của báo cáo này, và cả hai
 | 4 | Grid search `τ_low × τ_high` trên đúng 20 cặp đó | Biến ngưỡng từ *"số tôi chọn"* thành *"số tôi đo"* |
 | 5 | Một biểu đồ cột cho 4 metric chính | Đề §7.4 yêu cầu |
 | 6 | Xử lý phát hiện ③ ở §3 | `unsupported_rate` hiện không so sánh được trực tiếp giữa B1 và B2 |
+| 7 | `npm run eval:cost -- --batch=<uuid>` **sau** `eval:score` | Điền bảng chi phí ở §C — hạ tầng đã xong, chỉ chờ batch ①. Không tốn thêm lời gọi LLM nào |
+| 8 | Tra và chốt nguồn đơn giá DeepSeek → cập nhật `backend/eval/pricing.json` | Mọi con số USD hiện là token đổi đơn vị bằng một hằng số không có nguồn (§C.9) |
 
-Toàn bộ hạ tầng cho 6 việc trên **đã chạy được**; việc còn lại là thời gian máy và một buổi gán
+Toàn bộ hạ tầng cho 8 việc trên **đã chạy được**; việc còn lại là thời gian máy và một buổi gán
 nhãn tay.
 
 ---
@@ -331,3 +333,175 @@ hạ tầng chạy được, thứ còn thiếu là thời gian máy.
 | #5 | Thêm mục điều hướng vào `top-nav.tsx` | Đăng ký ở `command-palette.tsx` | `NAV` chỉ chứa link toàn cục, không mang được `projectId`. Cả 4 màn per-project của làn C đã theo lối này |
 | #3 | Ghi `Card.conflict_with_card_id` | Chỉ ghi ở phạm vi `CROSS_CARD` | Xung đột giữa hai nguồn của **cùng một thẻ** thì không có "thẻ đối diện" để trỏ; tự trỏ về chính nó là vô nghĩa và không truy vấn được |
 | #2 | "cờ chẩn đoán" khi không lấy được toàn văn | Thêm 2 giá trị vào `verifierFlagSchema` | Ngoại lệ có ý thức với luật chung 2 — đây là zod enum lưu xuống cột `Json`, không phải enum Prisma, nên không migration và không rủi ro chéo làn |
+
+---
+
+# PHỤ LỤC C — Làn C · Trực quan & Chi phí
+
+> Mục này do làn C (issues #14–#20) viết. Phần ablation ở trên đo **chất lượng** của mỗi arm;
+> mục này đo **cái giá**, và nói rõ kết luận nào được phép rút với n = 10.
+
+## C.0 Trạng thái
+
+> **Trạng thái: hạ tầng xong, chưa có số.** Bảng dưới để trống chờ batch 4 arm ở §6①. Chạy
+> `npm run eval:cost -- --batch=<uuid>` **sau** `eval:score` là số tự điền từ
+> `eval/results/<batch>-cost.json`.
+
+## C.1 Câu hỏi và vì sao nó không phải câu hỏi ban đầu
+
+Ablation ở §2 đo **chất lượng** của mỗi arm. Chưa ai đo **cái giá**. Câu hỏi của mục này:
+
+> *Ngân sách token đi đâu, và mỗi bậc kiến trúc mua được cải thiện nào với giá bao nhiêu?*
+
+Ý định ban đầu của làn C là đo **sai số của bộ ước lượng** (`ResourceEstimate` so với chi phí
+thật). **Đã bỏ, và lý do đáng ghi lại:** hai vế đo hai thứ khác loại — `ResourceEstimate.cost_usd`
+là dự toán cho *thí nghiệm người dùng sẽ chạy trên GPU của họ*, còn tổng `LlmCall` là tiền đã tiêu
+để *dựng bản đặc tả*. Trừ hai số đó cho nhau ra một đại lượng không có đơn vị. Thêm nữa
+`harness.ts` không gọi `saveEstimate`, nên lượt eval không sinh `ResourceEstimate` nào để so.
+
+## C.2 Chỉ số — chốt trước khi chạy
+
+| | Chỉ số | Vì sao |
+| --- | --- | --- |
+| Chính | `usd_per_spec` theo arm: **median, IQR, min, max, và cả 10 giá trị thô** | Chi phí LLM lệch phải, đuôi dày. `mean ± sd` trên 10 mẫu cho khoảng tràn xuống dưới 0 |
+| Chính | **Tỉ trọng chi phí theo bước** và theo `prompt_id` | Đây là con số *hành động được*: "B4 chiếm 62% ngân sách" nói phải sửa chỗ nào |
+| Chính | **Hiệu theo cặp ý tưởng** cho 3 bậc, kèm bootstrap CI 95% và số cặp cùng dấu | Thiết kế là paired: cùng 10 ý tưởng qua 4 arm. So hai trung bình độc lập là vứt thông tin ghép cặp |
+| Phụ | `calls_per_spec`, `tokens_per_spec`, `cache_hit_ratio`, `retry_ratio`, `failed_call_ratio` | |
+| Phụ | `seconds_per_spec` — **ô nhiễm**, chỉ đọc theo bậc độ lớn | `Source` unique toàn cục nên arm chạy sau ăn cache nguồn thật; B1 không search lần nào |
+
+**Đã bỏ một chỉ số từng định dùng:** *"USD trên mỗi +0.1 citation_validity"*. `citation_validity`
+đếm cặp mang cờ `SOURCE_NOT_FOUND`, mà mọi `Source` của B2/SYS/SYS_NO_VERIFY đều đến từ Semantic
+Scholar/OpenAlex và đều có `external_id` — nên chúng **không bao giờ** bị gắn cờ đó. Con số 1.000
+của B2 ở §3 là **hằng số theo cấu trúc, không phải kết quả**. Hệ quả: `Δcitation_validity ≡ 0` ở
+hai trong ba phép so, tức là chia cho 0. Thay bằng mặt phẳng chi phí–chất lượng: một tỉ số có mẫu
+số âm sẽ ra "âm USD mỗi điểm", trông như rẻ trong khi thực chất là **vừa đắt hơn vừa tệ hơn**.
+
+## C.3 Ba bậc — mô tả đúng cái đã đổi
+
+Không gọi tắt `B1→B2` là "giá của retrieval". Nó gộp **bốn** biến:
+
+| Biến | B1 | B2 |
+| --- | --- | --- |
+| model | `deepseek-v4-flash` | `deepseek-v4-pro` |
+| reasoning effort | `low` | `high` ở 4/5 lời gọi |
+| số lời gọi | 1 | 5 + search |
+| chi phí verifier | 0 (không có `CardSource` nào) | toàn bộ `ENTAILMENT` |
+
+| Bậc | Đã đổi cái gì |
+| --- | --- |
+| `B1→B2` | single-shot flash → pipeline pro có retrieval (đổi **cả bốn** biến trên) |
+| `B2→SYS` | thêm vòng judge và vòng sửa |
+| `SYS_NO_VERIFY→SYS` | bật verifier gate |
+
+## C.4 Hai cột USD, vì verifier mang hai vai
+
+`harness.ts` chạy verifier ở vai **đo** cho *mọi* arm — đó là cách duy nhất có cùng một thước cho
+baseline (§5.9). Nhưng với `B1`/`B2`, token `ENTAILMENT` là chi phí của **cái cân**, không phải của
+con cá; với `SYS` thì verifier vừa là thước vừa là cơ chế (gate) nên nó **đúng** là chi phí hệ.
+
+Vì vậy báo cáo có hai cột: `usd_total` (gồm tất cả) và `usd_system` (đã trừ `ENTAILMENT`). Đọc cột
+nào tuỳ câu hỏi — và **phải nói rõ đang đọc cột nào**.
+
+## C.5 Bảng 1 — chi phí theo arm
+
+_(chờ batch §6①)_
+
+| Arm | n | USD median | IQR | tokens median | calls median | cache hit | retry | fail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| B1 | | | | | | | | |
+| B2 | | | | | | | | |
+| SYS_NO_VERIFY | | | | | | | | |
+| SYS | | | | | | | | |
+
+## C.6 Bảng 2 — tỉ trọng chi phí theo bước
+
+_(chờ batch §6①)_ — **bảng quan trọng nhất của mục này.**
+
+| Bước | USD | % ngân sách | số lời gọi |
+| --- | --- | --- | --- |
+| B1 · Diễn giải & phân rã | | | |
+| B2 · Nghiên cứu liên quan & gap | | | |
+| B3 · Contribution & thí nghiệm | | | |
+| B4 · Judge & sửa spec | | | |
+| B5 · Kiểm chứng cứ | | | |
+
+## C.7 Bảng 3 — chi phí biên theo cặp ý tưởng
+
+_(chờ batch §6①)_
+
+| Bậc | n | Δ USD median | CI 95% | cùng dấu | Δ chất lượng tương ứng |
+| --- | --- | --- | --- | --- | --- |
+| B1→B2 | | | | /10 | `fabrication_rate` |
+| B2→SYS | | | | /10 | `unsupported_rate`, `auditor_blocking_issues` |
+| SYS_NO_VERIFY→SYS | | | | /10 | `unsupported_rate` |
+
+## C.8 Giả thuyết ghi trước
+
+1. **B4 Judge chiếm tỉ trọng lớn nhất.** 5 judge × mỗi vòng sửa, trên `deepseek-v4-pro`.
+2. **`SYS_NO_VERIFY` gần bằng giá `SYS`.** Đây là giả thuyết **yếu**, và nói thẳng vì sao: đọc
+   `repair-loop.ts:130-135` là biết trước — `resolveGate` chọn phương án theo *một luật, 0 token*.
+   Chi phí LLM thêm duy nhất là mấy lượt re-verify sau mỗi lần áp dụng. Nó sẽ được xác nhận **bởi
+   thiết kế code, không bởi dữ liệu**. Với n = 10, nhiễu do `rounds_run` gần như chắc chắn lớn hơn
+   tín hiệu gate.
+3. **`B1→B2` là bậc đắt nhất theo bội số**, vì nó đổi cả bốn biến cùng lúc.
+
+Kết quả trái với ba giả thuyết trên **vẫn phải báo**, và báo trước phần khớp.
+
+## C.9 Hai kịch bản giá — vì đơn giá chưa có nguồn
+
+`0.28` / `0.42` USD/1M token đang được chép ở **hai** chỗ (`estimator.service.ts:52-53` và
+`analytics.service.ts:56-57`), và **không chỗ nào ghi nguồn**. `SYSTEM_DESIGN_ANALYSIS` cũng đã tự
+đánh dấu `[❓CẦN XÁC NHẬN]` cho con số này.
+
+`eval-cost.ts` vì thế **không khai hằng số nào** — bảng giá truyền vào từ `eval/pricing.json`, được
+commit, ghi ngày, và **ghi thẳng vào file kết quả** để báo cáo cũ đọc lại vẫn tự giải thích được.
+
+Báo cáo hai kịch bản:
+
+| Kịch bản | `cached_input` | Ý nghĩa |
+| --- | --- | --- |
+| `flat` | = `input` | Không giảm giá cho cache hit → **cận trên** chi phí của SYS |
+| `cached_tenth` | = `input` × 0.1 | Cache hit rẻ 10 lần → **cận dưới** |
+
+**Nếu kết luận không đổi dấu giữa hai kịch bản thì nó vững bất kể đơn giá thật.** Nếu đổi, đó chính
+là giới hạn của báo cáo và phải viết ra.
+
+## C.10 Kết luận ĐƯỢC rút và KHÔNG được rút
+
+**Được:**
+- Ngân sách token tập trung ở bước nào, bao nhiêu phần trăm — quan sát mô tả, n = 10 đủ.
+- Bậc độ lớn chi phí mỗi bản spec cho từng arm (± hệ số ~2).
+- Hiệu theo cặp **khi và chỉ khi** cùng dấu ở ≥ 9/10 ý tưởng **và** CI 95% không chứa 0.
+- "Gate không thêm lời gọi LLM nào ngoài re-verify" — khẳng định về **thiết kế**, có số minh hoạ.
+- Chi phí **tương đối giữa các arm**.
+
+**Không được:**
+- Bất kỳ con số USD **tuyệt đối** nào — đơn giá chưa xác nhận nguồn, cache chưa chắc được tính
+  đúng, và chưa rõ DeepSeek có tính reasoning token vào `completion_tokens` hay không.
+- "`B1→B2` là giá của retrieval" — nó là giá của việc đổi bốn thứ cùng lúc.
+- Bất kỳ tỉ số "USD trên mỗi đơn vị `citation_validity`" nào.
+- So sánh **theo domain** — mỗi domain đúng 1 mẫu.
+- Bất kỳ tương quan hay hồi quy nào (chi phí ~ số vòng ~ chất lượng) — 10 điểm không đủ.
+- Khác biệt USD **dưới ~30%** giữa hai arm, hoặc khác biệt nào không cùng dấu trên gần hết 10 cặp.
+- Ngoại suy sang ý tưởng ngoài `ideas.json`, hoặc sang provider/model khác.
+
+## C.11 Limitation riêng của mục này
+
+1. **Chi phí retry không tách được.** `LlmService` cộng token của mọi lần thử vào **một** dòng
+   `LlmCall` kèm `attempts = n`. Đo được *tỉ lệ* lời gọi phải thử lại, **không** đo được *bao nhiêu
+   tiền* đốt vào retry. Muốn có thì phải đổi `LlmCall` — ngoài phạm vi làn C.
+2. **Lượt chạy hỏng vẫn tốn tiền mà không sinh spec.** `usd_per_spec` chia cho số lượt *đã được
+   `score.ts` tính*, nên nó là "giá của một bản spec **thành công**", không phải "giá trung bình
+   của một lần thử".
+3. **Reasoning token.** Không xác minh được từ code là DeepSeek có tính chúng vào
+   `completion_tokens` hay không. Nếu **không**, thì 4/5 lời gọi generator chạy `reasoning_effort:
+   high` đang bị **tính thiếu tiền**, và sai lệch đó thiên vị theo hướng làm B2/SYS trông rẻ hơn
+   thực tế.
+4. **Hoán vị arm là xoay vòng, không phải Latin square.** `run-eval.ts:55` dùng `arms[(k+i)%4]` với
+   10 ý tưởng, nên arm 0 và 1 đứng đầu 3 lần, arm 2 và 3 đứng 2 lần. Với **chi phí** gần như vô hại
+   (cache prefix có `cacheScope = projectId`, mỗi lượt là project mới). Với **thời gian** thì không
+   vô hại — xem §C.2.
+5. **n = 10, chạy một lần mỗi arm, không seed.** Không tách được phương sai giữa-ý-tưởng khỏi
+   phương sai giữa-lần-chạy. Rẻ nhất để có ước lượng nhiễu-lần-chạy: lặp 3 lần trên 2 ý tưởng ở arm
+   `SYS` (~6 lượt thêm). Nếu nhiễu đó cùng bậc với nhiễu giữa-ý-tưởng thì mọi khác biệt nhỏ giữa
+   arm là vô nghĩa — biết trước điều đó đáng giá hơn thêm 2 ý tưởng.
