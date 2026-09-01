@@ -85,7 +85,14 @@ export class JudgeService {
     const specJson = await this.spec.buildSpecJson(specVersionId);
     const sourcesJson = await this.sources.sourcesForPrompt(version.project_id);
 
-    // Làn B · #43 — khử lệch vị trí: xáo thứ tự thẻ riêng cho từng judge, 0 token thêm.
+    // Làn B · #43 — khử lệch vị trí: xáo thứ tự thẻ riêng cho từng judge.
+    //
+    // ⚠️ **"0 token thêm" đúng về SỐ LỜI GỌI, không đúng về GIÁ.** `spec_json` được nhúng vào khối
+    // `## SYSTEM` của prompt judge, và DeepSeek chỉ cache theo **prefix** — nên khi bật cờ, 5 judge
+    // có 5 khối SYSTEM khác nhau và **mất prefix cache** mà chính cách xếp khối đó sinh ra để ăn.
+    // Đo được ở B2: cache hit 12,7% prompt token. Cờ tắt thì không mất gì.
+    // Muốn có cả hai thì phải chuyển `spec_json` xuống khối USER — đổi cấu trúc 5 prompt, ngoài
+    // phạm vi #43, và phải đo lại cache hit trước/sau.
     //
     // Cờ **tắt** là đường cũ **từng byte**: `legacyDigest` băm đúng chuỗi gốc như trước, và cả 5
     // judge nhận cùng một `specJson`. Đây là điều kiện để mọi `input_digest` đã ghi trước đây vẫn
@@ -398,6 +405,10 @@ export class JudgeService {
         prompt_id: true,
         prompt_hash: true,
         input_digest: true,
+        // #43 — phải trả ra, không thì `shuffle_seed` chỉ là một chuỗi trong DB chứ không phải
+        // bằng chứng: người kiểm chứng cần nó để tự tính lại và đối chiếu với
+        // `seedFor(digest, judge_key, round)`.
+        shuffle_seed: true,
         raw_output: true,
         parse_attempts: true,
         status: true,
