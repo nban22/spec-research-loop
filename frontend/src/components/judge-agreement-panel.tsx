@@ -10,6 +10,7 @@ import {
   useJudgeAgreement,
   type ApiAgreement,
   type ApiJaccardCell,
+  type KappaReason,
 } from "@/lib/use-judge-agreement";
 import { cn } from "@/lib/utils";
 
@@ -95,13 +96,7 @@ function KappaHeadline({ a }: { a: ApiAgreement }) {
 
       {k.kappa === null && (
         <HintBox tone="warn">
-          {k.reason === "NO_VARIANCE"
-            ? "Mọi judge cho cùng một nhãn trên mọi thẻ nên hệ số không xác định được. Đây là đồng thuận tuyệt đối, không phải lỗi."
-            : k.reason === "INSUFFICIENT_ITEMS"
-              ? "Chỉ có một thẻ, nên hệ số luôn ra một hằng số bất kể dữ liệu — không mang thông tin gì."
-              : k.reason === "INSUFFICIENT_RATERS"
-                ? "Dưới hai judge hoàn thành, không có gì để so."
-                : "Chưa có thẻ nào để đo."}
+          {k.reason ? REASON_TEXT[k.reason] : "Chưa có thẻ nào để đo."}
         </HintBox>
       )}
 
@@ -126,6 +121,26 @@ function KappaHeadline({ a }: { a: ApiAgreement }) {
     </div>
   );
 }
+
+/**
+ * Giải thích cho từng lý do κ không tính được.
+ *
+ * Là `Record<KappaReason, string>` **có chủ ý**, không phải chuỗi `? :`. Bản trước dùng chuỗi ba
+ * nhánh rồi `else` trần, nên `MALFORMED_COUNTS` — lý do backend có sinh ra — rơi vào nhánh cuối và
+ * hiện "Chưa có thẻ nào để đo": sai sự thật, và che đúng vấn đề toàn vẹn dữ liệu cần thấy nhất.
+ * Với `Record`, thêm một giá trị vào `KappaReason` mà quên viết câu giải thích là **không biên
+ * dịch được** — bản chép tay giữa hai package không tự gác được, nên phải bắt chỗ dùng gác hộ.
+ */
+const REASON_TEXT: Record<KappaReason, string> = {
+  NO_VARIANCE:
+    "Mọi judge cho cùng một nhãn trên mọi thẻ nên hệ số không xác định được. Đây là đồng thuận tuyệt đối, không phải lỗi.",
+  INSUFFICIENT_ITEMS:
+    "Chỉ có một thẻ, nên hệ số luôn ra một hằng số bất kể dữ liệu — không mang thông tin gì.",
+  INSUFFICIENT_RATERS: "Dưới hai judge hoàn thành, không có gì để so.",
+  NO_ITEMS: "Chưa có thẻ nào để đo.",
+  MALFORMED_COUNTS:
+    "Dữ liệu đếm nhãn bị lệch hình nên phép đo bị dừng — đây là lỗi dữ liệu, không phải kết quả. Chạy lại vòng judge hoặc bấm tính lại.",
+};
 
 /**
  * Thang nhiệt rời rạc trên token sẵn có. Không nội suy màu, không hex.

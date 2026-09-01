@@ -169,6 +169,28 @@ describe('JudgeAgreementPanel', () => {
     expect(diag[0].parentElement).not.toHaveClass('bg-brand-ink');
   });
 
+  it('MALFORMED_COUNTS ⇒ nói rõ là LỖI DỮ LIỆU, không nói "chưa có thẻ nào"', async () => {
+    // Backend sinh ra lý do này, zod của service cho đi qua, nhưng kiểu ở frontend từng BỎ SÓT nó
+    // và panel dùng chuỗi `? :` kết thúc bằng `else` trần — nên nó hiện "Chưa có thẻ nào để đo".
+    // Câu đó sai sự thật và che đúng vấn đề toàn vẹn dữ liệu mà chốt này sinh ra để phát hiện.
+    mount({
+      ...base,
+      kappa: { ...base.kappa, kappa: null, reason: 'MALFORMED_COUNTS' },
+    });
+    await waitFor(() =>
+      expect(screen.getByText(/lệch hình nên phép đo bị dừng/)).toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/Chưa có thẻ nào để đo/)).not.toBeInTheDocument();
+  });
+
+  it('NO_ITEMS vẫn nói đúng câu của nó', async () => {
+    // Trước đây câu này là nhánh `else`, nên nó xanh kể cả khi reason là thứ khác hoàn toàn.
+    mount({ ...base, kappa: { ...base.kappa, kappa: null, reason: 'NO_ITEMS' } });
+    await waitFor(() =>
+      expect(screen.getByText('Chưa có thẻ nào để đo.')).toBeInTheDocument(),
+    );
+  });
+
   it('cờ tắt ⇒ nói rõ đang tắt, KHÁC với "chưa chạy judge"', async () => {
     mount(null, false);
     await waitFor(() =>

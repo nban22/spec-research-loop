@@ -8,11 +8,21 @@ import { api, qk } from '@/lib/api';
  * nhau nhất. Cùng lý do `use-overclaim.ts` tồn tại.
  */
 
+/**
+ * Lý do **không tính được** hệ số. Phải khớp `KappaReason` của backend — đây là bản chép tay giữa
+ * hai package, TypeScript không gác được sự lệch, nên nơi dùng phải là `Record<KappaReason, …>`
+ * để trình biên dịch bắt buộc liệt kê đủ (xem `REASON_TEXT` ở `judge-agreement-panel.tsx`).
+ *
+ * `MALFORMED_COUNTS` từng bị **bỏ sót** ở đây: backend sinh ra nó, zod của service cho đi qua, và
+ * panel rơi vào nhánh `else` trần nên báo "Chưa có thẻ nào để đo" — một câu sai sự thật, che mất
+ * đúng vấn đề toàn vẹn dữ liệu mà chốt đó sinh ra để phát hiện.
+ */
 export type KappaReason =
   | 'NO_ITEMS'
   | 'INSUFFICIENT_ITEMS'
   | 'INSUFFICIENT_RATERS'
-  | 'NO_VARIANCE';
+  | 'NO_VARIANCE'
+  | 'MALFORMED_COUNTS';
 
 export type ApiKappa = {
   kappa: number | null;
