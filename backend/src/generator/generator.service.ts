@@ -419,9 +419,44 @@ export class GeneratorService {
     });
 
     await onProgress?.(1, 2, 'Đang ước lượng tài nguyên…');
-    // Ước lượng là **công thức thuần, 0 LLM** — model chỉ cung cấp tham số (S4).
-    const inputs = estimatorInputSchema.parse(out.data.estimator_inputs);
-    await this.saveEstimate(version.id, inputs);
+
+    /**
+     * Ước lượng là **công thức thuần, 0 LLM** — model chỉ cung cấp tham số (S4).
+     *
+     * `safeParse` chứ **không** `parse`. Ba lý do, theo thứ tự quan trọng:
+     *
+     * 1. **Kế hoạch đã lưu ở trên rồi.** `parse` ném thì job chết *sau* khi `ExperimentPlan`
+     *    đã vào DB, để lại một trạng thái kẹt: có kế hoạch, không có ước lượng, và giao diện
+     *    không phân biệt được nó với "đang tính". Đã xảy ra thật — 5 job `GENERATE` chết với
+     *    `INTERNAL_ERROR` đúng tại chuỗi tiến độ này, để lại 3 kế hoạch mồ côi.
+     * 2. **Không phải nghiên cứu nào cũng chạy trên GPU.** `estimator_inputs` hỏi số tham số
+     *    model và mức lượng tử hoá; một RCT y khoa 200 người đo PSQI thì không có model nào,
+     *    nên mô hình buộc phải bịa và cái nó bịa rơi ra ngoài `positive()`/`int()`/enum.
+     *    Vứt cả kế hoạch thí nghiệm chỉ vì phần ước lượng GPU vô nghĩa là đổi sai chiều.
+     * 3. `backend/CLAUDE.md` §3 nói mọi output LLM phải `safeParse`. Chỗ này là ngoại lệ duy
+     *    nhất còn sót, và là ngoại lệ sai.
+     *
+     * Thiếu ước lượng **không** phải lỗi cần báo đỏ: `GET /spec-versions/:id/plan` trả
+     * `estimate: null`, và giao diện nói thẳng là kế hoạch này không ước lượng được.
+     */
+    const parsed = estimatorInputSchema.safeParse(out.data.estimator_inputs);
+    if (!parsed.success) {
+      // Log tham số sai, **không** log toàn bộ output của model (backend/CLAUDE.md §5).
+      this.logger.warn(
+        `Bỏ qua ước lượng tài nguyên cho version ${version.id}: ` +
+          `estimator_inputs không hợp lệ — ${parsed.error.issues
+            .map((i) => `${i.path.join('.')}: ${i.message}`)
+            .join(' · ')}`,
+      );
+      await onProgress?.(
+        2,
+        2,
+        'Đã có kế hoạch thí nghiệm. Kế hoạch này không phải thí nghiệm tính toán nên không ước lượng tài nguyên.',
+      );
+      return;
+    }
+
+    await this.saveEstimate(version.id, parsed.data);
     await onProgress?.(
       2,
       2,

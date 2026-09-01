@@ -50,7 +50,6 @@ export function Step3({ projectId }: { projectId: string }) {
     .flatMap((c) => c.card_sources)
     .filter((cs) => cs.verifier_run_id === null).length;
   const hasPlan = detail?.currentVersion?.has_experiment_plan ?? false;
-  const hasEstimate = detail?.currentVersion?.has_estimate ?? false;
 
   const { data: planData } = usePlanAndEstimate(versionId);
   const plan = planData?.plan ?? null;
@@ -156,10 +155,23 @@ export function Step3({ projectId }: { projectId: string }) {
             />
             <EstimateRows estimate={estimate} />
           </>
-        ) : hasPlan ? (
-          /* Đã có kế hoạch mà chưa có ước lượng ⇒ pha 2 của job đang chạy: hiện đúng khung
-             bốn ô sắp tới, không hiện chữ như thể không có gì. */
+        ) : hasPlan && job.busy ? (
+          /* Job **đang chạy** pha 2: hiện đúng khung bốn ô sắp tới, không hiện chữ như thể
+             không có gì. */
           <StatTileSkeleton />
+        ) : hasPlan ? (
+          /* Có kế hoạch, job đã dừng, mà vẫn không có ước lượng ⇒ **không phải đang tải**.
+             Hoặc đây không phải thí nghiệm tính toán (một RCT y khoa thì không có model nào
+             để ước lượng VRAM), hoặc tham số mô hình trả về không hợp lệ và backend đã bỏ qua
+             phần này để giữ lại kế hoạch.
+
+             Trước đây chỗ này hiện skeleton mãi mãi. Skeleton nghĩa là "đang tải"; dùng nó cho
+             một trạng thái đã kết thúc là bắt người dùng chờ một thứ không bao giờ tới. */
+          <HintBox tone="info">
+            Kế hoạch này không có phần tính toán để ước lượng — thường gặp khi thí nghiệm không
+            chạy trên mô hình, ví dụ thử nghiệm lâm sàng hoặc khảo sát người dùng. Kế hoạch thí
+            nghiệm ở cột giữa vẫn dùng được bình thường.
+          </HintBox>
         ) : (
           <p className="text-ink-3 text-xs">
             Ước lượng xuất hiện sau khi có kế hoạch thí nghiệm. Đây là công thức thuần — không
@@ -169,7 +181,11 @@ export function Step3({ projectId }: { projectId: string }) {
       </Panel>
 
       {/* Khối quyết định thêm vào so với mockup 3 — không có nó thì bước này tự chốt. */}
-      {hasEstimate && (
+      {/* Cổng mở theo `hasPlan`, **không** theo `hasEstimate`. Quyết định ở đây là *chốt kế
+          hoạch thí nghiệm*, không phải chốt ước lượng tài nguyên. Khoá sau `hasEstimate` nghĩa
+          là một nghiên cứu không chạy trên mô hình — thử nghiệm lâm sàng, khảo sát người dùng —
+          sẽ **kẹt vĩnh viễn ở bước 3** vì cái nút chốt không bao giờ hiện ra. */}
+      {hasPlan && (
         <Panel accent="decide" icon={Beaker} title="Duyệt kế hoạch">
           <OptionList
             question="Bạn muốn chốt kế hoạch thí nghiệm theo hướng nào?"
@@ -230,13 +246,18 @@ export function Step3({ projectId }: { projectId: string }) {
       context={context}
       content={content}
       decide={decide}
-      decideCount={hasEstimate ? 1 : 0}
-      decideSummary={hasEstimate ? 'Duyệt kế hoạch thí nghiệm' : undefined}
+      decideCount={hasPlan ? 1 : 0}
+      decideSummary={hasPlan ? 'Duyệt kế hoạch thí nghiệm' : undefined}
       summaryBar={
         <SummaryBar
           round={1}
           nodes={['Contribution', 'Thí nghiệm', 'Ước lượng', 'Xác nhận']}
-          activeIndex={claims.length === 0 ? 0 : !hasPlan ? 1 : !hasEstimate ? 2 : 3}
+          /* `estimate` chứ không `hasEstimate`: khi kế hoạch không có phần tính toán, backend
+             cố ý không sinh ước lượng. Bám vào cờ `has_estimate` thì thanh tiến độ đứng mãi ở
+             "Ước lượng" cho một chặng sẽ không bao giờ tới. */
+          activeIndex={
+            claims.length === 0 ? 0 : !hasPlan ? 1 : job.busy && !estimate ? 2 : 3
+          }
           hint="Mỗi khẳng định cần một điều kiện bác bỏ — trường hay bị quên nhất."
         />
       }

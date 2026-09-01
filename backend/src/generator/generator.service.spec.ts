@@ -13,6 +13,8 @@ describe('GeneratorService', () => {
   const relatedWorkRowCreateMany = jest.fn();
   const decisionDeleteMany = jest.fn();
   const decisionCreate = jest.fn();
+  const experimentPlanUpsert = jest.fn();
+  const resourceEstimateUpsert = jest.fn();
 
   const prisma = {
     project: { findUniqueOrThrow, update },
@@ -33,6 +35,8 @@ describe('GeneratorService', () => {
       createMany: relatedWorkRowCreateMany,
     },
     decision: { deleteMany: decisionDeleteMany, create: decisionCreate },
+    experimentPlan: { upsert: experimentPlanUpsert },
+    resourceEstimate: { upsert: resourceEstimateUpsert },
     $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
       cb(prisma),
     ),
@@ -158,5 +162,91 @@ describe('GeneratorService', () => {
 
     await service.gap('p-1');
     expect(cardCreate).toHaveBeenCalled();
+  });
+
+  /**
+   * Kế hoạch thí nghiệm được lưu **trước** khi ước lượng tài nguyên chạy. Nếu bước ước lượng ném
+   * lỗi thì job chết sau khi kế hoạch đã vào DB, để lại trạng thái kẹt: có kế hoạch, không có
+   * ước lượng, và giao diện không phân biệt được nó với "đang tính".
+   *
+   * Đã xảy ra thật: 5 job `GENERATE` chết với `INTERNAL_ERROR` đúng tại chuỗi tiến độ
+   * "Đang ước lượng tài nguyên…", để lại 3 kế hoạch mồ côi. Nguyên nhân là `estimator_inputs`
+   * hỏi số tham số model và mức lượng tử hoá — một RCT y khoa thì không có model nào, nên mô
+   * hình buộc phải bịa và cái nó bịa rơi ra ngoài schema.
+   */
+  describe('experimentPlan · ước lượng tài nguyên', () => {
+    const planOutput = (estimatorInputs: unknown) => ({
+      data: {
+        experiments: [
+          { code: 'TN1', title: 'T', bullets: ['b'], linked_claim_title: 'c' },
+        ],
+        baselines_and_metrics: 'B',
+        ablation_plan: 'A',
+        risks_and_limitations: 'R',
+        estimator_inputs: estimatorInputs,
+      },
+    });
+
+    const VALID = {
+      model_params_b: 7,
+      quantization: 'int8',
+      candidates: 8,
+      rounds: 3,
+      eval_samples: 500,
+      avg_prompt_tokens: 1200,
+      avg_output_tokens: 400,
+    };
+
+    beforeEach(() => {
+      spec.currentVersionOf.mockResolvedValue({ id: 'v-1' });
+      spec.buildSpecJson.mockResolvedValue('{}');
+      estimator.estimate.mockReturnValue({
+        inputs: VALID,
+        vram_gb: 10,
+        hours_min: 1,
+        hours_max: 2,
+        tokens_est: 1000,
+        cost_usd: 0.1,
+        fits_rtx3090: true,
+        downscale_suggestion: null,
+      });
+    });
+
+    it('tham số hợp lệ thì lưu cả kế hoạch lẫn ước lượng', async () => {
+      llm.completeJson.mockResolvedValue(planOutput(VALID));
+      await service.experimentPlan('p-1');
+      expect(experimentPlanUpsert).toHaveBeenCalled();
+      expect(resourceEstimateUpsert).toHaveBeenCalled();
+    });
+
+    it('tham số không hợp lệ thì GIỮ kế hoạch, bỏ ước lượng, và KHÔNG ném', async () => {
+      // Một RCT y khoa: không có model, không có lượng tử hoá.
+      llm.completeJson.mockResolvedValue(
+        planOutput({ ...VALID, model_params_b: 0, quantization: 'none' }),
+      );
+
+      await expect(service.experimentPlan('p-1')).resolves.toBeUndefined();
+      expect(experimentPlanUpsert).toHaveBeenCalled();
+      expect(resourceEstimateUpsert).not.toHaveBeenCalled();
+    });
+
+    it('thiếu hẳn estimator_inputs cũng không làm chết job', async () => {
+      llm.completeJson.mockResolvedValue(planOutput(undefined));
+      await expect(service.experimentPlan('p-1')).resolves.toBeUndefined();
+      expect(experimentPlanUpsert).toHaveBeenCalled();
+      expect(resourceEstimateUpsert).not.toHaveBeenCalled();
+    });
+
+    it('báo tiến độ nói rõ vì sao không có ước lượng, không im lặng', async () => {
+      llm.completeJson.mockResolvedValue(
+        planOutput({ ...VALID, candidates: -1 }),
+      );
+      const onProgress = jest.fn();
+      await service.experimentPlan('p-1', onProgress);
+
+      const last = onProgress.mock.calls.at(-1) as [number, number, string];
+      expect(last[0]).toBe(2);
+      expect(last[2]).toMatch(/không ước lượng/i);
+    });
   });
 });
