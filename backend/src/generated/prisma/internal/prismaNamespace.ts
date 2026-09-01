@@ -427,7 +427,8 @@ export const ModelName = {
   VerifierPassage: 'VerifierPassage',
   CardConflict: 'CardConflict',
   JudgeAgreement: 'JudgeAgreement',
-  JudgeCalibration: 'JudgeCalibration'
+  JudgeCalibration: 'JudgeCalibration',
+  JudgeAttempt: 'JudgeAttempt'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -443,7 +444,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag" | "ambiguityFlag" | "sourceScore" | "sourceFullText" | "verifierPassage" | "cardConflict" | "judgeAgreement" | "judgeCalibration"
+    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag" | "ambiguityFlag" | "sourceScore" | "sourceFullText" | "verifierPassage" | "cardConflict" | "judgeAgreement" | "judgeCalibration" | "judgeAttempt"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2741,6 +2742,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    JudgeAttempt: {
+      payload: Prisma.$JudgeAttemptPayload<ExtArgs>
+      fields: Prisma.JudgeAttemptFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.JudgeAttemptFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.JudgeAttemptFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>
+        }
+        findFirst: {
+          args: Prisma.JudgeAttemptFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.JudgeAttemptFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>
+        }
+        findMany: {
+          args: Prisma.JudgeAttemptFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>[]
+        }
+        create: {
+          args: Prisma.JudgeAttemptCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>
+        }
+        createMany: {
+          args: Prisma.JudgeAttemptCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.JudgeAttemptCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>[]
+        }
+        delete: {
+          args: Prisma.JudgeAttemptDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>
+        }
+        update: {
+          args: Prisma.JudgeAttemptUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>
+        }
+        deleteMany: {
+          args: Prisma.JudgeAttemptDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.JudgeAttemptUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.JudgeAttemptUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>[]
+        }
+        upsert: {
+          args: Prisma.JudgeAttemptUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JudgeAttemptPayload>
+        }
+        aggregate: {
+          args: Prisma.JudgeAttemptAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateJudgeAttempt>
+        }
+        groupBy: {
+          args: Prisma.JudgeAttemptGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.JudgeAttemptGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.JudgeAttemptCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.JudgeAttemptCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3288,6 +3363,20 @@ export const JudgeCalibrationScalarFieldEnum = {
 } as const
 
 export type JudgeCalibrationScalarFieldEnum = (typeof JudgeCalibrationScalarFieldEnum)[keyof typeof JudgeCalibrationScalarFieldEnum]
+
+
+export const JudgeAttemptScalarFieldEnum = {
+  id: 'id',
+  judge_run_id: 'judge_run_id',
+  attempt_no: 'attempt_no',
+  status: 'status',
+  error_code: 'error_code',
+  raw_output: 'raw_output',
+  latency_ms: 'latency_ms',
+  created_at: 'created_at'
+} as const
+
+export type JudgeAttemptScalarFieldEnum = (typeof JudgeAttemptScalarFieldEnum)[keyof typeof JudgeAttemptScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3868,6 +3957,7 @@ export type GlobalOmitConfig = {
   cardConflict?: Prisma.CardConflictOmit
   judgeAgreement?: Prisma.JudgeAgreementOmit
   judgeCalibration?: Prisma.JudgeCalibrationOmit
+  judgeAttempt?: Prisma.JudgeAttemptOmit
 }
 
 /* Types for Logging */

@@ -81,7 +81,8 @@ export const ModelName = {
   VerifierPassage: 'VerifierPassage',
   CardConflict: 'CardConflict',
   JudgeAgreement: 'JudgeAgreement',
-  JudgeCalibration: 'JudgeCalibration'
+  JudgeCalibration: 'JudgeCalibration',
+  JudgeAttempt: 'JudgeAttempt'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -608,6 +609,20 @@ export const JudgeCalibrationScalarFieldEnum = {
 } as const
 
 export type JudgeCalibrationScalarFieldEnum = (typeof JudgeCalibrationScalarFieldEnum)[keyof typeof JudgeCalibrationScalarFieldEnum]
+
+
+export const JudgeAttemptScalarFieldEnum = {
+  id: 'id',
+  judge_run_id: 'judge_run_id',
+  attempt_no: 'attempt_no',
+  status: 'status',
+  error_code: 'error_code',
+  raw_output: 'raw_output',
+  latency_ms: 'latency_ms',
+  created_at: 'created_at'
+} as const
+
+export type JudgeAttemptScalarFieldEnum = (typeof JudgeAttemptScalarFieldEnum)[keyof typeof JudgeAttemptScalarFieldEnum]
 
 
 export const SortOrder = {
