@@ -10,6 +10,7 @@ import { OptionList } from '@/components/option-list';
 import { Panel } from '@/components/panel';
 import { SpecCard } from '@/components/spec-cards';
 import { EmptyState, StatTileSkeleton } from '@/components/states';
+import { EstimateForm } from '@/components/estimate-form';
 import { EstimateRows, ExperimentPlanList, StatTileGrid } from '@/components/spec-views';
 import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
@@ -50,11 +51,13 @@ export function Step3({ projectId }: { projectId: string }) {
     .flatMap((c) => c.card_sources)
     .filter((cs) => cs.verifier_run_id === null).length;
   const hasPlan = detail?.currentVersion?.has_experiment_plan ?? false;
-  const hasEstimate = detail?.currentVersion?.has_estimate ?? false;
 
   const { data: planData } = usePlanAndEstimate(versionId);
+  /* Đọc trạng thái đã **ghi xuống**, không suy ra từ việc `estimate` vắng mặt: sự vắng mặt gộp
+     bốn ca cần bốn câu nói khác nhau (`backend/src/contracts/estimator.ts`). */
   const plan = planData?.plan ?? null;
   const estimate = planData?.estimate ? toApiEstimate(planData.estimate) : null;
+  const status = plan?.estimate_status;
 
   const context = (
     <>
@@ -156,10 +159,41 @@ export function Step3({ projectId }: { projectId: string }) {
             />
             <EstimateRows estimate={estimate} />
           </>
-        ) : hasPlan ? (
-          /* Đã có kế hoạch mà chưa có ước lượng ⇒ pha 2 của job đang chạy: hiện đúng khung
-             bốn ô sắp tới, không hiện chữ như thể không có gì. */
+        ) : status === 'NOT_APPLICABLE' ? (
+          /* Mô hình **chủ động** nói kế hoạch này không chạy trên model nào (prompt rule 8).
+             Đây là câu duy nhất được phép khẳng định điều đó — ba ca còn lại nói khác. */
+          <HintBox tone="info">
+            Kế hoạch này không chạy trên mô hình nào nên không có gì để ước lượng.
+            {plan?.estimate_note ? ` ${plan.estimate_note}` : ''}
+          </HintBox>
+        ) : status === 'INVALID_PARAMS' ? (
+          /* Kế hoạch CÓ phần tính toán, chỉ là tham số mô hình trả về không dùng được. Con số đó
+             tồn tại — mời người dùng nhập là việc đúng, không phải đẩy việc. */
+          <div className="space-y-2">
+            <HintBox tone="warn">
+              Kế hoạch này có phần chạy trên mô hình, nhưng tham số ước lượng hệ thống nhận được
+              không hợp lệ nên chưa tính được. Bạn nhập tay bảy tham số là có ngay ước lượng.
+            </HintBox>
+            <EstimateForm projectId={projectId} />
+          </div>
+        ) : hasPlan && job.busy ? (
+          /* Job **đang chạy** pha 2: hiện đúng khung bốn ô sắp tới. */
           <StatTileSkeleton />
+        ) : hasPlan ? (
+          /* Không rõ vì sao chưa có ước lượng: hoặc là hàng ghi trước khi có `estimate_status`,
+             hoặc job đang chạy mà trang vừa được tải lại nên client mất dấu nó.
+
+             **Không khẳng định gì** ở đây. Bản vá đầu tiên nói chắc nịch "kế hoạch này không
+             phải thí nghiệm tính toán" cho cả ba ca — và với dữ liệu cũ trong DB thì câu đó
+             sai, vì chúng thật ra thuộc ca tham số hỏng. */
+          <div className="space-y-2">
+            <StatTileSkeleton />
+            <p className="text-ink-3 text-xs">
+              Chưa có ước lượng tài nguyên. Nếu bạn vừa dựng kế hoạch, hệ thống có thể đang tính
+              — tải lại trang sau ít giây. Nếu vẫn trống, bạn nhập tay bên dưới.
+            </p>
+            <EstimateForm projectId={projectId} />
+          </div>
         ) : (
           <p className="text-ink-3 text-xs">
             Ước lượng xuất hiện sau khi có kế hoạch thí nghiệm. Đây là công thức thuần — không
@@ -169,7 +203,11 @@ export function Step3({ projectId }: { projectId: string }) {
       </Panel>
 
       {/* Khối quyết định thêm vào so với mockup 3 — không có nó thì bước này tự chốt. */}
-      {hasEstimate && (
+      {/* Cổng mở theo `hasPlan`, **không** theo `hasEstimate`. Quyết định ở đây là *chốt kế
+          hoạch thí nghiệm*, không phải chốt ước lượng tài nguyên. Khoá sau `hasEstimate` nghĩa
+          là một nghiên cứu không chạy trên mô hình — thử nghiệm lâm sàng, khảo sát người dùng —
+          sẽ **kẹt vĩnh viễn ở bước 3** vì cái nút chốt không bao giờ hiện ra. */}
+      {hasPlan && (
         <Panel accent="decide" icon={Beaker} title="Duyệt kế hoạch">
           <OptionList
             question="Bạn muốn chốt kế hoạch thí nghiệm theo hướng nào?"
@@ -181,7 +219,12 @@ export function Step3({ projectId }: { projectId: string }) {
                 example: 'Chạy đúng số candidate và số mẫu đánh giá đang ước lượng.',
                 recommended: estimate?.fits_rtx3090 ?? true,
               },
-              {
+              /* Chỉ hiện khi CÓ ước lượng. Không có ước lượng thì không có đề xuất nào để
+                 áp và không có quy mô nào để giảm — mà `Decision` là dữ liệu đầu vào của
+                 `eval/` và của báo cáo đánh giá, nên ghi vào đó một lựa chọn vô nghĩa là làm
+                 bẩn đúng cái bảng dùng để đo. */
+              ...(estimate
+                ? [{
                 key: 'B',
                 label: 'Giảm quy mô theo đề xuất',
                 explain: 'Áp dụng các đề xuất giảm quy mô để vừa tài nguyên.',
@@ -189,7 +232,8 @@ export function Step3({ projectId }: { projectId: string }) {
                   estimate?.downscale_suggestion?.[0]?.reason ??
                   'Giảm số candidate hoặc hạ lượng tử hoá.',
                 recommended: !(estimate?.fits_rtx3090 ?? true),
-              },
+                  }]
+                : []),
             ]}
             variant="compact"
             submitting={answer.isPending}
@@ -230,13 +274,18 @@ export function Step3({ projectId }: { projectId: string }) {
       context={context}
       content={content}
       decide={decide}
-      decideCount={hasEstimate ? 1 : 0}
-      decideSummary={hasEstimate ? 'Duyệt kế hoạch thí nghiệm' : undefined}
+      decideCount={hasPlan ? 1 : 0}
+      decideSummary={hasPlan ? 'Duyệt kế hoạch thí nghiệm' : undefined}
       summaryBar={
         <SummaryBar
           round={1}
           nodes={['Contribution', 'Thí nghiệm', 'Ước lượng', 'Xác nhận']}
-          activeIndex={claims.length === 0 ? 0 : !hasPlan ? 1 : !hasEstimate ? 2 : 3}
+          /* `estimate` chứ không `hasEstimate`: khi kế hoạch không có phần tính toán, backend
+             cố ý không sinh ước lượng. Bám vào cờ `has_estimate` thì thanh tiến độ đứng mãi ở
+             "Ước lượng" cho một chặng sẽ không bao giờ tới. */
+          activeIndex={
+            claims.length === 0 ? 0 : !hasPlan ? 1 : job.busy && !estimate ? 2 : 3
+          }
           hint="Mỗi khẳng định cần một điều kiện bác bỏ — trường hay bị quên nhất."
         />
       }
