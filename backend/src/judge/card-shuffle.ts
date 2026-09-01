@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { mulberry32, seedFrom, shuffle } from './prng';
+import { mulberry32, seedFrom, shuffle } from './agreement/agreement';
 
 /**
  * B2a · #43 — xáo thứ tự thẻ theo từng judge, và giữ được bằng chứng độc lập.
