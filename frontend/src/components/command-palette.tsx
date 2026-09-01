@@ -7,6 +7,7 @@ import {
   FolderOpen,
   Home,
   LifeBuoy,
+  Network,
   Map,
   Search,
   ClipboardCheck,
@@ -171,6 +172,16 @@ export function CommandPalette() {
       run: go(`/projects/${p.id}/label`),
     }));
 
+    // Bản đồ claim–evidence (#15) — cùng lý do với ba màn hình trên.
+    const claimMap: Cmd[] = projects.map((p) => ({
+      id: `claim-${p.id}`,
+      label: `Bản đồ claim–evidence · ${p.title}`,
+      hint: 'kéo thả nguồn',
+      group: 'Bản đồ claim–evidence',
+      icon: Network,
+      run: go(`/projects/${p.id}/claim-map`),
+    }));
+
     // Nhảy bước chỉ có nghĩa khi đã có dự án — lấy dự án sửa gần nhất làm đích.
     const latest = projects[0];
     const jump: Cmd[] = latest
@@ -193,6 +204,7 @@ export function CommandPalette() {
       ...sim,
       ...evidence,
       ...label,
+      ...claimMap,
       ...jump,
     ];
   }, [data, router]);
