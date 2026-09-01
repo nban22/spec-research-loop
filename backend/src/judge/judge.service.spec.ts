@@ -20,9 +20,32 @@ describe('JudgeService', () => {
       createMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
-      findMany: jest.fn<Promise<unknown>, [{ orderBy?: unknown }]>(),
+      findMany: jest.fn<
+        Promise<unknown>,
+        [{ orderBy?: unknown; select?: unknown }]
+      >(),
     },
     card: { findMany: jest.fn() },
+    // #44 — `groupRound` ghi thống kê hiệu chỉnh khi cờ `judge_debias` bật.
+    judgeCalibration: {
+      upsert: jest.fn<
+        Promise<unknown>,
+        [
+          {
+            create: {
+              judge_key: string;
+              rounds: number;
+              usable: boolean;
+              reason: string;
+              mean_rank: number;
+            };
+          },
+        ]
+      >(),
+    },
+    $transaction: jest.fn((ops: unknown) =>
+      Array.isArray(ops) ? Promise.all(ops) : Promise.resolve([]),
+    ),
     project: { update: jest.fn() },
   };
 
@@ -338,5 +361,81 @@ describe('JudgeService', () => {
 
     expect(llm.completeJson.mock.calls.length).toBe(callsOff);
     expect(callsOff).toBe(JUDGE_DEFS.length);
+  });
+
+  /* ---------------------------------------------- #44 · chuẩn hoá thang điểm ở tầng service */
+
+  it('#44 cờ TẮT ⇒ KHÔNG đọc lịch sử, KHÔNG ghi JudgeCalibration', async () => {
+    // Cờ tắt phải là đường cũ từng byte: không truy vấn thêm, không bảng mới nào được ghi.
+    arrangeRound(false);
+    await service.runRound('v-1');
+    expect(prisma.judgeCalibration.upsert).not.toHaveBeenCalled();
+  });
+
+  it('#44 cờ BẬT ⇒ ghi thống kê từng judge, kèm lý do', async () => {
+    arrangeRound(true);
+    // Lịch sử: J4 nặng tay (chỉ MAJOR/CRITICAL) qua 6 vòng; J1 dùng cả ba mức.
+    const hist: unknown[] = [];
+    for (let r = 1; r <= 6; r++) {
+      for (const sev of ['MAJOR', 'CRITICAL'])
+        hist.push({
+          severity: sev,
+          judge_run: { judge_key: 'J4', spec_version_id: 'v-0', round: r },
+        });
+      for (const sev of ['MINOR', 'MAJOR', 'CRITICAL'])
+        hist.push({
+          severity: sev,
+          judge_run: { judge_key: 'J1', spec_version_id: 'v-0', round: r },
+        });
+    }
+    // Phân biệt theo **hình dạng truy vấn**, không theo thứ tự gọi: truy vấn lịch sử dùng
+    // `select`, truy vấn issue của vòng dùng `include`. Dựa vào thứ tự là test vỡ ngay khi
+    // `runRound` thêm một lượt đọc khác ở giữa.
+    prisma.issue.findMany.mockImplementation((args: { select?: unknown }) =>
+      Promise.resolve(args?.select ? hist : []),
+    );
+
+    await service.runRound('v-1');
+
+    const written = prisma.judgeCalibration.upsert.mock.calls.map(
+      (c) => c[0].create,
+    );
+    expect(written.map((w) => w.judge_key).sort()).toEqual(['J1', 'J4']);
+    for (const w of written) {
+      expect(w.rounds).toBe(6);
+      expect(w.usable).toBe(true);
+      expect(w.reason).toBe('OK');
+    }
+    // J4 nặng tay ⇒ trung bình bậc cao hơn J1.
+    const j4 = written.find((w) => w.judge_key === 'J4')!;
+    const j1 = written.find((w) => w.judge_key === 'J1')!;
+    expect(j4.mean_rank).toBeGreaterThan(j1.mean_rank);
+  });
+
+  it('#44 lịch sử MỎNG ⇒ vẫn ghi bản ghi, nhưng usable = false', async () => {
+    // Trạng thái bình thường của dữ liệu hiện tại. Ghi lại để "chưa hiệu chỉnh" là một sự thật
+    // đọc được trong DB, không phải một im lặng.
+    arrangeRound(true);
+    prisma.issue.findMany.mockImplementation((args: { select?: unknown }) =>
+      Promise.resolve(
+        args?.select
+          ? [
+              {
+                severity: 'MAJOR',
+                judge_run: {
+                  judge_key: 'J1',
+                  spec_version_id: 'v-0',
+                  round: 1,
+                },
+              },
+            ]
+          : [],
+      ),
+    );
+
+    await service.runRound('v-1');
+    const w = prisma.judgeCalibration.upsert.mock.calls[0][0].create;
+    expect(w.usable).toBe(false);
+    expect(w.reason).toBe('NOT_ENOUGH_ROUNDS');
   });
 });

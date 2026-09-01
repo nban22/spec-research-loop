@@ -1,7 +1,4 @@
 import {
-  AgreementInput,
-  CardVote,
-  GroupVote,
   bucketOf,
   cardLabelCounts,
   fleissKappa,
@@ -12,6 +9,7 @@ import {
   seedFrom,
   severityBias,
   soloRates,
+  type AgreementInput,
   type CardVote,
   type GroupVote,
 } from './agreement';

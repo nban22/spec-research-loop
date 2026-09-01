@@ -1,4 +1,4 @@
-import { groupIssues, type RawIssue } from './issue-grouping';
+import { groupIssues, type RawIssue, type RankOf } from './issue-grouping';
 
 const issue = (over: Partial<RawIssue> & { id: string }): RawIssue => ({
   judgeKey: 'J1',
@@ -121,5 +121,67 @@ describe('groupIssues', () => {
     ]);
     expect(groups).toHaveLength(1);
     expect(groups[0].judgeKeys.sort()).toEqual(['J1', 'J5']);
+  });
+});
+
+/* ------------------------------------------------- #44 · bậc hiệu chỉnh khi gộp nhóm */
+
+describe('groupIssues với rankOf đã hiệu chỉnh (#44)', () => {
+  /** J4 nặng tay: `CRITICAL` của nó chỉ đáng 2.625. J1 bình thường: `CRITICAL` đáng 3.125. */
+  const calibrated: RankOf = (i) => {
+    const raw = { CRITICAL: 3, MAJOR: 2, MINOR: 1 }[i.severity];
+    return i.judgeKey === 'J4' ? raw - 0.375 : raw + 0.125;
+  };
+
+  const issue = (
+    id: string,
+    judgeKey: string,
+    severity: 'CRITICAL' | 'MAJOR' | 'MINOR',
+    title: string,
+  ) => ({ id, judgeKey, severity, title, targetCardId: 'c1' }) as const;
+
+  it('judge nặng tay KHÔNG còn tự động làm chủ nhóm', () => {
+    // Hai judge cùng nêu `CRITICAL` trên cùng một thẻ, tiêu đề giống nhau ⇒ một nhóm.
+    // Không hiệu chỉnh: J4 vào trước nên giữ ngôi. Có hiệu chỉnh: J1 vượt lên.
+    const issues = [
+      issue('i1', 'J4', 'CRITICAL', 'Missing baseline comparison'),
+      issue('i2', 'J1', 'CRITICAL', 'Missing baseline comparison'),
+    ];
+
+    const raw = groupIssues(issues);
+    expect(raw).toHaveLength(1);
+    expect(raw[0].canonicalTitle).toBe('Missing baseline comparison');
+
+    const cal = groupIssues(issues, calibrated);
+    expect(cal).toHaveLength(1);
+    // Mức thô của người thắng — KHÔNG bịa ra mức nào.
+    expect(cal[0].maxSeverity).toBe('CRITICAL');
+    expect(cal[0].judgeKeys).toEqual(['J4', 'J1']);
+    // Bậc của người thắng là bậc ĐÃ hiệu chỉnh của J1, không phải bậc thô 3.
+    expect(cal[0].winnerRank).toBeCloseTo(3.125, 3);
+  });
+
+  it('mức của nhóm luôn là mức THÔ, không bao giờ là số đã hiệu chỉnh', () => {
+    // Chốt chặn: hiệu chỉnh chỉ quyết định *ai thắng*, không được rò vào `max_severity`.
+    const cal = groupIssues(
+      [issue('i1', 'J4', 'MAJOR', 'Chunking strategy undefined')],
+      calibrated,
+    );
+    expect(cal[0].maxSeverity).toBe('MAJOR');
+    expect(['CRITICAL', 'MAJOR', 'MINOR']).toContain(cal[0].maxSeverity);
+  });
+
+  it('KHÔNG truyền rankOf ⇒ hành vi giống hệt trước #44', () => {
+    // Cờ `judge_debias` tắt là đường này. Phải giống từng byte.
+    const issues = [
+      issue('i1', 'J4', 'MAJOR', 'Missing baseline comparison'),
+      issue('i2', 'J1', 'CRITICAL', 'Missing baseline comparison'),
+      issue('i3', 'J2', 'MINOR', 'Something else entirely different here'),
+    ];
+    const a = groupIssues(issues);
+    const b = groupIssues(issues);
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+    // Nhóm blocking lấy CRITICAL của J1; MINOR tách nhóm riêng theo `bucket`.
+    expect(a.map((g) => g.maxSeverity)).toEqual(['CRITICAL', 'MINOR']);
   });
 });

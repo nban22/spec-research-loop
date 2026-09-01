@@ -20,7 +20,8 @@ import { LlmService } from '../llm/llm.service';
 import { SourcesService } from '../sources/sources.service';
 import { SpecService } from '../spec/spec.service';
 import { AgreementService } from './agreement/agreement.service';
-import { groupIssues, type RawIssue } from './issue-grouping';
+import { groupIssues, type RankOf, type RawIssue } from './issue-grouping';
+import { calibratedRank, groupScale, judgeStats } from './severity-calibration';
 import type { JudgeKey } from './judge.types';
 
 type Progress = (done: number, total: number, message: string) => Promise<void>;
@@ -233,6 +234,7 @@ export class JudgeService {
       specVersionId,
       round,
       completed.length,
+      debias,
     );
     await this.prisma.project.update({
       where: { id: version.project_id },
@@ -300,6 +302,79 @@ export class JudgeService {
   }
 
   /**
+   * Dựng hàm bậc-đã-hiệu-chỉnh cho #44, và **lưu lại** thống kê đã dùng.
+   *
+   * Lưu chứ không tính lại: nhóm issue đã chốt phải giải thích được bằng thống kê **lúc đó**. Lịch
+   * sử dài thêm một vòng là mọi trung bình đổi, và tính lại thì một nhóm cũ sẽ được biện minh bằng
+   * con số nó chưa từng thấy — cùng lý lẽ NFR-JDG-6 của `JudgeAgreement`.
+   *
+   * Lịch sử **chỉ lấy từ `JudgeRun.status = 'OK'`**: nhận cả vòng `FAILED` là đưa nhiễu của một lỗi
+   * hạ tầng vào thống kê về thói quen chấm điểm.
+   */
+  private async calibrationRankOf(
+    specVersionId: string,
+    round: number,
+  ): Promise<RankOf | undefined> {
+    const history = await this.prisma.issue.findMany({
+      where: { judge_run: { status: 'OK' } },
+      select: {
+        severity: true,
+        judge_run: {
+          select: { judge_key: true, spec_version_id: true, round: true },
+        },
+      },
+    });
+
+    const stats = judgeStats(
+      history.map((h) => ({
+        judgeKey: h.judge_run.judge_key,
+        severity: h.severity,
+        roundKey: `${h.judge_run.spec_version_id}:${h.judge_run.round}`,
+      })),
+    );
+    const scale = groupScale(stats);
+    const byJudge = new Map(stats.map((s) => [s.judgeKey, s]));
+
+    await this.prisma.$transaction(
+      stats.map((st) =>
+        this.prisma.judgeCalibration.upsert({
+          where: {
+            spec_version_id_round_judge_key: {
+              spec_version_id: specVersionId,
+              round,
+              judge_key: st.judgeKey as JudgeKey,
+            },
+          },
+          create: {
+            spec_version_id: specVersionId,
+            round,
+            judge_key: st.judgeKey as JudgeKey,
+            rounds: st.rounds,
+            n: st.n,
+            mean_rank: st.mean,
+            sd_rank: st.sd,
+            usable: st.usable,
+            reason: st.reason,
+          },
+          update: {},
+        }),
+      ),
+    );
+
+    const usable = stats.filter((s) => s.usable).length;
+    this.logger.log(
+      `#44 hiệu chỉnh thang điểm: ${usable}/${stats.length} judge dùng được` +
+        (usable === 0 ? ' — chưa đủ lịch sử, mọi mức đi qua nguyên vẹn' : ''),
+    );
+    // Không judge nào dùng được ⇒ trả `undefined` để `groupIssues` đi đúng đường bậc thô, thay vì
+    // gọi một hàm luôn trả bậc thô. Rẻ hơn, và log ở trên nói rõ vì sao.
+    if (usable === 0) return undefined;
+
+    return (issue) =>
+      calibratedRank(issue.severity, byJudge.get(issue.judgeKey), scale).rank;
+  }
+
+  /**
    * Gộp một lần lúc chạy và **lưu lại** — không tính lại lúc render, vì `agreement_count`
    * là con số đi vào báo cáo (NFR-JDG-6).
    */
@@ -307,6 +382,7 @@ export class JudgeService {
     specVersionId: string,
     round: number,
     judgesCompleted: number,
+    debias: boolean,
   ): Promise<number> {
     const issues = await this.prisma.issue.findMany({
       where: {
@@ -329,7 +405,12 @@ export class JudgeService {
       targetCardId: i.target_card_id,
     }));
 
-    const groups = groupIssues(raw);
+    // Làn B · #44 — bậc dùng để chọn ai thắng nhóm, hiệu chỉnh theo thói quen chấm của từng judge.
+    // Cờ tắt ⇒ `rankOf` là `undefined` ⇒ `groupIssues` dùng bậc thô, hành vi giống hệt trước #44.
+    const rankOf = debias
+      ? await this.calibrationRankOf(specVersionId, round)
+      : undefined;
+    const groups = groupIssues(raw, rankOf);
 
     for (const g of groups) {
       const created = await this.prisma.issueGroup.create({
