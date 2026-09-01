@@ -80,6 +80,44 @@ run null`, thay cho `WEAK 11` như trước.
 
 backend `jest 302/302 · lint 0 · build 0` · frontend `lint 0 · build 0 · vitest 85/85`
 
-**Còn lại, cần người bấm:** chạy VERIFY trên dự án đó để 11 cặp có nhãn thật. Lệnh
-`POST /spec-versions/8e800cbd/verify` bị chặn quyền vì nó ghi vào prod và tiêu token LLM.
-Nút có sẵn ở bước 5: *"Chạy lại kiểm chứng cứ"*.
+### Phần sau: chạy full flow rồi đụng một lỗi nặng hơn
+
+Merge vào `main` (`71f14ff`), bốn workflow xanh, container lên `prod-71f14ff`, API host trả
+đúng `unverified 11/11` và bundle frontend có chuỗi `CHƯA KIỂM`. Rồi chạy **toàn bộ luồng sinh
+spec** trên dự án mới qua HTTP, đúng trình tự của `eval/harness.ts:runArm`.
+
+**Luồng chết ngay ở bước đầu.** `POST /projects/:id/analyze` → job FAILED sau 111 giây; log
+container: `Không gọi được DeepSeek: terminated`. Mọi bước sau đổ theo **đúng thiết kế**
+(không có nguồn ⇒ related-work và gap từ chối, `queries: []` bị zod chặn) — không phải lỗi mới.
+
+Đo trên `LlmCall` của 24h gần nhất:
+
+| prompt | lượt | hỏng | lâu nhất |
+| --- | --- | --- | --- |
+| `generator` | 7 | 1 (14%) — `LLM_UNAVAILABLE` | 119 210 ms |
+| `verifier_entailment` | 64 | 1 (2%) — `LLM_INVALID_JSON` | 30 869 ms |
+| còn lại (5 prompt) | 27 | 0 | 107 607 ms |
+
+`generator` chạy `reasoning_effort: high` với 12k token nên mất **77–119 giây** mỗi lượt và
+thỉnh thoảng bị cắt kết nối. Lỗi transient — nhưng `LlmService` cho nó **0 lần thử lại**:
+JSON sai schema được 3 lượt, socket đứt thì `catch` ném thẳng. Chính sách retry đang lo cho
+lỗi của *mô hình* mà bỏ trống lỗi của *đường truyền*, trong khi cái transient lại là cái sau.
+
+Sửa: `llm-transient.ts` (hàm thuần, có test) phân loại theo hình dạng lỗi — `status` 429/5xx,
+`APIConnectionError`, mã socket của undici, và lời văn `terminated`/`socket hang up`. 4xx còn
+lại **không** thử lại: sai key hay quá context thì thử thêm hai lượt ~110 giây cũng vẫn hỏng.
+`LlmService` thử tối đa 3 lượt, backoff 2s/6s, **tách khỏi** `maxRetries` của schema.
+
+Hai chỗ test bắt được trong lúc viết:
+
+1. Ban đầu chỉ phân loại ở `DeepseekProvider`, nên `LlmService` chỉ retry khi
+   `err instanceof LlmTransportError` — provider khác (hay test double) ném lỗi mạng trần thì
+   không được gọi lại. Đã nhận diện ở cả hai chỗ.
+2. `attempts` **cố ý không** cộng số lần thử lại vì mạng: nó là số lần *mô hình* phải sửa JSON,
+   và `eval/score.ts` cùng báo cáo đánh giá đọc nó theo nghĩa đó. Lượt hỏng vì mạng cũng không
+   trả token nào nên phần đếm token không đổi.
+
+backend `jest 321/321 · lint 0 · build 0`
+
+**Còn lại, cần người bấm:** chạy VERIFY trên dự án demo cũ (`8e800cbd`) để 11 cặp có nhãn
+thật — nút *"Chạy lại kiểm chứng cứ"* ở bước 5.
