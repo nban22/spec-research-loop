@@ -75,8 +75,7 @@ export type NullVerdict = {
 export const MIN_UNION = 5;
 
 export type ApiAgreementResponse = {
-  /** `false` khi `Project.judge_agreement` tắt — cờ chỉ gác phần hiển thị. */
-  enabled: boolean;
+  /** `null` khi chưa chạy judge vòng nào. Không có cờ bật/tắt — xem `AgreementService.forDisplay`. */
   agreement: ApiAgreement | null;
 };
 

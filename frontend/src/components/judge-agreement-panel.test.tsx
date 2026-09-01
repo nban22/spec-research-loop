@@ -54,8 +54,8 @@ const verdict = (judgeKey: string, value: number, p: number) => ({
 
 const cell = (value: number | null, union: number) => ({ value, union });
 
-function mount(agreement: ApiAgreement | null, enabled = true) {
-  get.mockResolvedValue({ enabled, agreement });
+function mount(agreement: ApiAgreement | null) {
+  get.mockResolvedValue({ agreement });
   return render(<JudgeAgreementPanel versionId="v-1" />, { wrapper });
 }
 
@@ -189,14 +189,6 @@ describe('JudgeAgreementPanel', () => {
     await waitFor(() =>
       expect(screen.getByText('Chưa có thẻ nào để đo.')).toBeInTheDocument(),
     );
-  });
-
-  it('cờ tắt ⇒ nói rõ đang tắt, KHÁC với "chưa chạy judge"', async () => {
-    mount(null, false);
-    await waitFor(() =>
-      expect(screen.getByText('Số đo đang tắt')).toBeInTheDocument(),
-    );
-    expect(screen.queryByText('Chưa có số đo')).not.toBeInTheDocument();
   });
 
   it('gọi ĐÚNG endpoint — mock trước đây bỏ qua đối số nên sai đường dẫn vẫn xanh', async () => {

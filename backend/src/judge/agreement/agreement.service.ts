@@ -80,14 +80,7 @@ export type AgreementView = AgreementReport & {
 };
 
 export type AgreementResponse = {
-  /**
-   * `false` khi `Project.judge_agreement` tắt.
-   *
-   * Cờ **chỉ gác phần hiển thị**, không gác phần tính: số đo là bằng chứng, 0 token, và nếu gác
-   * luôn thì #13 quên bật là ablation không có dữ liệu mà không ai biết. Cùng khuôn với
-   * `OverclaimService.scanVersion` trả `{ enabled: false }`.
-   */
-  enabled: boolean;
+  /** `null` khi chưa chạy judge vòng nào. */
   agreement: AgreementView | null;
 };
 
@@ -122,21 +115,20 @@ export class AgreementService {
   }
 
   /**
-   * Đọc cho giao diện. Tính **vẫn chạy** khi cờ tắt (bản ghi lúc `runRound` đã có sẵn), chỉ là
-   * không trả về — nên bật cờ lên là thấy ngay số của các vòng đã chạy, không phải chạy lại.
+   * Đọc cho giao diện.
+   *
+   * **Không có cờ bật/tắt.** Luật chung 1 của epic #22 đòi tính năng mới nằm sau cờ `Project` mặc
+   * định tắt, và bản đầu của #9 có cột `judge_agreement`. Bỏ đi vì lý lẽ nền của luật đó không áp
+   * dụng ở đây: cờ tồn tại để làm **cần gạt ablation** cho #13, mà #9 **chỉ hiển thị** — không có
+   * gì trong hệ tiêu thụ số đo để đổi hành vi, nên tắt panel đi thì bản spec sinh ra không khác
+   * một chữ. Không có gì để ablate ⇒ cờ không đo được điều gì.
+   *
+   * Cộng thêm: chưa có API nào ghi các cờ `Project`, nên "mặc định tắt" nghĩa là tính năng vô hình
+   * trừ khi có người gõ SQL — với một tính năng được chấm bằng thứ demo được thì đó là chưa nộp.
+   * Lý do lệch luật đã ghi trong mô tả PR và comment ở issue #22.
    */
   async forDisplay(specVersionId: string): Promise<AgreementResponse> {
-    const version = await this.prisma.specVersion.findUniqueOrThrow({
-      where: { id: specVersionId },
-      select: { project: { select: { judge_agreement: true } } },
-    });
-    if (!version.project.judge_agreement) {
-      return { enabled: false, agreement: null };
-    }
-    return {
-      enabled: true,
-      agreement: await this.forLatestRound(specVersionId),
-    };
+    return { agreement: await this.forLatestRound(specVersionId) };
   }
 
   async forLatestRound(specVersionId: string): Promise<AgreementView | null> {

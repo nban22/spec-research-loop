@@ -72,7 +72,6 @@ async function main(): Promise<void> {
         domain: 'Vietnamese legal QA',
         step: 'S4',
         status: 'IN_PROGRESS',
-        judge_agreement: true,
         judge_round: 1,
         judge_rounds_total: 1,
       },

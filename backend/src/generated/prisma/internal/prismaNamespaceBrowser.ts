@@ -133,7 +133,6 @@ export const ProjectScalarFieldEnum = {
   judge_rounds_total: 'judge_rounds_total',
   overclaim_detector: 'overclaim_detector',
   ambiguity_detector: 'ambiguity_detector',
-  judge_agreement: 'judge_agreement',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const

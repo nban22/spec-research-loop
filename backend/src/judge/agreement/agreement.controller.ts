@@ -20,8 +20,8 @@ export class AgreementController {
   @Get('spec-versions/:id/judge-agreement')
   async latest(@Param('id') id: string, @UserId() userId: string) {
     await this.spec.assertVersionOwned(id, userId);
-    // Trả kèm `enabled` — cờ `Project.judge_agreement` gác phần hiển thị. `agreement` là `null`
-    // khi chưa chạy judge vòng nào; giao diện phân biệt hai trạng thái đó.
+    // `agreement` là `null` khi chưa chạy judge vòng nào. Không có cờ bật/tắt — xem lý do ở
+    // `AgreementService.forDisplay`.
     return this.agreement.forDisplay(id);
   }
 

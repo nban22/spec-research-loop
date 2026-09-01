@@ -31,21 +31,11 @@ export function JudgeAgreementPanel({
 }) {
   const { data, isLoading } = useJudgeAgreement(versionId);
   const a = data?.agreement ?? null;
-  // `enabled === false` nghĩa là cờ `Project.judge_agreement` đang tắt — khác hẳn "chưa chạy
-  // judge". Hai trạng thái phải nói khác nhau, không thì người dùng bật cờ rồi vẫn tưởng hỏng.
-  const flagOff = data !== undefined && !data.enabled;
 
   return (
     <Panel accent="neutral" icon={Scale} title="Bất đồng giữa các judge">
       {isLoading ? (
         <p className="text-ink-3 text-xs">Đang tải số đo…</p>
-      ) : flagOff ? (
-        <EmptyState
-          icon={Scale}
-          tone="neutral"
-          title="Số đo đang tắt"
-          description="Bật cờ judge_agreement trên dự án để xem. Phần tính vẫn chạy sẵn ở mỗi vòng judge, nên bật lên là thấy ngay số của các vòng đã chạy — không phải chạy lại."
-        />
       ) : !a ? (
         <EmptyState
           icon={Scale}

@@ -18,7 +18,6 @@ type UpsertArg = { create: Row; update: Row };
 type WhereArg = { where: Row };
 
 function makePrisma(opts: {
-  flagOn?: boolean;
   rounds?: { round: number }[];
   saved?: Row | null;
   cards?: { id: string }[];
@@ -27,11 +26,6 @@ function makePrisma(opts: {
 }) {
   const upsert = jest.fn<unknown, [UpsertArg]>();
   const prisma = {
-    specVersion: {
-      findUniqueOrThrow: jest.fn().mockResolvedValue({
-        project: { judge_agreement: opts.flagOn ?? true },
-      }),
-    },
     judgeRun: {
       findFirst: jest
         .fn<Promise<unknown>, [WhereArg]>()
@@ -73,25 +67,16 @@ const savedRow = (over: Row = {}): Row => ({
   ...over,
 });
 
-describe('AgreementService — cờ chỉ gác HIỂN THỊ', () => {
-  it('cờ tắt ⇒ enabled false, KHÔNG trả số, và không đọc gì thêm', async () => {
-    const { prisma } = makePrisma({ flagOn: false });
-    const res = await new AgreementService(prisma as never).forDisplay('v-1');
-
-    expect(res).toEqual({ enabled: false, agreement: null });
-    // Không đi tìm vòng — cờ tắt là dừng ngay.
-    expect(prisma.judgeRun.findFirst).not.toHaveBeenCalled();
-  });
-
-  it('cờ bật ⇒ trả bản đã lưu, computed = false', async () => {
+describe('AgreementService — đọc bản đã lưu', () => {
+  it('trả bản đã lưu của vòng mới nhất, computed = false', async () => {
+    // `computed = false` là "số này đọc từ DB, không phải vừa tính". Giao diện dùng nó để nói
+    // nguồn gốc con số — NFR-JDG-6 đòi số cố định, nên phân biệt hai nguồn là có ý nghĩa.
     const { prisma } = makePrisma({
-      flagOn: true,
       rounds: [{ round: 2 }],
       saved: savedRow(),
     });
     const res = await new AgreementService(prisma as never).forDisplay('v-1');
 
-    expect(res.enabled).toBe(true);
     expect(res.agreement?.round).toBe(2);
     expect(res.agreement?.computed).toBe(false);
     expect(res.agreement?.kappa.kappa).toBe(0.18);

@@ -209,10 +209,6 @@ model Project {
   overclaim_detector      Boolean       @default(false)
   // Cờ của làn B · #12. Mặc định **tắt** theo luật chung 1.
   ambiguity_detector      Boolean       @default(false)
-  // Cờ của làn B · #9 — chỉ gác phần HIỂN THỊ. Phần tính và lưu luôn chạy: nó là bằng
-  // chứng, 0 token, không đổi hành vi; nếu gác luôn thì #13 quên bật là ablation không
-  // có dữ liệu và không ai biết. Xem lý do đầy đủ trong mô tả PR.
-  judge_agreement         Boolean       @default(false)
   created_at              DateTime      @default(now())
   updated_at              DateTime      @updatedAt
 

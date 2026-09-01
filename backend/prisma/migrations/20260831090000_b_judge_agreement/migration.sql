@@ -1,6 +1,3 @@
--- AlterTable
-ALTER TABLE "Project" ADD COLUMN     "judge_agreement" BOOLEAN NOT NULL DEFAULT false;
-
 -- CreateTable
 CREATE TABLE "JudgeAgreement" (
     "id" TEXT NOT NULL,
