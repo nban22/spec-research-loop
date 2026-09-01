@@ -7,7 +7,10 @@ import {
   FolderOpen,
   Home,
   LifeBuoy,
+  Map,
   Search,
+  SlidersHorizontal,
+  ShieldAlert,
   Workflow,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -105,8 +108,8 @@ export function CommandPalette() {
       run: go(`/projects/${p.id}/step/${STEPS.find((s) => s.step === p.step)?.no ?? 1}`),
     }));
 
-    /* Màn hình chi phí (#17) không có mục nav riêng: `top-nav.tsx` nằm ngoài phạm vi sở hữu
-       của làn C. Bảng lệnh là đường vào hợp lệ và cũng là chỗ người dùng tìm nó tự nhiên nhất. */
+    /* Hai màn của làn C không có mục nav riêng: `top-nav.tsx` nằm ngoài phạm vi sở hữu của
+       làn này. Bảng lệnh là đường vào hợp lệ và cũng là chỗ người dùng tìm chúng tự nhiên nhất. */
     const cost: Cmd[] = projects.map((p) => ({
       id: `cost-${p.id}`,
       label: `Chi phí · ${p.title}`,
@@ -114,6 +117,36 @@ export function CommandPalette() {
       group: 'Chi phí',
       icon: Coins,
       run: go(`/projects/${p.id}/cost`),
+    }));
+
+    const errors: Cmd[] = projects.map((p) => ({
+      id: `err-${p.id}`,
+      label: `Phân tích lỗi · ${p.title}`,
+      hint: 'cờ · nhãn · ngưỡng',
+      group: 'Phân tích',
+      icon: ShieldAlert,
+      run: go(`/projects/${p.id}/errors`),
+    }));
+
+    /* Bản đồ nguồn (#16) — cùng lý do với màn hình chi phí: `top-nav.tsx` nằm ngoài phạm vi
+       sở hữu của làn C, nên bảng lệnh là đường vào hợp lệ. */
+    const map: Cmd[] = projects.map((p) => ({
+      id: `map-${p.id}`,
+      label: `Bản đồ nguồn · ${p.title}`,
+      hint: 'timeline · chủ đề',
+      group: 'Bản đồ nguồn',
+      icon: Map,
+      run: go(`/projects/${p.id}/map`),
+    }));
+
+    // Mô phỏng chi phí (#18) — cùng lý do với hai màn hình trên.
+    const sim: Cmd[] = projects.map((p) => ({
+      id: `sim-${p.id}`,
+      label: `Mô phỏng chi phí · ${p.title}`,
+      hint: 'VRAM · Pareto',
+      group: 'Mô phỏng chi phí',
+      icon: SlidersHorizontal,
+      run: go(`/projects/${p.id}/simulate`),
     }));
 
     // Nhảy bước chỉ có nghĩa khi đã có dự án — lấy dự án sửa gần nhất làm đích.
@@ -129,7 +162,7 @@ export function CommandPalette() {
         }))
       : [];
 
-    return [...nav, ...openProject, ...cost, ...jump];
+    return [...nav, ...openProject, ...cost, ...errors, ...map, ...sim, ...jump];
   }, [data, router]);
 
   const results = useMemo(() => {

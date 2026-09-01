@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { SeverityBadge } from './severity-badge';
+import type { Severity } from '@/lib/types';
 
 describe('SeverityBadge', () => {
   it('renders CRITICAL badge with danger-ink background styles', () => {
@@ -29,4 +30,10 @@ describe('SeverityBadge', () => {
     const badge = screen.getByText('CRITICAL');
     expect(badge).toHaveClass('custom-test-class');
   });
+
+  it('renders an unknown severity verbatim instead of crashing', () => {
+    render(<SeverityBadge severity={'FATAL' as Severity} />);
+    expect(screen.getByText('FATAL')).toBeInTheDocument();
+  });
+
 });

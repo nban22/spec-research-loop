@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { StatusChip } from './status-chip';
+import type { CardStatus } from '@/lib/types';
 
 describe('StatusChip', () => {
   it('renders CONFIRMED status chip with ok-soft styling', () => {
@@ -43,4 +44,12 @@ describe('StatusChip', () => {
     const chip = screen.getByText('Đã xác nhận');
     expect(chip.closest('span')).toHaveClass('custom-chip-class');
   });
+
+  /* Regression: an enum value the frontend has not learned yet must not blank the page.
+     See lib/unknown-style.ts. */
+  it('renders an unknown status verbatim instead of crashing', () => {
+    render(<StatusChip status={'UNVERIFIED' as CardStatus} />);
+    expect(screen.getByText('UNVERIFIED')).toBeInTheDocument();
+  });
+
 });

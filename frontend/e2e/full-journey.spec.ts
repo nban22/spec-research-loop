@@ -147,14 +147,19 @@ test.describe('End-to-End Research Spec Journey', () => {
               {
                 id: 'c-1',
                 type: 'PROBLEM',
-                status: 'UNVERIFIED',
+                // `UNVERIFIED` không nằm trong 6 giá trị của `CardStatus`; backend không bao giờ
+                // trả về nó. `PROPOSED` là trạng thái thật của một thẻ vừa sinh, chưa ai xác nhận.
+                status: 'PROPOSED',
                 title: 'Problem Definition',
                 body: 'Routing delay problem under uncertain traffic patterns.',
                 card_sources: [],
               },
               {
                 id: 'c-2',
-                type: 'PROPOSED_APPROACH',
+                // `PROPOSED_APPROACH` không nằm trong 8 giá trị của `CardType`. Trong hệ này
+                // "proposed approach" là một thẻ `CONTRIBUTION` mang `payload.role`
+                // (`spec.types.ts:23-27`) — enum 8 loại không nới ra để chứa một mục trình bày.
+                type: 'CONTRIBUTION',
                 status: 'CONFIRMED',
                 title: 'Proposed Heuristic Model',
                 body: 'Dynamic programming combined with heuristic search.',

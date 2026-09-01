@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { CARD_STATUS_STYLE } from '@/lib/status-style';
+import { styleOr } from '@/lib/unknown-style';
 import type { CardStatus } from '@/lib/types';
 
 /**
@@ -15,7 +16,7 @@ export function StatusChip({
   status: CardStatus;
   className?: string;
 }) {
-  const style = CARD_STATUS_STYLE[status];
+  const style = styleOr(CARD_STATUS_STYLE, status);
   const Icon = style.icon;
   return (
     <span

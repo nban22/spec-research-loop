@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { SEVERITY_STYLE } from '@/lib/status-style';
+import { styleOr } from '@/lib/unknown-style';
 import type { Severity } from '@/lib/types';
 
 /**
@@ -14,7 +15,7 @@ export function SeverityBadge({
   severity: Severity;
   className?: string;
 }) {
-  const style = SEVERITY_STYLE[severity];
+  const style = styleOr(SEVERITY_STYLE, severity);
   const Icon = style.icon;
   return (
     <span
