@@ -17,6 +17,9 @@ describe('SourceMapService', () => {
     venue: string | null;
     citation_count: number | null;
     doi_verified: boolean | null;
+    external_id: string;
+    retrieved_from: string;
+    raw: unknown;
     _count: { card_sources: number };
   };
 
@@ -29,6 +32,9 @@ describe('SourceMapService', () => {
     venue: 'ACL',
     citation_count: 120,
     doi_verified: true,
+    external_id: 'W1',
+    retrieved_from: 'OPENALEX',
+    raw: { referenced_works: [] },
     _count: { card_sources: 1 },
     ...over,
   });
@@ -80,6 +86,11 @@ describe('SourceMapService', () => {
       nodes: [],
       timeline: [],
       weak_text_count: 0,
+      citations: {
+        edges: [],
+        coverage: { with_refs: 0, total: 0 },
+        most_cited: [],
+      },
     });
   });
 
@@ -168,5 +179,27 @@ describe('SourceMapService', () => {
     expect(first.nodes.map((n) => [n.x, n.y])).toEqual(
       second.nodes.map((n) => [n.x, n.y]),
     );
+  });
+
+  it('dựng đồ thị trích dẫn từ referenced_works đã nằm sẵn trong Source.raw', async () => {
+    const { service } = build([
+      src({
+        id: 's-1',
+        external_id: 'W1',
+        raw: { referenced_works: ['https://openalex.org/W2'] },
+      }),
+      src({ id: 's-2', external_id: 'W2' }),
+      // Nguồn Semantic Scholar không có dữ liệu trích dẫn — phải phản ánh vào `coverage`.
+      src({
+        id: 's-3',
+        external_id: 'p3',
+        retrieved_from: 'SEMANTIC_SCHOLAR',
+        raw: {},
+      }),
+    ]);
+    const map = await service.sourceMap('p-1', 'u-1');
+
+    expect(map.citations.edges).toEqual([{ from: 's-1', to: 's-2' }]);
+    expect(map.citations.coverage).toEqual({ with_refs: 2, total: 3 });
   });
 });

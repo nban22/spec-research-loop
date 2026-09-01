@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { IdeaInput } from '@/components/idea-input';
 import { Panel } from '@/components/panel';
 import { ProjectCard, type ProjectSummary } from '@/components/project-card';
+import { ResearchFlowAnimation } from '@/components/research-flow';
 import { api, qk } from '@/lib/api';
 
 /** Trang chủ: `IdeaInput` cỡ lớn để mở dự án mới + vài dự án gần đây (DESIGN_SYSTEM §5.4). */
@@ -31,6 +32,10 @@ export default function HomePage() {
       <Panel accent="brand" icon={Lightbulb} title="Ý tưởng nghiên cứu của bạn">
         <IdeaInput variant="create" />
       </Panel>
+
+      {/* Đặt NGAY DƯỚI ô nhập, không phải cuối trang: người chưa từng dùng hệ thống cần biết
+          bấm xong thì chuyện gì xảy ra, trước khi họ quyết định có gõ gì vào ô trên hay không. */}
+      <ResearchFlowAnimation />
 
       {recent.length > 0 && (
         <section className="space-y-2">
