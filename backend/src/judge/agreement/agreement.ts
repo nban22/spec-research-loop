@@ -388,7 +388,7 @@ export function leaveOneOut(
  * định, mà p-value tính bằng mô phỏng thì mỗi lần chạy ra một số khác nếu nguồn ngẫu nhiên tự do.
  * Seed suy từ `(spec_version_id, round)` ⇒ cùng một vòng luôn ra cùng một p.
  */
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -409,7 +409,7 @@ export function seedFrom(key: string): number {
 }
 
 /** Fisher–Yates, tại chỗ trên **bản sao** của lời gọi. */
-function shuffle<T>(arr: T[], rnd: () => number): T[] {
+export function shuffle<T>(arr: T[], rnd: () => number): T[] {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(rnd() * (i + 1));
