@@ -76,6 +76,10 @@ export const ModelName = {
   HumanCheck: 'HumanCheck',
   OverclaimFlag: 'OverclaimFlag',
   AmbiguityFlag: 'AmbiguityFlag',
+  SourceScore: 'SourceScore',
+  SourceFullText: 'SourceFullText',
+  VerifierPassage: 'VerifierPassage',
+  CardConflict: 'CardConflict',
   JudgeAgreement: 'JudgeAgreement'
 } as const
 
@@ -133,6 +137,9 @@ export const ProjectScalarFieldEnum = {
   judge_rounds_total: 'judge_rounds_total',
   overclaim_detector: 'overclaim_detector',
   ambiguity_detector: 'ambiguity_detector',
+  source_credibility: 'source_credibility',
+  evidence_fulltext: 'evidence_fulltext',
+  conflict_detector: 'conflict_detector',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -494,6 +501,74 @@ export const AmbiguityFlagScalarFieldEnum = {
 } as const
 
 export type AmbiguityFlagScalarFieldEnum = (typeof AmbiguityFlagScalarFieldEnum)[keyof typeof AmbiguityFlagScalarFieldEnum]
+
+
+export const SourceScoreScalarFieldEnum = {
+  id: 'id',
+  source_id: 'source_id',
+  total: 'total',
+  tier: 'tier',
+  reason: 'reason',
+  components: 'components',
+  scored_at: 'scored_at'
+} as const
+
+export type SourceScoreScalarFieldEnum = (typeof SourceScoreScalarFieldEnum)[keyof typeof SourceScoreScalarFieldEnum]
+
+
+export const SourceFullTextScalarFieldEnum = {
+  id: 'id',
+  source_id: 'source_id',
+  provider: 'provider',
+  url: 'url',
+  status: 'status',
+  text: 'text',
+  char_count: 'char_count',
+  fetched_at: 'fetched_at',
+  expires_at: 'expires_at'
+} as const
+
+export type SourceFullTextScalarFieldEnum = (typeof SourceFullTextScalarFieldEnum)[keyof typeof SourceFullTextScalarFieldEnum]
+
+
+export const VerifierPassageScalarFieldEnum = {
+  id: 'id',
+  verifier_run_id: 'verifier_run_id',
+  card_source_id: 'card_source_id',
+  rank: 'rank',
+  similarity: 'similarity',
+  char_start: 'char_start',
+  text: 'text',
+  is_evidence: 'is_evidence',
+  created_at: 'created_at'
+} as const
+
+export type VerifierPassageScalarFieldEnum = (typeof VerifierPassageScalarFieldEnum)[keyof typeof VerifierPassageScalarFieldEnum]
+
+
+export const CardConflictScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  card_id: 'card_id',
+  scope: 'scope',
+  other_card_id: 'other_card_id',
+  card_source_a_id: 'card_source_a_id',
+  card_source_b_id: 'card_source_b_id',
+  source_a_id: 'source_a_id',
+  source_b_id: 'source_b_id',
+  signal: 'signal',
+  evidence_a: 'evidence_a',
+  evidence_b: 'evidence_b',
+  terms: 'terms',
+  reason: 'reason',
+  previous_status: 'previous_status',
+  chosen_exit: 'chosen_exit',
+  decision_id: 'decision_id',
+  llm_calls: 'llm_calls',
+  created_at: 'created_at'
+} as const
+
+export type CardConflictScalarFieldEnum = (typeof CardConflictScalarFieldEnum)[keyof typeof CardConflictScalarFieldEnum]
 
 
 export const JudgeAgreementScalarFieldEnum = {

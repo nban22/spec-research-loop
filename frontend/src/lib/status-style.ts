@@ -9,6 +9,7 @@ import {
   OctagonAlert,
   ShieldAlert,
   ShieldCheck,
+  ShieldQuestion,
   ShieldX,
   TriangleAlert,
   type LucideIcon,
@@ -16,6 +17,7 @@ import {
 import type {
   CardStatus,
   ConfidenceLevel,
+  CredibilityTier,
   Severity,
   SupportLabel,
 } from './types';
@@ -121,6 +123,24 @@ export const SUPPORT_STYLE: Record<SupportLabel, StatusStyle> = {
 };
 
 /**
+ * **Trạng thái thứ tư của cặp thẻ–nguồn: chưa hề kiểm chứng.**
+ *
+ * Cố ý **không** thêm vào `SupportLabel` — enum đó là ba phán quyết của verifier, còn đây là
+ * "verifier chưa nhìn tới". Trộn hai thứ vào một enum thì mọi chỗ đếm nhãn đều nói dối.
+ * Tín hiệu lấy từ `CardSource.verifier_run_id === null`, không phải từ nhãn.
+ *
+ * Dùng `neutral` chứ **không** dùng `warn`: chưa đo không phải là một kết quả xấu, nó là chưa
+ * có kết quả — cùng lý lẽ với ghi chú của `CONFIDENCE_STYLE` ngay dưới đây.
+ */
+export const UNVERIFIED_STYLE: StatusStyle = {
+  // Viền đứt nét mượn đúng tín hiệu "chỗ trống" của `MISSING`: đọc được cả khi in trắng đen,
+  // là chỗ dựa duy nhất khi ba tag `SupportLabel` kia đều rỗng ruột và cùng cỡ chữ.
+  label: 'CHƯA KIỂM',
+  icon: ShieldQuestion,
+  className: 'border-neutral-line border-dashed text-neutral-strong',
+};
+
+/**
  * Nhóm enum thứ tư. Cố ý **không** có component badge riêng: ba vật thể ở §3.1 đã dùng hết ba
  * hình dạng phân biệt được khi in trắng đen. Render thành một dòng trong `HintBox` (§3.8).
  * `LOW` dùng `warn` chứ **không** dùng `danger` — hệ thống hiểu chưa chắc không phải là *lỗi*.
@@ -155,4 +175,73 @@ export const VERIFIER_FLAG_LABEL: Record<string, string> = {
   FABRICATED_QUOTE: 'Câu trích dẫn không nằm trong abstract',
   DOI_UNVERIFIED: 'Chưa kiểm được DOI (registry không trả lời)',
   LLM_UNAVAILABLE: 'Không kiểm được bằng mô hình ở bước này',
+  // Làn A · #2 — hai cờ của tầng đọc toàn văn.
+  FULLTEXT_USED: 'Nhãn này đọc từ toàn văn bài báo, không chỉ abstract',
+  FULLTEXT_UNAVAILABLE:
+    'Không lấy được toàn văn — đã lùi về đối chiếu abstract',
+  // Loại thẻ này khẳng định một sự vắng mặt (khoảng trống) hoặc một việc sắp làm (đóng góp),
+  // nên hỏi "nguồn có kéo theo câu này không" là hỏi sai câu. Trích dẫn vẫn được kiểm có thật.
+  CITATION_ONLY: 'Đã kiểm trích dẫn có thật; loại thẻ này không chấm bằng phép kéo theo',
 };
+
+/**
+ * Làn A · #1 — mức tin cậy của nguồn.
+ *
+ * Ba mức, và **không mức nào dùng `danger`**: nguồn yếu không phải là *lỗi*, nó là thứ cần người
+ * đọc cân nhắc. Dùng `danger` ở đây sẽ tranh chỗ với `UNSUPPORTED` — thứ thật sự chặn xuất bản.
+ *
+ * Điểm số không bao giờ hiện ra; thứ hiện ra là `label` cộng câu `reason` backend sinh sẵn
+ * (tiêu chí hoàn thành của #1).
+ */
+export const CREDIBILITY_STYLE: Record<
+  CredibilityTier,
+  { label: string; className: string }
+> = {
+  HIGH: {
+    label: 'Đáng tin',
+    className: 'bg-ok-soft text-ok-strong border-ok-line',
+  },
+  MEDIUM: {
+    label: 'Trung bình',
+    className: 'bg-neutral-soft text-neutral-strong border-neutral-line',
+  },
+  REVIEW: {
+    label: 'Cần cân nhắc',
+    className: 'bg-warn-soft text-warn-strong border-warn-line',
+  },
+};
+
+/** Làn A · #3 — nhãn tiếng Việt cho hai phạm vi xung đột và bốn tín hiệu phát hiện. */
+export const CONFLICT_SCOPE_LABEL: Record<string, string> = {
+  INTRA_CARD: 'Hai nguồn của cùng một thẻ nói ngược nhau',
+  CROSS_CARD: 'Hai thẻ dùng cùng một bài báo theo hai chiều',
+};
+
+export const CONFLICT_SIGNAL_LABEL: Record<string, string> = {
+  POLARITY: 'Trái chiều kết luận',
+  NUMERIC: 'Lệch số liệu',
+  DIRECTION: 'Trái chiều diễn đạt',
+  LLM: 'Mô hình xác nhận',
+};
+
+/** Làn A · #5 — tên bảy tầng của verifier, hiện trên thanh truy vết. */
+export const VERIFIER_LAYER_LABEL: Record<string, string> = {
+  L0: 'Nguồn có thật',
+  L1: 'Đủ dữ liệu',
+  L2: 'Đối chiếu số',
+  L3: 'Độ tương đồng',
+  L3b: 'Đọc toàn văn',
+  L4: 'Hỏi mô hình',
+  L4b: 'Chống bịa trích',
+};
+
+/** Thứ tự hiển thị của thanh tầng — cũng là thứ tự chạy thật trong verifier. */
+export const VERIFIER_LAYER_ORDER = [
+  'L0',
+  'L1',
+  'L2',
+  'L3',
+  'L3b',
+  'L4',
+  'L4b',
+] as const;

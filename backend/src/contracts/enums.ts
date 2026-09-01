@@ -85,6 +85,16 @@ export const verifierFlagSchema = z.enum([
   'FABRICATED_QUOTE',
   'DOI_UNVERIFIED',
   'LLM_UNAVAILABLE',
+  // Làn A · #2. Ngoại lệ có ý thức với luật chung 2 ("không thêm giá trị vào enum đang có"):
+  // đây là zod enum lưu xuống cột `Json?`, **không** phải enum Prisma — không migration, không
+  // rủi ro chéo làn. Ba tầng (enums.ts · frontend/types.ts · status-style.ts) sửa cùng một commit
+  // đúng như backend/CLAUDE.md §7 đòi.
+  'FULLTEXT_USED',
+  'FULLTEXT_UNAVAILABLE',
+  // Cặp dừng sau L2 vì loại thẻ không hỏi bằng phép kéo theo — xem `ENTAILMENT_CARD_TYPES`.
+  // Không có cờ này thì nhãn WEAK của một thẻ GAP trông y hệt "đã hỏi mô hình và bằng chứng
+  // yếu", trong khi thật ra mô hình chưa từng được hỏi.
+  'CITATION_ONLY',
 ]);
 export type VerifierFlag = z.infer<typeof verifierFlagSchema>;
 

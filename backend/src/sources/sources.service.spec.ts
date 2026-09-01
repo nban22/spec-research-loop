@@ -12,7 +12,14 @@ describe('SourcesService', () => {
   };
 
   const client = { search: jest.fn(), fetchAbstractByDoi: jest.fn() };
-  const service = new SourcesService(prisma as never, client as never);
+  // #1 — chấm điểm tin cậy chạy ở cuối `searchAndStore`. Mock nó ở đây để test này vẫn đo đúng
+  // thứ nó định đo (tìm và khử trùng nguồn), không kéo theo cả tầng chấm điểm.
+  const credibility = { rescoreProject: jest.fn().mockResolvedValue(0) };
+  const service = new SourcesService(
+    prisma as never,
+    client as never,
+    credibility as never,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();

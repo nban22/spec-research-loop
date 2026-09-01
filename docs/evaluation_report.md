@@ -164,3 +164,170 @@ Cả hai đều làm sai lệch chính metric của báo cáo này, và cả hai
 
 Toàn bộ hạ tầng cho 6 việc trên **đã chạy được**; việc còn lại là thời gian máy và một buổi gán
 nhãn tay.
+
+---
+
+# PHỤ LỤC A — Làn A · Bằng chứng & Nguồn
+
+> Mục này do làn A (issues #1–#6) viết, nối vào báo cáo chính ở trên. Ba mục con: cải tiến là gì,
+> đo bằng cách nào, và **những chỗ không cải thiện** — mục cuối là mục quan trọng nhất.
+
+## A.1 Bốn cơ chế được thêm
+
+| # | Cơ chế | Cờ bật/tắt | Chi phí LLM |
+| --- | --- | --- | --- |
+| #1 | Chấm độ tin cậy của nguồn, quy về ba mức kèm câu giải thích | `source_credibility` | **0 token** |
+| #2 | Verifier leo thang xuống **toàn văn arXiv** khi abstract không kết luận nổi | `evidence_fulltext` | ngang hiện tại |
+| #3 | Phát hiện **hai nguồn nói ngược nhau** → gán `CardStatus.CONFLICT` | `conflict_detector` | 0 ở đường thường |
+| #4 | Hiệu chỉnh ngưỡng verifier bằng nhãn người, qua `eval/calibrate.ts` | — (công cụ đo) | 0 token |
+
+Ba cờ đều **mặc định tắt** và chính là cần gạt của ablation ở §A.3.
+
+**#3 là chức năng bắt buộc theo §5 của đề, không phải tính năng thêm.** Trước làn A, giá trị
+`CONFLICT` có trong enum `CardStatus`, có màu trong `status-style.ts`, có nhắc trong
+`prompts/generator.md`, và cột `Card.conflict_with_card_id` có trong `schema.prisma` — nhưng
+**không một dòng backend nào gán chúng**. Bị hỏi "conflict phát hiện thế nào" thì không có câu trả
+lời nào ngoài "LLM tình cờ dán nhãn ở bước 1".
+
+## A.2 Vì sao chi phí LLM không tăng khi đọc toàn văn
+
+Đây là câu hay bị hỏi nhất, nên nói trước: **đọc toàn văn không làm tăng token API**.
+
+Tầng L3b lấy 5 đoạn gần khẳng định nhất, mỗi đoạn 3 câu ≈ 400 ký tự ⇒ khoảng 2000 ký tự gửi lên
+mô hình — **đúng bằng một abstract**. Phần đắt thêm là embedding, mà embedding chạy trên CPU bằng
+`all-MiniLM-L6-v2` cục bộ, 0 token API. Toàn văn được cache theo **nguồn** (`SourceFullText`, cache
+cả lần thất bại) chứ không theo cặp, và có trần cứng 8 nguồn mỗi lần chạy.
+
+Đo trên dự án demo (7 cặp, sau khi làm nóng model và cache): tắt cờ 35,3s · bật cờ 28,2s. Con số
+này **bị nhiễu nặng** bởi độ trễ API DeepSeek — riêng nó đã dao động 17–53s giữa các lượt giống
+hệt nhau. Kết luận trung thực: toàn văn **không thêm thời gian đo được**, chứ không phải nó nhanh
+hơn. Mốc "không quá 2×" của #2 đạt được, nhưng phần lớn là vì **độ phủ thấp** (xem A.4), không
+phải vì toàn văn rẻ.
+
+## A.3 Ablation ba cấu hình
+
+Batch `a0000000-…-00000000000a` · 2 ý tưởng (I01, I02) × 3 cấu hình · 2026-09-01 ·
+kết quả thô ở `backend/eval/results/a0000000-0000-4000-8000-00000000000a-evidence.json`.
+
+| cấu hình | n | unsupported_rate | fabrication_rate | l4_llm_ratio | fulltext_hit_rate | conflict_detected | low_credibility_claim_rate | evidence_precision_human |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| abstract (như MVP) | 2 | 0,800 | 0,000 | 0,944 | 0,000 | 0,0 | 0,000 | — |
+| abstract + chấm tin cậy | 2 | 1,000 | 0,000 | 1,000 | 0,000 | 0,0 | 0,000 | — |
+| toàn văn đầy đủ | 2 | 0,962 | 0,000 | 1,000 | 0,000 | 0,0 | 0,000 | — |
+
+**Bảng này gần như không nói được gì, và dưới đây là lý do — đọc phần này chứ đừng đọc bảng.**
+
+**① `fulltext_hit_rate = 0` vì hai dự án của nhánh toàn văn không có lấy một nguồn arXiv nào.**
+Đếm cụ thể: I01 có 10 nguồn, **0** là arXiv; I02 có 23 nguồn, **0** là arXiv. Tầng L3b vẫn leo
+thang đúng 14 lần (4 + 10) và cả 14 lần đều dừng ở `NOT_ARXIV` — tức cơ chế chạy đúng, chỉ là
+không có gì để đọc. Trên toàn bộ 115 nguồn của cả 6 lượt thì có 10 nguồn arXiv (**8,7%**), nhưng
+chúng rơi vào bốn dự án của hai nhánh còn lại, nơi cờ đang tắt nên không thử lần nào.
+
+Đã kiểm riêng để chắc đây **không** phải lỗi nhận diện: `detectArxivId` bắt được đúng 10/10 nguồn
+có dấu vết arXiv trong `raw`, không sót cái nào.
+
+**② Chênh lệch `unsupported_rate` giữa ba dòng là nhiễu, không phải tín hiệu.** Đây là **khiếm
+khuyết thiết kế của chính script ablation này**, phải nói ra: mỗi nhánh tự chạy lại generator nên
+**ba nhánh không dùng chung một tập khẳng định**. Ba cờ của làn A về nguyên tắc chỉ đổi được
+`unsupported_rate` qua đường toàn văn, mà đường đó không chạy lần nào (xem ①) — nên 0,800 / 1,000
+/ 0,962 chỉ là dao động của LLM giữa các lượt sinh thẻ. Muốn so đúng thì ba nhánh phải verify lại
+trên **cùng một** `SpecVersion`, và đó là việc sửa cho lượt chạy sau.
+
+**③ `conflict_detected = 0` là hệ quả trực tiếp của `unsupported_rate` ≈ 1.** Tín hiệu cực chỉ
+kích hoạt khi có **một nguồn hỗ trợ và một nguồn phản bác** trên cùng một thẻ. Khi gần như mọi cặp
+đều `UNSUPPORTED` thì không tồn tại cặp PRO–CON nào — và theo đúng thiết kế, "mọi nguồn cùng phản
+bác" **không** phải mâu thuẫn, chúng đồng ý với nhau. Cơ chế đã được kiểm là chạy đúng trên dữ liệu
+dựng sẵn (`seed-evidence-demo.ts`): 3 thẻ `CONFLICT`, 2 có `conflict_with_card_id`, 0 token.
+
+**④ `low_credibility_claim_rate = 0`** — không thẻ nào bị chống lưng **hoàn toàn** bằng nguồn mức
+thấp. Với n = 2 thì đây là số thật nhưng chưa nói được gì.
+
+**⑤ `evidence_precision_human = —`** vì bảng `HumanCheck` đang trống. Xem §A.4 ②.
+
+**Kết luận trung thực:** ở cỡ mẫu này, ablation **không đủ sức đo** ba cơ chế của làn A. Bằng chứng
+rằng chúng chạy đúng đến từ dự án demo dựng sẵn và từ lượt đo trên "Attention Is All You Need"
+(§A.2), không đến từ bảng trên. Việc còn lại là thời gian máy: chạy đủ 10 ý tưởng (~3 giờ) và sửa
+khiếm khuyết ② để ba nhánh dùng chung một tập khẳng định.
+
+### A.3.1 Vì sao `unsupported_rate` ≈ 1 — nguyên nhân thật, tìm ra sau khi chạy full flow
+
+Ba nhận xét ② và ③ ở trên nói đúng *hiện tượng* nhưng chưa chạm *nguyên nhân*. Một lượt chạy toàn
+bộ luồng sinh spec trên API thật đã chỉ ra nó, và nó là **lỗi ngữ nghĩa của verifier**, không phải
+nhiễu của LLM.
+
+Thống kê trên **toàn bộ** cặp thẻ–nguồn đã kiểm chứng trong cơ sở dữ liệu, mọi dự án, mọi lượt chạy:
+
+| loại thẻ | n | SUPPORTED | WEAK | UNSUPPORTED |
+| --- | ---: | ---: | ---: | ---: |
+| `GAP` | 315 | **0 (0%)** | 15 | 300 |
+| `CONTRIBUTION` | 130 | **0 (0%)** | 16 | 114 |
+| `CLAIM` | 67 | 4 (6%) | 0 | 63 |
+
+**0/315 và 0/130 không phải xác suất thấp — đó là điều không thể xảy ra.** Lý do nằm ở chỗ
+`VERIFIABLE_CARD_TYPES` cho cả bốn loại thẻ đi qua tầng L4, trong khi phép thử của L4 là *kéo theo*:
+
+- **`GAP` khẳng định một sự vắng mặt** — *"No retrieved work evaluates a cross-encoder reranker on
+  Vietnamese legal statute passages"*. Không tóm tắt đơn lẻ nào kéo theo được một phủ định phổ
+  quát. Câu hỏi đúng cho trích dẫn của một gap là *"nguồn này có thuộc mảng mà gap nói tới không"* —
+  độ liên quan, không phải kéo theo.
+- **`CONTRIBUTION` khẳng định việc tác giả sắp làm** — *"We define a paired evaluation that…"*. Một
+  bài báo cũ mà kéo theo được nó thì nghĩa là đóng góp **không mới**; tức `ENTAILS` đáng ra là tín
+  hiệu **xấu**, ngược hẳn cách bảng quyết định L5 đang dùng.
+
+Vì 445/512 cặp thuộc hai loại đó, `unsupported_rate` bị đẩy về 1 bất kể ba cờ của làn A bật hay
+tắt — nhận xét ② nói "nhiễu giữa các lượt sinh thẻ" là **chưa đủ**: phần lớn chênh lệch bị nén
+xuống bởi một trần cứng. Và ③ là hệ quả dây chuyền: mọi cặp cùng `UNSUPPORTED` thì không tồn tại
+cặp PRO–CON, nên `conflict_detected` không thể khác 0.
+
+**Đã sửa:** thêm `ENTAILMENT_CARD_TYPES = ['CLAIM', 'EVIDENCE']`. Mọi loại thẻ **vẫn** qua L0–L2
+(nguồn có thật · DOI tra được · con số trong thẻ có mặt trong nguồn) — tuyến chống bịa trích dẫn
+không mất; chỉ L3–L4 mới giới hạn theo loại thẻ. Cặp dừng sau L2 nhận nhãn `WEAK` kèm cờ
+`CITATION_ONLY` để không lẫn với "đã hỏi mô hình và bằng chứng yếu". Cổng xuất bản tự sửa theo:
+nó lọc `support_label = 'UNSUPPORTED'`, nên thôi chặn vì những cặp không bao giờ thắng được, nhưng
+vẫn chặn khi nguồn của một `GAP` không tra ra (L0 chạy trước, mọi loại thẻ).
+
+Hệ quả về chi phí phải đo lại ở lượt ablation sau: 445/512 cặp không còn gọi L4, nên `l4_llm_ratio`
+và tổng token sẽ giảm mạnh — con số 0,944–1,000 ở bảng A.3 là của **phiên bản trước** khi sửa.
+
+## A.4 Những chỗ **không** cải thiện — đọc kỹ mục này
+
+**① `fulltext_hit_rate` thấp, và đó là giới hạn của thiết kế, không phải lỗi.**
+Chỉ arXiv mới có bản HTML mở đọc được: `arxiv.org/html/` chỉ tồn tại với bài nộp bằng LaTeX từ
+12/2023 trở đi, ar5iv phủ kho cũ nhưng snapshot trễ hàng tháng, còn nguồn ACM/IEEE/Springer/
+Elsevier thì **0%**. Đường PDF bị cắt khỏi phạm vi có chủ ý: text bóc từ PDF bẩn tới mức câu chứng
+cứ không còn khớp **nguyên văn** với nguồn, mà khớp nguyên văn chính là thứ tầng chống bịa trích
+dẫn (L4b) đang bảo vệ — nới nó ra thì mất luôn cơ chế đáng giá nhất để đổi lấy vài phần trăm phủ.
+
+Cách đọc đúng con số này: *"toàn văn phủ được x% số nguồn; trong nhóm đó nhãn đổi như sau"* —
+**không** phải *"verifier đọc toàn văn"*.
+
+**② `evidence_precision_human` chưa có số.**
+Bảng `HumanCheck` cần **ít nhất 30 cặp gán tay, chấm mù**. Toàn bộ đường ống đã dựng xong và chạy
+được — màn hình gán nhãn ở `/projects/<id>/label`, và `eval/calibrate.ts` quét lưới 27 bộ ngưỡng —
+nhưng việc ngồi gán 30 cặp là **việc tay không code thay được**. Chừng nào chưa gán thì ngưỡng
+0,35 / 0,72 / 0,7 vẫn đúng như `thresholds.ts` tự thú: *"ước đoán, không phải số đo"*.
+
+Đã kiểm chứng đường ống bằng một lượt smoke test 7 cặp rồi xoá: `replayLabel` cho **đúng** nhãn mà
+verifier thật đã gán trên cả 7 cặp, và cột "không tái lập" nhảy từ 0 lên 2 khi đẩy `τ_high` lên
+0,76 — nghĩa là phép suy và phần báo cáo giới hạn của nó đều chạy đúng.
+
+**③ `conflict_detected` có baseline bằng 0 theo nghĩa đen.**
+Không phải "cơ chế cũ bắt được 0 cặp", mà là **chưa từng có cơ chế nào**. Nên mọi con số dương ở
+đây đều là cải thiện tuyệt đối, và cũng vì thế nó **không chứng minh được độ chính xác** — muốn
+biết bắt đúng hay bắt bừa thì phải kiểm tay từng cặp. Tầng luật được thiết kế thiên về **bỏ sót
+hơn là báo nhầm**: tín hiệu số học bắt buộc hai câu phải cùng tên metric, tín hiệu chiều bắt buộc
+hai câu phải cùng chủ đề (jaccard ≥ 0,25) và phải chuẩn hoá phủ định trước khi so cực. Chỉ tín
+hiệu **cực** (một nguồn được chấm hỗ trợ, nguồn kia bị chấm phản bác) mới đủ chắc để tự kết luận;
+hai tín hiệu còn lại chỉ **đề cử** cặp cho tầng LLM.
+
+**④ Ablation chạy trên cỡ mẫu nhỏ.** Xem `n` ở bảng §A.3. Cùng một limitation với báo cáo chính:
+hạ tầng chạy được, thứ còn thiếu là thời gian máy.
+
+## A.5 Chỗ lệch có chủ ý so với câu chữ của issue
+
+| Issue | Câu chữ | Đã làm | Vì sao |
+| --- | --- | --- | --- |
+| #6 | Ghi kết quả vào `EvalRun`, chống trùng bằng `UNIQUE(batch_id, arm, idea_id)` | Ghi ra `eval/results/<batch>-evidence.json`, chống trùng bằng chính file đó | `enum Arm` chỉ có `B1 B2 SYS SYS_NO_VERIFY`, luật chung 2 cấm thêm giá trị ⇒ ba cấu hình của làn A không có tên arm hợp lệ |
+| #5 | Thêm mục điều hướng vào `top-nav.tsx` | Đăng ký ở `command-palette.tsx` | `NAV` chỉ chứa link toàn cục, không mang được `projectId`. Cả 4 màn per-project của làn C đã theo lối này |
+| #3 | Ghi `Card.conflict_with_card_id` | Chỉ ghi ở phạm vi `CROSS_CARD` | Xung đột giữa hai nguồn của **cùng một thẻ** thì không có "thẻ đối diện" để trỏ; tự trỏ về chính nó là vô nghĩa và không truy vấn được |
+| #2 | "cờ chẩn đoán" khi không lấy được toàn văn | Thêm 2 giá trị vào `verifierFlagSchema` | Ngoại lệ có ý thức với luật chung 2 — đây là zod enum lưu xuống cột `Json`, không phải enum Prisma, nên không migration và không rủi ro chéo làn |

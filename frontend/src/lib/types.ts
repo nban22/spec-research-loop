@@ -43,7 +43,15 @@ export type VerifierFlag =
   | 'NUMBER_NOT_IN_SOURCE'
   | 'FABRICATED_QUOTE'
   | 'DOI_UNVERIFIED'
-  | 'LLM_UNAVAILABLE';
+  | 'LLM_UNAVAILABLE'
+  // Làn A · #2 — khớp 1-1 `verifierFlagSchema` của backend, sửa cùng commit (STACK §3.1).
+  | 'FULLTEXT_USED'
+  | 'FULLTEXT_UNAVAILABLE'
+  /** Cặp dừng sau L2 vì loại thẻ không hỏi bằng phép kéo theo (GAP · CONTRIBUTION). */
+  | 'CITATION_ONLY';
+
+/** Làn A · #1 — mức tin cậy của nguồn, khớp cột `SourceScore.tier`. */
+export type CredibilityTier = 'HIGH' | 'MEDIUM' | 'REVIEW';
 
 export const CARD_TYPES: CardType[] = [
   'PROBLEM',
@@ -119,6 +127,11 @@ export type ApiSource = {
 export type ApiCardSource = {
   id: string;
   support_label: SupportLabel;
+  /**
+   * `null` ⇒ cặp chưa đi qua verifier lần nào, và `support_label` chỉ là mặc định `WEAK` của
+   * schema. Phải đọc field này trước khi hiện nhãn, xem `SupportTag`.
+   */
+  verifier_run_id: string | null;
   similarity: number | null;
   evidence_sentence: string | null;
   flags: VerifierFlag[] | null;

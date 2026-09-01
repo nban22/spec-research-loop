@@ -16,6 +16,7 @@ import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
 import {
   useAnswerDecision,
+  useCredibility,
   useCards,
   useJobAction,
   usePendingDecisions,
@@ -29,6 +30,8 @@ const FILTERS = [
   { key: 'doi', label: 'Có DOI' },
   { key: 'recent', label: 'Từ 2020 trở lại đây' },
   { key: 'abstract', label: 'Có abstract để đối chiếu' },
+  // Làn A · #1 — chỉ có nghĩa khi cờ `source_credibility` bật; lọc bỏ ở dưới nếu tắt.
+  { key: 'trusted', label: 'Chỉ nguồn đáng tin' },
 ];
 
 /**
@@ -51,6 +54,7 @@ export function Step2({ projectId }: { projectId: string }) {
   const answer = useAnswerDecision(projectId);
 
   const [active, setActive] = useState<string[]>([]);
+  const [sortByTrust, setSortByTrust] = useState(false);
   /* Từ khoá mặc định suy ra từ meta **trong lúc render**; state chỉ giữ phần người dùng đã sửa,
      nên không cần setState trong effect (gây render dây chuyền). */
   const [editedKeywords, setEditedKeywords] = useState<string[] | null>(null);
@@ -58,14 +62,32 @@ export function Step2({ projectId }: { projectId: string }) {
     editedKeywords ?? (detail?.currentVersion?.meta?.search_keywords ?? []).slice(0, 4);
   const setKeywords = setEditedKeywords;
 
+  const { data: credibility } = useCredibility(projectId);
+  const credOn = credibility?.enabled ?? false;
+  const tierOf = new Map(
+    (credibility?.sources ?? []).map((c) => [c.source_id, c]),
+  );
+  /** Cờ tắt ⇒ giấu luôn cả filter, không để một ô tick không làm gì. */
+  const filters = credOn ? FILTERS : FILTERS.filter((f) => f.key !== 'trusted');
+
   const allSources = sourceData?.sources ?? [];
   const sources = allSources.filter((s) => {
     if (active.includes('peer') && !s.venue) return false;
     if (active.includes('doi') && !s.doi) return false;
     if (active.includes('recent') && (s.year ?? 0) < 2020) return false;
     if (active.includes('abstract') && !s.abstract) return false;
+    if (active.includes('trusted') && tierOf.get(s.id)?.tier === 'REVIEW')
+      return false;
     return true;
   });
+
+  /* Backend trả sẵn theo số trích dẫn giảm dần. Khi có điểm tin cậy thì sắp lại ở client —
+     một nguồn nhiều trích dẫn nhưng không DOI, không nơi công bố vẫn nên đứng sau. */
+  if (credOn && sortByTrust) {
+    sources.sort(
+      (a, b) => (tierOf.get(b.id)?.total ?? 0) - (tierOf.get(a.id)?.total ?? 0),
+    );
+  }
 
   const gaps = (cardData?.cards ?? []).filter((c) => c.type === 'GAP');
   const pending = (pendingData?.decisions ?? []).filter((d) => d.step === 'S2');
@@ -103,7 +125,7 @@ export function Step2({ projectId }: { projectId: string }) {
 
       <Panel accent="neutral" icon={Filter} title="Nguồn ưu tiên">
         <SourceFilterList
-          filters={FILTERS.map((f) => ({ ...f, checked: active.includes(f.key) }))}
+          filters={filters.map((f) => ({ ...f, checked: active.includes(f.key) }))}
           onToggle={(key) =>
             setActive((prev) =>
               prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
@@ -113,6 +135,30 @@ export function Step2({ projectId }: { projectId: string }) {
         <p className="text-ink-3 text-xs">
           Hiện {sources.length}/{allSources.length} nguồn
         </p>
+        {credOn && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full cursor-pointer"
+            aria-pressed={sortByTrust}
+            onClick={() => setSortByTrust((v) => !v)}
+          >
+            {sortByTrust ? "Đang sắp theo độ tin cậy" : "Sắp theo độ tin cậy"}
+          </Button>
+        )}
+        {credOn && (credibility?.low_credibility_cards.length ?? 0) > 0 && (
+          <HintBox tone="warn" title="Có khẳng định chỉ dựa vào nguồn yếu">
+            <p>
+              Những thẻ sau đang được chống lưng <strong>hoàn toàn</strong> bằng nguồn ở mức
+              cần cân nhắc. Tìm thêm một nguồn mạnh hơn cho chúng trước khi đi tiếp:
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {credibility?.low_credibility_cards.map((c) => (
+                <li key={c.card_id}>· {c.title}</li>
+              ))}
+            </ul>
+          </HintBox>
+        )}
       </Panel>
     </>
   );

@@ -59,6 +59,13 @@ export class SpecService {
           select: {
             id: true,
             support_label: true,
+            /**
+             * `null` ⇒ cặp này **chưa từng đi qua verifier**, và `support_label` đang là giá trị
+             * mặc định `WEAK` của schema chứ không phải một phán quyết. Không trả field này ra
+             * thì giao diện không có cách nào phân biệt "chưa kiểm" với "kiểm rồi, yếu" — đúng
+             * cái làm cả bảng thẻ ở bước 3 hiện WEAK ngay khi generator vừa sinh xong.
+             */
+            verifier_run_id: true,
             similarity: true,
             evidence_sentence: true,
             flags: true,

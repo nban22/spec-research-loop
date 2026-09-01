@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { ConflictPanel } from '@/components/conflict-panel';
 import { HintBox } from '@/components/hint-box';
 import { JobProgress } from '@/components/job-progress';
 import { OptionList } from '@/components/option-list';
@@ -122,6 +123,18 @@ export function Step5({ projectId }: { projectId: string }) {
                 </span>
               </div>
             ))}
+            {/*
+              Chỉ hiện khi còn cặp chưa kiểm. Ba ô trên **không** còn cộng gộp chúng nữa, nên
+              không có dòng này thì tổng ba ô nhỏ hơn số cặp thật mà không ai giải thích được.
+            */}
+            {(verification?.unverified ?? 0) > 0 && (
+              <div className="flex items-center justify-between gap-2">
+                <SupportTag label="WEAK" verified={false} />
+                <span className="text-ink-1 text-sm font-semibold tabular-nums">
+                  {verification?.unverified}
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-ink-3 text-xs">Chưa có kết quả kiểm chứng cứ.</p>
@@ -246,6 +259,9 @@ export function Step5({ projectId }: { projectId: string }) {
           </Button>
         </HintBox>
       )}
+
+      {/* Làn A · #3 — hàng đợi mâu thuẫn nguồn. Tự ẩn khi không có xung đột nào. */}
+      <ConflictPanel projectId={projectId} versionId={versionId} />
 
       <Panel accent="neutral" icon={CheckCircle2} title="Xuất bản">
         {/* Ẩn ở mobile: ExportBar đã nằm ở thanh dính đáy */}

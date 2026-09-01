@@ -1,6 +1,7 @@
 'use client';
 
 import { ClipboardList, Lightbulb, ListChecks, MessageCircleQuestion } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { HintBox } from '@/components/hint-box';
@@ -42,6 +43,7 @@ export function Step1({ projectId }: { projectId: string }) {
   /* Bản đồ là mặc định — đề gợi ý trả lời câu "tôi hiểu đúng chưa" bằng hình, và đường
      đọc-văn-bản vẫn giữ nguyên ở tab thứ hai chứ không bị thay thế (#14). */
   const [view, setView] = useState<'map' | 'board'>('map');
+  const reduced = useReducedMotion();
 
   const meta = detail?.currentVersion?.meta ?? null;
   const cards = cardData?.cards ?? [];
@@ -117,11 +119,24 @@ export function Step1({ projectId }: { projectId: string }) {
             title="Bảng thẻ phân rã — 8 loại × 6 trạng thái"
             action={<ViewToggle view={view} onChange={setView} />}
           >
-            {view === 'map' ? (
-              <ConceptMap projectId={projectId} meta={meta} cards={cards} />
-            ) : (
-              <CardBoard cards={cards} />
-            )}
+            {/* Hai cách nhìn **cùng một tập thẻ**, nên chuyển giữa chúng phải liền mạch chứ
+                không phải thay nội dung. `mode="wait"` để chiều cao không giật: bản đồ và bảng
+                cao rất khác nhau. */}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={view}
+                initial={{ opacity: 0, y: reduced ? 0 : 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: reduced ? 0 : -6 }}
+                transition={{ duration: reduced ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {view === 'map' ? (
+                  <ConceptMap projectId={projectId} meta={meta} cards={cards} />
+                ) : (
+                  <CardBoard cards={cards} />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </Panel>
         </>
       )}

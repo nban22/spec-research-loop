@@ -40,6 +40,15 @@ export function Step3({ projectId }: { projectId: string }) {
     (c) => c.type === 'CONTRIBUTION' && c.payload?.role === 'proposed_approach',
   );
   const claims = cards.filter((c) => c.type === 'CLAIM');
+
+  /**
+   * Verifier chạy ở **bước 5**, nên mọi cặp thẻ–nguồn vừa sinh ra ở đây đều chưa được chấm.
+   * `CardSource.support_label` lại có mặc định `WEAK`, nên nếu không nói ra thì cả bảng thẻ
+   * trông như thể verifier đã đọc hết và không chống lưng được gì — kết luận sai hoàn toàn.
+   */
+  const unverifiedPairs = cards
+    .flatMap((c) => c.card_sources)
+    .filter((cs) => cs.verifier_run_id === null).length;
   const hasPlan = detail?.currentVersion?.has_experiment_plan ?? false;
   const hasEstimate = detail?.currentVersion?.has_estimate ?? false;
 
@@ -76,6 +85,15 @@ export function Step3({ projectId }: { projectId: string }) {
           <p className="text-ink-3 text-xs">Chưa có khẳng định nào.</p>
         ) : (
           <div className="space-y-2">
+            {unverifiedPairs > 0 && (
+              <HintBox tone="info" title="Các cặp này chưa qua kiểm chứng cứ">
+                <p>
+                  {unverifiedPairs} cặp khẳng định – nguồn đang mang nhãn{' '}
+                  <strong>CHƯA KIỂM</strong>. Bước kiểm chứng cứ chạy ở bước 5; trước đó chưa có
+                  nhãn nào là kết luận của hệ thống.
+                </p>
+              </HintBox>
+            )}
             {claims.map((c) => (
               <SpecCard key={c.id} card={c} />
             ))}

@@ -209,50 +209,58 @@ model Project {
   overclaim_detector      Boolean       @default(false)
   // Cờ của làn B · #12. Mặc định **tắt** theo luật chung 1.
   ambiguity_detector      Boolean       @default(false)
+  // Cờ của làn A · #1. Bật thì danh sách nguồn ở bước 2 có mức tin cậy và cảnh báo thẻ chỉ
+  // dựa vào nguồn yếu. Mặc định **tắt** theo luật chung 1; cũng là cần gạt cho ablation ở #6.
+  source_credibility      Boolean       @default(false)
+  // Cờ của làn A · #2. Bật thì verifier leo thang xuống toàn văn arXiv khi abstract không kết
+  // luận nổi. Tắt ⇒ hành vi **y hệt** bản MVP, đây là tiêu chí hoàn thành số 1 của #2.
+  evidence_fulltext       Boolean       @default(false)
+  // Cờ của làn A · #3. Bật thì verifier đối chiếu các nguồn **với nhau** và gán `CONFLICT`.
+  conflict_detector       Boolean       @default(false)
   created_at              DateTime      @default(now())
   updated_at              DateTime      @updatedAt
 
-  user           User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  spec_versions  SpecVersion[] @relation("ProjectVersions")
-  sources        Source[]
-  decisions      Decision[]
-  job_runs       JobRun[]
-  llm_calls      LlmCall[]
-  eval_runs      EvalRun[]
+  user          User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  spec_versions SpecVersion[] @relation("ProjectVersions")
+  sources       Source[]
+  decisions     Decision[]
+  job_runs      JobRun[]
+  llm_calls     LlmCall[]
+  eval_runs     EvalRun[]
 
   @@index([user_id])
 }
 
 model SpecVersion {
-  id                      String            @id @default(uuid())
-  project_id              String
-  version_no              Int
-  parent_version_id       String?
-  created_by_decision_id  String?
-  status                  SpecVersionStatus @default(DRAFT)
-  label                   String?
+  id                     String            @id @default(uuid())
+  project_id             String
+  version_no             Int
+  parent_version_id      String?
+  created_by_decision_id String?
+  status                 SpecVersionStatus @default(DRAFT)
+  label                  String?
   // Diễn giải lại ý tưởng, mức chắc chắn, vấn đề chính, từ khoá tìm kiếm.
   // Thuộc về version chứ không thuộc project: chạy lại analyze là ra bản diễn giải khác.
-  meta                    Json?
-  created_at              DateTime          @default(now())
+  meta                   Json?
+  created_at             DateTime          @default(now())
 
-  project           Project      @relation("ProjectVersions", fields: [project_id], references: [id], onDelete: Cascade)
-  parent_version    SpecVersion? @relation("VersionLineage", fields: [parent_version_id], references: [id])
-  child_versions    SpecVersion[] @relation("VersionLineage")
-  created_by        Decision?    @relation("DecisionCreatesVersion", fields: [created_by_decision_id], references: [id])
+  project        Project       @relation("ProjectVersions", fields: [project_id], references: [id], onDelete: Cascade)
+  parent_version SpecVersion?  @relation("VersionLineage", fields: [parent_version_id], references: [id])
+  child_versions SpecVersion[] @relation("VersionLineage")
+  created_by     Decision?     @relation("DecisionCreatesVersion", fields: [created_by_decision_id], references: [id])
 
-  cards              Card[]
-  related_work_rows  RelatedWorkRow[]
-  experiment_plan    ExperimentPlan?
-  resource_estimate  ResourceEstimate?
-  export_artifacts   ExportArtifact[]
-  judge_runs         JudgeRun[]
-  issue_groups       IssueGroup[]
-  verifier_runs      VerifierRun[]
-  decisions          Decision[]   @relation("DecisionAskedAtVersion")
-  resulting_of       Decision[]   @relation("DecisionResultsInVersion")
-  job_runs           JobRun[]
-  llm_calls          LlmCall[]
+  cards             Card[]
+  related_work_rows RelatedWorkRow[]
+  experiment_plan   ExperimentPlan?
+  resource_estimate ResourceEstimate?
+  export_artifacts  ExportArtifact[]
+  judge_runs        JudgeRun[]
+  issue_groups      IssueGroup[]
+  verifier_runs     VerifierRun[]
+  decisions         Decision[]        @relation("DecisionAskedAtVersion")
+  resulting_of      Decision[]        @relation("DecisionResultsInVersion")
+  job_runs          JobRun[]
+  llm_calls         LlmCall[]
 
   @@unique([project_id, version_no])
   @@index([project_id])
@@ -311,10 +319,10 @@ model Source {
 }
 
 model CardSource {
-  id                String        @id @default(uuid())
+  id                String       @id @default(uuid())
   card_id           String
   source_id         String
-  support_label     SupportLabel  @default(WEAK)
+  support_label     SupportLabel @default(WEAK)
   similarity        Float?
   entailment        Entailment?
   confidence        Float?
@@ -325,7 +333,7 @@ model CardSource {
   // kèm lý do bắt buộc (ARCHITECTURE §6.6). Gate bỏ qua cặp có lý do, và file xuất ra
   // **đánh dấu** nó — đó là chỗ khác nhau giữa *bỏ qua có ghi nhận* và *không kiểm*.
   override_reason   String?
-  created_at        DateTime      @default(now())
+  created_at        DateTime     @default(now())
 
   card         Card         @relation(fields: [card_id], references: [id], onDelete: Cascade)
   source       Source       @relation(fields: [source_id], references: [id], onDelete: Cascade)
@@ -424,28 +432,28 @@ model IssueGroup {
 // ---------------------------------------------------------------- quyết định
 
 model Decision {
-  id                          String        @id @default(uuid())
-  project_id                  String
-  spec_version_id             String
-  step                        ProjectStep
-  issue_group_id              String?
-  question                    String
-  options                     Json
-  chosen_key                  String
-  custom_text                 String?
-  actor                       DecisionActor @default(USER)
+  id                        String        @id @default(uuid())
+  project_id                String
+  spec_version_id           String
+  step                      ProjectStep
+  issue_group_id            String?
+  question                  String
+  options                   Json
+  chosen_key                String
+  custom_text               String?
+  actor                     DecisionActor @default(USER)
   // Bản nháp thay đổi đã tính lúc `POST /decisions` và đã hiện trong DiffView.
   // Lưu lại để `apply` áp **đúng** thứ người dùng đã duyệt — tính lại bằng LLM lúc apply thì
   // diff đã xem và thứ được ghi có thể khác nhau.
-  draft                       Json?
-  applied                     Boolean       @default(false)
-  resulting_spec_version_id   String?
-  created_at                  DateTime      @default(now())
+  draft                     Json?
+  applied                   Boolean       @default(false)
+  resulting_spec_version_id String?
+  created_at                DateTime      @default(now())
 
-  project      Project      @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  spec_version SpecVersion  @relation("DecisionAskedAtVersion", fields: [spec_version_id], references: [id], onDelete: Cascade)
-  issue_group  IssueGroup?  @relation(fields: [issue_group_id], references: [id])
-  resulting    SpecVersion? @relation("DecisionResultsInVersion", fields: [resulting_spec_version_id], references: [id])
+  project      Project       @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  spec_version SpecVersion   @relation("DecisionAskedAtVersion", fields: [spec_version_id], references: [id], onDelete: Cascade)
+  issue_group  IssueGroup?   @relation(fields: [issue_group_id], references: [id])
+  resulting    SpecVersion?  @relation("DecisionResultsInVersion", fields: [resulting_spec_version_id], references: [id])
   created      SpecVersion[] @relation("DecisionCreatesVersion")
 
   @@index([project_id])
@@ -641,40 +649,38 @@ model HumanCheck {
 
 /**
  * Một cờ phóng đại trên một `Card(CLAIM)`.
- *
  * `card_id` / `spec_version_id` cố ý để **scalar trần, không khai relation**. Relation của Prisma
  * đòi thêm field ngược ở `Card` và `SpecVersion`, mà luật chung 4 chỉ cho thêm dòng vào cuối
  * `schema.prisma`, không cho sửa model đang có. Đánh đổi: mất cascade delete — `OverclaimFlag`
  * phải xoá tay khi xoá version (xem `OverclaimService.clearForVersion`).
- *
  * `Issue` **không** bị sửa (ràng buộc của #7). Cờ này sinh ra `Issue` qua judge run riêng chứ
  * không thêm cột vào bảng đó.
  */
 model OverclaimFlag {
-  id              String   @id @default(uuid())
-  spec_version_id String
-  card_id         String
+  id                  String   @id @default(uuid())
+  spec_version_id     String
+  card_id             String
   /// `RULE` = tầng luật 0 token · `LLM` = tầng vùng xám. Để `String` thay vì enum: luật chung 2
   /// cấm thêm giá trị vào enum đang có, và một enum mới vẫn kéo theo ba tầng phải sửa cùng lúc.
-  detector        String
+  detector            String
   /// `NONE` · `MINOR` · `MAJOR` · `CRITICAL` — chốt kiểu ở `contracts/llm-io/overclaim.ts`.
-  level           String
+  level               String
   /// Cụm chữ trong claim khiến nó bị cờ.
-  matched_terms   Json
+  matched_terms       Json
   /// Phạm vi claim tự khai, và phạm vi đếm được trong `ExperimentPlan`.
-  declared_scope  Json
-  actual_scope    Json
-  rationale       String
+  declared_scope      Json
+  actual_scope        Json
+  rationale           String
   /// Câu thu hẹp dùng được ngay. Tiêu chí hoàn thành của #7: không được chỉ là lời cảnh báo.
   suggested_narrowing String
   /// `NARROW_CLAIM` · `EXPAND_EXPERIMENT` · `TO_RESEARCH_QUESTION`.
   recommended_exit    String
   /// Đường ra người dùng đã chọn, và `Decision` ghi lại lựa chọn đó. Null khi chưa xử lý.
-  chosen_exit     String?
-  decision_id     String?
+  chosen_exit         String?
+  decision_id         String?
   /// Số token tầng LLM đã tốn cho cờ này. `0` ⇒ tầng luật kết luận một mình.
-  llm_calls       Int      @default(0)
-  created_at      DateTime @default(now())
+  llm_calls           Int      @default(0)
+  created_at          DateTime @default(now())
 
   @@index([spec_version_id])
   @@index([card_id])
@@ -684,31 +690,160 @@ model OverclaimFlag {
 
 /**
  * Một cờ mơ hồ trên một `Card`.
- *
  * `Card.status` được gán `AMBIGUOUS` (giá trị enum **đã có**, không thêm giá trị mới — luật
  * chung 2). Nhưng gán đè là **xoá mất trạng thái cũ**, nên `previous_status` giữ lại giá trị
  * trước đó để `clearForVersion` khôi phục được. Không có nó thì quét lần hai là mất dữ liệu.
- *
  * `card_id` / `spec_version_id` để scalar trần, không relation — cùng lý do với `OverclaimFlag`:
  * relation đòi thêm field ngược vào `Card`, mà luật chung 4 chỉ cho thêm dòng cuối file.
  */
 model AmbiguityFlag {
-  id              String   @id @default(uuid())
-  spec_version_id String
-  card_id         String
+  id                   String   @id @default(uuid())
+  spec_version_id      String
+  card_id              String
   /// `CLAIM_FIELD_VAGUE` · `GAP_FIELD_VAGUE` · `DANGLING_PRONOUN` · `VAGUE_TERM`.
-  kind            String
+  kind                 String
   /// Tên trường trong `payload`, null khi vấn đề nằm ở `body`.
-  field           String?
+  field                String?
   /// Đoạn chữ gây ra cờ, để người đọc kiểm lại.
-  excerpt         String
-  terms           Json
-  reason          String
+  excerpt              String
+  terms                Json
+  reason               String
   /// Trạng thái thẻ **trước khi** bị gán `AMBIGUOUS` — để khôi phục khi quét lại.
-  previous_status String
+  previous_status      String
   /// `Decision` chứa câu hỏi làm rõ sinh từ cờ này. Null khi hết hạn mức câu hỏi.
   question_decision_id String?
+  created_at           DateTime @default(now())
+
+  @@index([spec_version_id])
+  @@index([card_id])
+}
+
+// ------------------------------------------------------ làn A · #1 chấm độ tin cậy của nguồn
+
+/**
+ * Điểm tin cậy của một `Source`, 1-1 theo `source_id`.
+ * Tính bằng **luật thuần, 0 token** (`src/sources/credibility.ts`) và chấm lại sau mỗi lần
+ * `SourcesService.searchAndStore` upsert nguồn. Bảng riêng chứ không thêm cột vào `Source`:
+ * luật chung 2 cấm sửa model đang có, và tách ra thì xoá điểm đi chấm lại cũng không đụng nguồn.
+ * `total` và `components` **không hiện cho người dùng** — thứ hiện ra là `tier` + `reason`.
+ * Giữ lại vì #1 đòi đo tương quan giữa điểm tin cậy và nhãn `UNSUPPORTED` của verifier.
+ */
+model SourceScore {
+  id         String   @id @default(uuid())
+  source_id  String   @unique
+  /// 0..1, chỉ để sắp xếp và để đo. Không phải thứ đem khoe với người dùng.
+  total      Float
+  /// `HIGH` · `MEDIUM` · `REVIEW`. String thay vì enum — luật chung 2.
+  tier       String
+  /// Một câu tiếng Việt giải thích vì sao ra mức này. Tiêu chí hoàn thành của #1.
+  reason     String
+  /// Điểm từng thành phần, để trang giải trình mở ra được khi bị hỏi tới.
+  components Json
+  scored_at  DateTime @default(now())
+
+  @@index([tier])
+}
+
+// ------------------------------------------------- làn A · #2 verifier đọc toàn văn arXiv
+
+/**
+ * Cache toàn văn của một `Source`, khoá theo `source_id`.
+ * Cache **cả lần thất bại** mới là điểm chính: phần lớn nguồn không bao giờ có bản HTML mở, và
+ * không có dòng `NOT_FOUND` thì mỗi lần chạy lại đều gọi HTTP cho đúng những nguồn đó.
+ * `status` chính là "cờ chẩn đoán" mà #2 đòi, nhưng ở dạng truy vấn được — thay vì thêm giá trị
+ * vào `verifierFlagSchema` cho **mọi** cặp mang theo. `fulltext_hit_rate` của #6 đọc thẳng từ đây.
+ * `source_id` để scalar trần, không relation — luật chung 4 chỉ cho thêm dòng vào cuối file, mà
+ * relation đòi thêm field ngược ở `Source`. Đánh đổi: mất cascade delete, dọn bằng `expires_at`.
+ */
+model SourceFullText {
+  id         String   @id @default(uuid())
+  source_id  String   @unique
+  /// `ARXIV_HTML` · `AR5IV`. String thay vì enum — luật chung 2.
+  provider   String
+  /// URL thật sự tải được, để người chấm mở lại đúng trang đó.
+  url        String
+  /// `OK` · `NOT_ARXIV` · `NOT_FOUND` · `TOO_SHORT` · `FETCH_ERROR`.
+  status     String
+  /// Đã bóc thẻ, đã cắt tài liệu tham khảo, đã cắt ở 60.000 ký tự. Rỗng khi `status != OK`.
+  text       String
+  char_count Int      @default(0)
+  fetched_at DateTime @default(now())
+  /// 30 ngày cho `OK`, 3 ngày cho thất bại — arXiv sinh HTML muộn sau khi bài lên.
+  expires_at DateTime
+
+  @@index([status])
+  @@index([expires_at])
+}
+
+/**
+ * Những đoạn toàn văn **thật sự gửi lên L4** cho một cặp `CardSource`, và đoạn nào chứa câu
+ * chứng cứ cuối cùng.
+ * Đây là dữ liệu của trang "vì sao nhãn này" (#5): một nhãn sinh từ toàn văn mà không có bảng này
+ * thì không kiểm lại được, mà "kiểm lại được" là toàn bộ lý do verifier tồn tại.
+ * Một dòng một đoạn chứ không gộp `Json`: trang giải trình cần lọc theo `is_evidence` và sắp theo
+ * `rank`. Chỉ cặp **leo thang xuống toàn văn** mới ghi, nên số dòng ≤ 5 × số cặp leo thang.
+ */
+model VerifierPassage {
+  id              String   @id @default(uuid())
+  verifier_run_id String
+  card_source_id  String
+  /// Thứ hạng cosine so với khẳng định, 0 là gần nhất.
+  rank            Int
+  similarity      Float
+  /// Vị trí đoạn trong văn bản đã bóc thẻ — để nhảy đúng chỗ khi mở lại toàn văn.
+  char_start      Int      @default(0)
+  text            String
+  /// `true` ở đúng **một** dòng. Toàn `false` ⇒ câu chứng cứ không nằm trong đoạn nào ⇒
+  /// L4b đã gắn `FABRICATED_QUOTE` và ép verdict `NOT_ENTAILED`.
+  is_evidence     Boolean  @default(false)
   created_at      DateTime @default(now())
+
+  @@index([card_source_id])
+  @@index([verifier_run_id])
+}
+
+// --------------------------------------------- làn A · #3 phát hiện nguồn mâu thuẫn nhau
+
+/**
+ * Một xung đột chứng cứ trên một `Card`.
+ * `Card.status` được gán `CONFLICT` — giá trị enum **đã có sẵn** trong schema và đã có màu ở
+ * `frontend/src/lib/status-style.ts`, nhưng trước issue này **không dòng backend nào gán nó**,
+ * y hệt câu chuyện `AMBIGUOUS` của #12. §5 đề bài liệt đây là chức năng bắt buộc.
+ * `previous_status` giữ trạng thái trước khi gán đè: thiếu nó thì lần quét thứ hai đọc `CONFLICT`
+ * như "trạng thái trước" và trạng thái thật mất vĩnh viễn (bài học của `AmbiguityFlag`).
+ * Mọi khoá ngoài để scalar trần, không relation — luật chung 4.
+ */
+model CardConflict {
+  id               String   @id @default(uuid())
+  spec_version_id  String
+  card_id          String
+  /// `INTRA_CARD` (hai nguồn của cùng một thẻ chỏi nhau) · `CROSS_CARD` (cùng một bài báo bị hai
+  /// thẻ dùng theo hai chiều ngược nhau). String thay vì enum — luật chung 2.
+  scope            String
+  /// Thẻ đối diện, **chỉ** có ở `CROSS_CARD`. Đây là giá trị được chép sang
+  /// `Card.conflict_with_card_id` — cột có sẵn trong schema mà trước issue này không ai ghi.
+  other_card_id    String?
+  /// Hai cặp claim–nguồn gây xung đột.
+  card_source_a_id String
+  card_source_b_id String
+  source_a_id      String
+  source_b_id      String
+  /// `POLARITY` · `NUMERIC` · `DIRECTION` · `LLM`.
+  signal           String
+  /// Chép nguyên văn hai câu chứng cứ để người đọc tự đối chiếu, không phải tin máy.
+  evidence_a       String
+  evidence_b       String
+  /// Cặp từ trái nghĩa, hoặc tên metric kèm hai con số.
+  terms            Json
+  reason           String
+  /// Trạng thái thẻ **trước khi** bị gán `CONFLICT` — để `clearForVersion` khôi phục được.
+  previous_status  String
+  /// Đường ra người dùng đã chọn, và `Decision` ghi lại lựa chọn đó. Null khi chưa xử lý.
+  chosen_exit      String?
+  decision_id      String?
+  /// Số lời gọi LLM đã tốn cho xung đột này. `0` ⇒ tầng luật kết luận một mình.
+  llm_calls        Int      @default(0)
+  created_at       DateTime @default(now())
 
   @@index([spec_version_id])
   @@index([card_id])

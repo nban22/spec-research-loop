@@ -92,7 +92,11 @@ export function SpecCard({ card }: { card: ApiCard }) {
                   {cs.source.title}
                   {cs.source.year ? ` (${cs.source.year})` : ''}
                 </p>
-                <SupportTag label={cs.support_label} flags={cs.flags} />
+                <SupportTag
+                  label={cs.support_label}
+                  flags={cs.flags}
+                  verified={cs.verifier_run_id !== null}
+                />
                 {cs.evidence_sentence && (
                   <p className="text-ink-3 border-hairline border-l-2 pl-2 text-xs italic">
                     “{cs.evidence_sentence}”

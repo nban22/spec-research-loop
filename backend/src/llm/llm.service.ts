@@ -13,6 +13,16 @@ import {
   type LlmUsage,
   type ReasoningEffort,
 } from './llm-provider.interface';
+import { isTransientLlmError, LlmTransportError } from './llm-transient';
+
+/**
+ * Tổng số lần gọi provider cho MỘT lượt, tính cả lần đầu. 3 lần × ~110 giây của `generator`
+ * cộng backoff là dưới 6 phút — chấp nhận được với job chạy nền, và vẫn rẻ hơn nhiều so với
+ * việc người dùng phải bấm lại cả chuỗi 10 bước.
+ */
+const TRANSPORT_TRIES = 3;
+/** Backoff giữa các lần: đứt kết nối thường tự khỏi ngay, không cần chờ lâu. */
+const TRANSPORT_BACKOFF_MS = [2000, 6000];
 
 export type CompleteJsonOptions<T> = {
   promptId: string;
@@ -111,7 +121,7 @@ export class LlmService {
       attempts += 1;
       let content = '';
       try {
-        const res = await this.provider.complete({
+        const res = await this.completeWithTransportRetry(opts.promptId, {
           model: opts.model,
           messages: conversation,
           maxTokens,
@@ -178,6 +188,45 @@ export class LlmService {
       `Model trả về JSON không khớp schema sau ${attempts} lần thử (${opts.promptId}).`,
       lastError.slice(0, 1000),
     );
+  }
+
+  /**
+   * Thử lại **lỗi đường truyền**, tách hẳn khỏi ngân sách `maxRetries` của schema.
+   *
+   * Hai loại hỏng ngược nhau về xác suất thành công khi thử lại, nên không được dùng chung
+   * một bộ đếm: JSON sai schema thì phải gửi kèm lỗi zod cho model tự sửa, còn socket đứt thì
+   * chỉ cần gọi lại y nguyên. Trước đây vòng lặp chỉ lo loại đầu, còn loại sau ném thẳng ra
+   * ngoài và giết cả job — trên prod `generator` chạy 77–119 giây mỗi lượt và hỏng 1/7 lượt
+   * vì `terminated`, đủ để chuỗi 10 bước sinh spec chết ngay ở bước đầu.
+   *
+   * `attempts` **cố ý không** cộng số lần thử lại ở đây: nó là số lần *model* phải sửa JSON,
+   * và `eval/score.ts` cùng báo cáo đánh giá đọc nó theo nghĩa đó. Lần gọi hỏng vì mạng cũng
+   * không trả về token nào nên phần đếm token không bị ảnh hưởng.
+   */
+  private async completeWithTransportRetry(
+    promptId: string,
+    req: Parameters<LlmProvider['complete']>[0],
+  ): Promise<Awaited<ReturnType<LlmProvider['complete']>>> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.provider.complete(req);
+      } catch (err) {
+        // Nhận diện ở **cả hai** chỗ là cố ý. `DeepseekProvider` phân loại chính xác nhất vì
+        // nó còn giữ lỗi gốc của SDK, nhưng không được phép để việc thử lại phụ thuộc vào
+        // chuyện mọi provider đều nhớ bọc đúng — provider khác ném lỗi mạng trần thì vẫn phải
+        // được gọi lại.
+        const transient =
+          err instanceof LlmTransportError || isTransientLlmError(err);
+        if (attempt >= TRANSPORT_TRIES || !transient) throw err;
+        const waitMs = TRANSPORT_BACKOFF_MS[attempt - 1] ?? 6000;
+        const reason = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `[${promptId}] lỗi đường truyền lần ${attempt}/${TRANSPORT_TRIES}: ` +
+            `${reason} — gọi lại sau ${waitMs}ms`,
+        );
+        await new Promise((r) => setTimeout(r, waitMs));
+      }
+    }
   }
 
   private parseAndValidate<T>(

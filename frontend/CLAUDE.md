@@ -70,7 +70,9 @@ lệnh add mà không xung đột. Cần khác đi thì bọc một component c�
 - Không đặt thông tin **chỉ** trong `:hover` hoặc `title=` — cảm ứng không có hover (DS §6.7).
 - Mọi input có `<label>` gắn `htmlFor`.
 - Ảnh dùng `next/image`, font dùng `next/font`. Không `<img>` trần, không `@import` font trong CSS.
-- Không dark mode, không animation phức tạp (STACK §5).
+- Không dark mode.
+- Animation: dùng `motion` (Framer Motion) được, nhưng phải **mang thông tin** và **luôn** tôn
+  trọng `useReducedMotion()`. Ba ràng buộc đầy đủ ở STACK §5.
 - Danh sách render phải có `key` ổn định từ id, không dùng index.
 
 ## 8. Cần chốt (chưa cấu hình)
