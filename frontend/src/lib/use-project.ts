@@ -17,6 +17,7 @@ import type {
   ApiRelatedWorkRow,
   ApiSource,
   ApiSpecSection,
+  CredibilityTier,
   SupportLabel,
   VerifierFlag,
 } from './types';
@@ -309,6 +310,180 @@ export function useApplyDecision(projectId: string) {
         err instanceof ApiError
           ? err.message
           : 'Hệ thống chưa áp dụng được quyết định. Bạn vui lòng thử lại.',
+      );
+    },
+  });
+}
+
+/* ─────────────────────────────── làn A · bằng chứng & nguồn ───────────────────────────────
+   Thêm dòng vào cuối file, không sửa hook của ai. Type của payload khai ngay tại đây theo đúng
+   khuôn làn C đã dùng cho các màn hình đọc — `lib/types.ts` giữ cho enum dùng chung. */
+
+export type ApiCredibilitySource = {
+  source_id: string;
+  tier: CredibilityTier;
+  reason: string;
+  /** Chỉ để **sắp xếp**. Giao diện không hiện con số này (tiêu chí #1). */
+  total: number;
+};
+
+export type ApiCredibility = {
+  enabled: boolean;
+  sources: ApiCredibilitySource[];
+  low_credibility_cards: {
+    card_id: string;
+    title: string;
+    type: string;
+    source_count: number;
+  }[];
+};
+
+export function useCredibility(projectId: string | undefined) {
+  return useQuery({
+    queryKey: qk.credibility(projectId ?? ''),
+    enabled: Boolean(projectId),
+    queryFn: () => api.get<ApiCredibility>(`/projects/${projectId}/credibility`),
+  });
+}
+
+export type ApiConflict = {
+  id: string;
+  card_id: string;
+  card_title: string;
+  scope: string;
+  signal: string;
+  other_card_id: string | null;
+  other_card_title: string | null;
+  card_source_a_id: string;
+  card_source_b_id: string;
+  source_a_title: string;
+  source_b_title: string;
+  evidence_a: string;
+  evidence_b: string;
+  terms: string[];
+  reason: string;
+  chosen_exit: string | null;
+};
+
+export function useConflicts(versionId: string | undefined) {
+  return useQuery({
+    queryKey: qk.conflicts(versionId ?? ''),
+    enabled: Boolean(versionId),
+    queryFn: () =>
+      api.get<{ conflicts: ApiConflict[] }>(
+        `/spec-versions/${versionId}/conflicts`,
+      ),
+  });
+}
+
+export type ApiEvidencePair = {
+  card_source_id: string;
+  card: { id: string; title: string; type: string; status: string };
+  source: {
+    id: string;
+    title: string;
+    year: number | null;
+    doi: string | null;
+    url: string | null;
+    venue: string | null;
+  };
+  support_label: SupportLabel;
+  similarity: number | null;
+  entailment: string | null;
+  confidence: number | null;
+  evidence_sentence: string | null;
+  flags: VerifierFlag[];
+  layer: string;
+  layer_why: string;
+  credibility: { tier: CredibilityTier; reason: string } | null;
+  passages: {
+    rank: number;
+    similarity: number;
+    char_start: number;
+    text: string;
+    is_evidence: boolean;
+  }[];
+};
+
+export type ApiEvidenceTrace = {
+  /** Ngưỡng của **chính lần chạy đó**, không phải hằng số hiện tại (yêu cầu của #5). */
+  thresholds: {
+    tau_low: number;
+    tau_high: number;
+    conf_min: number;
+    title_match: number;
+    min_abstract_chars: number;
+    stale_years: number;
+  };
+  run: {
+    id: string;
+    created_at: string;
+    units_total: number;
+    units_l4: number;
+  } | null;
+  summary: Record<SupportLabel, number>;
+  pairs: ApiEvidencePair[];
+};
+
+export function useEvidenceTrace(versionId: string | undefined) {
+  return useQuery({
+    queryKey: qk.evidenceTrace(versionId ?? ''),
+    enabled: Boolean(versionId),
+    queryFn: () =>
+      api.get<ApiEvidenceTrace>(`/spec-versions/${versionId}/evidence-trace`),
+  });
+}
+
+export type ApiLabelQueue = {
+  items: {
+    card_source_id: string;
+    claim_title: string;
+    claim_body: string;
+    source_title: string;
+    source_year: number | null;
+    source_abstract: string;
+  }[];
+  progress: {
+    labelled: number;
+    remaining: number;
+    labelled_total: number;
+    target: number;
+  };
+};
+
+export function useLabelQueue(versionId: string | undefined) {
+  return useQuery({
+    queryKey: qk.labelQueue(versionId ?? ''),
+    enabled: Boolean(versionId),
+    // Hàng đợi đổi sau **mỗi** lần gán ⇒ không giữ cache cũ.
+    staleTime: 0,
+    queryFn: () =>
+      api.get<ApiLabelQueue>(`/spec-versions/${versionId}/label-queue`),
+  });
+}
+
+/**
+ * Ghi nhãn người. Response chỉ trả `match` — client **không** gửi và **không** biết nhãn máy
+ * trước đó, đó là cả điểm của việc chấm mù (#4).
+ */
+export function useRecordHumanCheck(versionId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { cardSourceId: string; label: SupportLabel }) =>
+      api.post<{ match: boolean }>(
+        `/card-sources/${input.cardSourceId}/human-check`,
+        { human_label: input.label },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: qk.labelQueue(versionId ?? ''),
+      });
+    },
+    onError: (err) => {
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Hệ thống chưa ghi được nhãn. Bạn vui lòng thử lại.',
       );
     },
   });

@@ -128,4 +128,13 @@ export const qk = {
   // làn C · #18 — khoá theo chuỗi query vì preview là hàm thuần: một cấu hình một kết quả.
   estimatePreview: (id: string, query: string) =>
     ['projects', id, 'estimate-preview', query] as const,
+  // làn A · #1 — thêm dòng vào cuối theo luật chung 4.
+  credibility: (id: string) => ['projects', id, 'credibility'] as const,
+  // làn A · #5 — trang giải trình nhãn.
+  evidenceTrace: (id: string) =>
+    ['spec-versions', id, 'evidence-trace'] as const,
+  // làn A · #3 — hàng đợi xung đột nguồn.
+  conflicts: (id: string) => ['spec-versions', id, 'conflicts'] as const,
+  // làn A · #4 — hàng đợi chấm mù.
+  labelQueue: (id: string) => ['spec-versions', id, 'label-queue'] as const,
 };

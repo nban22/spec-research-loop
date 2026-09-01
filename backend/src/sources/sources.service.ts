@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AppError } from '../common/app-error';
 import { PrismaService } from '../common/prisma.service';
 import { normalizeDoi, titleSimilarity } from '../common/text';
+import { CredibilityService } from './credibility.service';
 import { SourceClient, type NormalizedSource } from './source.client';
 
 export type StoredSource = {
@@ -27,6 +28,7 @@ export class SourcesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly client: SourceClient,
+    private readonly credibility: CredibilityService,
   ) {}
 
   /**
@@ -164,6 +166,18 @@ export class SourcesService {
         `Provider có lỗi bộ phận: ${errors.slice(0, 3).join(' | ')}`,
       );
     }
+
+    // #1 — chấm lại độ tin cậy ngay sau khi upsert. Luật thuần, 0 token, vài mili giây.
+    // Bọc try/catch: chấm điểm là **thông tin thêm**, hỏng nó không được phép làm hỏng cả job
+    // tìm nguồn mà người dùng vừa chờ xong.
+    try {
+      await this.credibility.rescoreProject(projectId);
+    } catch (err) {
+      this.logger.warn(
+        `Không chấm được độ tin cậy nguồn: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
     return { stored, skippedDuplicates, providersUsed: [...providersUsed] };
   }
 

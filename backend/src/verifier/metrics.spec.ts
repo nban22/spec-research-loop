@@ -2,7 +2,11 @@ import {
   auditorBlockingIssues,
   citationMetrics,
   claimedCitationMetrics,
+  conflictDetected,
+  evidencePrecisionHuman,
+  fullTextHitRate,
   jsonValidityByGroup,
+  lowCredibilityClaimRate,
   meanStd,
   type CitationPair,
 } from './metrics';
@@ -123,5 +127,39 @@ describe('meanStd', () => {
 
   it('toàn null thì n = 0', () => {
     expect(meanStd([null, null])).toEqual({ mean: 0, std: 0, n: 0 });
+  });
+});
+
+describe('khoá metric mới của làn A (#6)', () => {
+  it('tỉ lệ lấy được toàn văn đếm đúng trên tổng số nguồn, không phải trên số lần thử', () => {
+    expect(fullTextHitRate(['OK', 'NOT_ARXIV', 'NOT_FOUND'], 6)).toBeCloseTo(
+      1 / 6,
+    );
+    expect(fullTextHitRate([], 0)).toBeNull();
+  });
+
+  it('phân biệt "không có thẻ nào để đo" với "đo được và bằng không"', () => {
+    expect(lowCredibilityClaimRate([])).toBeNull();
+    expect(lowCredibilityClaimRate([{ tiers: [] }])).toBeNull();
+    expect(lowCredibilityClaimRate([{ tiers: ['HIGH'] }])).toBe(0);
+  });
+
+  it('chỉ tính thẻ mà **mọi** nguồn đều ở mức thấp', () => {
+    const rate = lowCredibilityClaimRate([
+      { tiers: ['REVIEW', 'REVIEW'] },
+      { tiers: ['REVIEW', 'HIGH'] },
+    ]);
+    expect(rate).toBe(0.5);
+  });
+
+  it('chưa gán nhãn người thì trả null chứ không trả 0', () => {
+    expect(evidencePrecisionHuman([])).toBeNull();
+    expect(evidencePrecisionHuman([{ match: true }, { match: false }])).toBe(
+      0.5,
+    );
+  });
+
+  it('số xung đột bắt được không bao giờ null — 0 là một phép đo thật', () => {
+    expect(conflictDetected(0)).toBe(0);
   });
 });

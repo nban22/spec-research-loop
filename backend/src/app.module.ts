@@ -19,6 +19,7 @@ import { SourcesModule } from './sources/sources.module';
 import { SpecModule } from './spec/spec.module';
 import { VerifierModule } from './verifier/verifier.module';
 import { CritiqueModule } from './critique/critique.module';
+import { ConflictModule } from './conflict/conflict.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { CritiqueModule } from './critique/critique.module';
     ProjectModule,
     AnalyticsModule,
     CritiqueModule,
+    ConflictModule,
   ],
   controllers: [HealthController],
   providers: [

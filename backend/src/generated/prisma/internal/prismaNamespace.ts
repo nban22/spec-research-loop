@@ -421,7 +421,11 @@ export const ModelName = {
   AuditorScore: 'AuditorScore',
   HumanCheck: 'HumanCheck',
   OverclaimFlag: 'OverclaimFlag',
-  AmbiguityFlag: 'AmbiguityFlag'
+  AmbiguityFlag: 'AmbiguityFlag',
+  SourceScore: 'SourceScore',
+  SourceFullText: 'SourceFullText',
+  VerifierPassage: 'VerifierPassage',
+  CardConflict: 'CardConflict'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -437,7 +441,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag" | "ambiguityFlag"
+    modelProps: "user" | "refreshToken" | "project" | "specVersion" | "card" | "source" | "cardSource" | "relatedWorkRow" | "judgeRun" | "issue" | "issueGroup" | "decision" | "experimentPlan" | "resourceEstimate" | "exportArtifact" | "verifierRun" | "jobRun" | "jobEvent" | "llmCall" | "evalRun" | "evalMetric" | "auditorScore" | "humanCheck" | "overclaimFlag" | "ambiguityFlag" | "sourceScore" | "sourceFullText" | "verifierPassage" | "cardConflict"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2291,6 +2295,302 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SourceScore: {
+      payload: Prisma.$SourceScorePayload<ExtArgs>
+      fields: Prisma.SourceScoreFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SourceScoreFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SourceScoreFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>
+        }
+        findFirst: {
+          args: Prisma.SourceScoreFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SourceScoreFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>
+        }
+        findMany: {
+          args: Prisma.SourceScoreFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>[]
+        }
+        create: {
+          args: Prisma.SourceScoreCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>
+        }
+        createMany: {
+          args: Prisma.SourceScoreCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SourceScoreCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>[]
+        }
+        delete: {
+          args: Prisma.SourceScoreDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>
+        }
+        update: {
+          args: Prisma.SourceScoreUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>
+        }
+        deleteMany: {
+          args: Prisma.SourceScoreDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SourceScoreUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SourceScoreUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>[]
+        }
+        upsert: {
+          args: Prisma.SourceScoreUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceScorePayload>
+        }
+        aggregate: {
+          args: Prisma.SourceScoreAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSourceScore>
+        }
+        groupBy: {
+          args: Prisma.SourceScoreGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SourceScoreGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SourceScoreCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SourceScoreCountAggregateOutputType> | number
+        }
+      }
+    }
+    SourceFullText: {
+      payload: Prisma.$SourceFullTextPayload<ExtArgs>
+      fields: Prisma.SourceFullTextFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SourceFullTextFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SourceFullTextFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>
+        }
+        findFirst: {
+          args: Prisma.SourceFullTextFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SourceFullTextFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>
+        }
+        findMany: {
+          args: Prisma.SourceFullTextFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>[]
+        }
+        create: {
+          args: Prisma.SourceFullTextCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>
+        }
+        createMany: {
+          args: Prisma.SourceFullTextCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SourceFullTextCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>[]
+        }
+        delete: {
+          args: Prisma.SourceFullTextDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>
+        }
+        update: {
+          args: Prisma.SourceFullTextUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>
+        }
+        deleteMany: {
+          args: Prisma.SourceFullTextDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SourceFullTextUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SourceFullTextUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>[]
+        }
+        upsert: {
+          args: Prisma.SourceFullTextUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceFullTextPayload>
+        }
+        aggregate: {
+          args: Prisma.SourceFullTextAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSourceFullText>
+        }
+        groupBy: {
+          args: Prisma.SourceFullTextGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SourceFullTextGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SourceFullTextCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SourceFullTextCountAggregateOutputType> | number
+        }
+      }
+    }
+    VerifierPassage: {
+      payload: Prisma.$VerifierPassagePayload<ExtArgs>
+      fields: Prisma.VerifierPassageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.VerifierPassageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.VerifierPassageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>
+        }
+        findFirst: {
+          args: Prisma.VerifierPassageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.VerifierPassageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>
+        }
+        findMany: {
+          args: Prisma.VerifierPassageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>[]
+        }
+        create: {
+          args: Prisma.VerifierPassageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>
+        }
+        createMany: {
+          args: Prisma.VerifierPassageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.VerifierPassageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>[]
+        }
+        delete: {
+          args: Prisma.VerifierPassageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>
+        }
+        update: {
+          args: Prisma.VerifierPassageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>
+        }
+        deleteMany: {
+          args: Prisma.VerifierPassageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.VerifierPassageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.VerifierPassageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>[]
+        }
+        upsert: {
+          args: Prisma.VerifierPassageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerifierPassagePayload>
+        }
+        aggregate: {
+          args: Prisma.VerifierPassageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateVerifierPassage>
+        }
+        groupBy: {
+          args: Prisma.VerifierPassageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.VerifierPassageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.VerifierPassageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.VerifierPassageCountAggregateOutputType> | number
+        }
+      }
+    }
+    CardConflict: {
+      payload: Prisma.$CardConflictPayload<ExtArgs>
+      fields: Prisma.CardConflictFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CardConflictFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CardConflictFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>
+        }
+        findFirst: {
+          args: Prisma.CardConflictFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CardConflictFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>
+        }
+        findMany: {
+          args: Prisma.CardConflictFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>[]
+        }
+        create: {
+          args: Prisma.CardConflictCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>
+        }
+        createMany: {
+          args: Prisma.CardConflictCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CardConflictCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>[]
+        }
+        delete: {
+          args: Prisma.CardConflictDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>
+        }
+        update: {
+          args: Prisma.CardConflictUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>
+        }
+        deleteMany: {
+          args: Prisma.CardConflictDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CardConflictUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CardConflictUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>[]
+        }
+        upsert: {
+          args: Prisma.CardConflictUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CardConflictPayload>
+        }
+        aggregate: {
+          args: Prisma.CardConflictAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCardConflict>
+        }
+        groupBy: {
+          args: Prisma.CardConflictGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CardConflictGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CardConflictCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CardConflictCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2368,6 +2668,9 @@ export const ProjectScalarFieldEnum = {
   judge_rounds_total: 'judge_rounds_total',
   overclaim_detector: 'overclaim_detector',
   ambiguity_detector: 'ambiguity_detector',
+  source_credibility: 'source_credibility',
+  evidence_fulltext: 'evidence_fulltext',
+  conflict_detector: 'conflict_detector',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -2729,6 +3032,74 @@ export const AmbiguityFlagScalarFieldEnum = {
 } as const
 
 export type AmbiguityFlagScalarFieldEnum = (typeof AmbiguityFlagScalarFieldEnum)[keyof typeof AmbiguityFlagScalarFieldEnum]
+
+
+export const SourceScoreScalarFieldEnum = {
+  id: 'id',
+  source_id: 'source_id',
+  total: 'total',
+  tier: 'tier',
+  reason: 'reason',
+  components: 'components',
+  scored_at: 'scored_at'
+} as const
+
+export type SourceScoreScalarFieldEnum = (typeof SourceScoreScalarFieldEnum)[keyof typeof SourceScoreScalarFieldEnum]
+
+
+export const SourceFullTextScalarFieldEnum = {
+  id: 'id',
+  source_id: 'source_id',
+  provider: 'provider',
+  url: 'url',
+  status: 'status',
+  text: 'text',
+  char_count: 'char_count',
+  fetched_at: 'fetched_at',
+  expires_at: 'expires_at'
+} as const
+
+export type SourceFullTextScalarFieldEnum = (typeof SourceFullTextScalarFieldEnum)[keyof typeof SourceFullTextScalarFieldEnum]
+
+
+export const VerifierPassageScalarFieldEnum = {
+  id: 'id',
+  verifier_run_id: 'verifier_run_id',
+  card_source_id: 'card_source_id',
+  rank: 'rank',
+  similarity: 'similarity',
+  char_start: 'char_start',
+  text: 'text',
+  is_evidence: 'is_evidence',
+  created_at: 'created_at'
+} as const
+
+export type VerifierPassageScalarFieldEnum = (typeof VerifierPassageScalarFieldEnum)[keyof typeof VerifierPassageScalarFieldEnum]
+
+
+export const CardConflictScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  card_id: 'card_id',
+  scope: 'scope',
+  other_card_id: 'other_card_id',
+  card_source_a_id: 'card_source_a_id',
+  card_source_b_id: 'card_source_b_id',
+  source_a_id: 'source_a_id',
+  source_b_id: 'source_b_id',
+  signal: 'signal',
+  evidence_a: 'evidence_a',
+  evidence_b: 'evidence_b',
+  terms: 'terms',
+  reason: 'reason',
+  previous_status: 'previous_status',
+  chosen_exit: 'chosen_exit',
+  decision_id: 'decision_id',
+  llm_calls: 'llm_calls',
+  created_at: 'created_at'
+} as const
+
+export type CardConflictScalarFieldEnum = (typeof CardConflictScalarFieldEnum)[keyof typeof CardConflictScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3303,6 +3674,10 @@ export type GlobalOmitConfig = {
   humanCheck?: Prisma.HumanCheckOmit
   overclaimFlag?: Prisma.OverclaimFlagOmit
   ambiguityFlag?: Prisma.AmbiguityFlagOmit
+  sourceScore?: Prisma.SourceScoreOmit
+  sourceFullText?: Prisma.SourceFullTextOmit
+  verifierPassage?: Prisma.VerifierPassageOmit
+  cardConflict?: Prisma.CardConflictOmit
 }
 
 /* Types for Logging */

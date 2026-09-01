@@ -191,3 +191,57 @@ export function meanStd(values: (number | null)[]): Summary {
     xs.reduce((a, b) => a + (b - mean) ** 2, 0) / (xs.length - 1);
   return { mean, std: Math.sqrt(variance), n: xs.length };
 }
+
+/* ───────────────────────── làn A · khoá metric mới của #6 ─────────────────────────
+   Bốn hàm thuần, gọi từ **cả** `eval/score.ts` lẫn `eval/ablation-evidence.ts` — cùng một phép
+   tính cho hai bảng, nên hai bảng không bao giờ nói lệch nhau. Thêm vào cuối file theo luật
+   chung 4; không sửa khoá metric nào đang có. */
+
+/**
+ * `fulltext_hit_rate` — bao nhiêu phần nguồn của dự án thật sự lấy được bản toàn văn.
+ *
+ * Đây là con số **phải báo dù nó xấu**: chỉ arXiv mới có bản HTML mở, nên tỉ lệ này thấp là
+ * chuyện đã biết trước. #2 nói thẳng rằng "toàn văn phủ được x%, trong nhóm đó sai số giảm y%"
+ * vẫn là một kết quả có nghĩa — nhưng chỉ khi x được nói ra.
+ */
+export function fullTextHitRate(
+  statuses: string[],
+  totalSources: number,
+): number | null {
+  if (totalSources === 0) return null;
+  return statuses.filter((s) => s === 'OK').length / totalSources;
+}
+
+/**
+ * `low_credibility_claim_rate` — tỉ lệ thẻ bị chặn cổng mà **mọi** nguồn chống lưng đều ở mức
+ * thấp nhất. `null` khi không có thẻ nào để đo, khác hẳn `0` nghĩa là "đo được và bằng không".
+ */
+export function lowCredibilityClaimRate(
+  cards: { tiers: string[] }[],
+): number | null {
+  const withSources = cards.filter((c) => c.tiers.length > 0);
+  if (withSources.length === 0) return null;
+  const low = withSources.filter((c) => c.tiers.every((t) => t === 'REVIEW'));
+  return low.length / withSources.length;
+}
+
+/**
+ * `evidence_precision_human` — tỉ lệ nhãn máy trùng nhãn người, trên những cặp đã được chấm mù.
+ * `null` khi chưa gán nhãn cặp nào; báo `0` ở đó là nói dối bằng số.
+ */
+export function evidencePrecisionHuman(
+  checks: { match: boolean }[],
+): number | null {
+  if (checks.length === 0) return null;
+  return checks.filter((c) => c.match).length / checks.length;
+}
+
+/**
+ * `conflict_detected` — số cặp nguồn mâu thuẫn bắt được.
+ *
+ * Baseline của khoá này là **0** theo đúng nghĩa đen: trước #3 không cơ chế nào gán `CONFLICT`.
+ * Vì vậy nó không bao giờ `null` — 0 ở đây là một phép đo, không phải thiếu dữ liệu.
+ */
+export function conflictDetected(count: number): number {
+  return count;
+}

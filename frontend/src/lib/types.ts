@@ -43,7 +43,13 @@ export type VerifierFlag =
   | 'NUMBER_NOT_IN_SOURCE'
   | 'FABRICATED_QUOTE'
   | 'DOI_UNVERIFIED'
-  | 'LLM_UNAVAILABLE';
+  | 'LLM_UNAVAILABLE'
+  // Làn A · #2 — khớp 1-1 `verifierFlagSchema` của backend, sửa cùng commit (STACK §3.1).
+  | 'FULLTEXT_USED'
+  | 'FULLTEXT_UNAVAILABLE';
+
+/** Làn A · #1 — mức tin cậy của nguồn, khớp cột `SourceScore.tier`. */
+export type CredibilityTier = 'HIGH' | 'MEDIUM' | 'REVIEW';
 
 export const CARD_TYPES: CardType[] = [
   'PROBLEM',

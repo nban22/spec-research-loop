@@ -24,15 +24,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { ApiSource } from '@/lib/types';
+import type { ApiSource, CredibilityTier } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { CredibilityTag } from './credibility-tag';
 import { SupportTag } from './support-tag';
 
 /**
  * Bấm để mở thông tin nguồn — **bấm**, không phải hover: cảm ứng không có hover
  * (DESIGN_SYSTEM §6.7 luật 1).
  */
-export function SourceChip({ source }: { source: ApiSource }) {
+export function SourceChip({
+  source,
+  credibility,
+}: {
+  source: ApiSource;
+  /** Làn A · #1 — chỉ truyền khi cờ `source_credibility` bật. */
+  credibility?: { tier: CredibilityTier; reason: string } | null;
+}) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -61,6 +69,10 @@ export function SourceChip({ source }: { source: ApiSource }) {
           <Row label="Nơi công bố" value={source.venue ?? '—'} />
           <Row label="Lấy từ" value={source.retrieved_from} />
           <Row
+            label="Số trích dẫn"
+            value={source.citation_count === null ? '—' : String(source.citation_count)}
+          />
+          <Row
             label="DOI"
             value={source.doi ?? '—'}
             mono
@@ -73,6 +85,9 @@ export function SourceChip({ source }: { source: ApiSource }) {
             }
           />
         </dl>
+        {credibility && (
+          <CredibilityTag tier={credibility.tier} reason={credibility.reason} />
+        )}
         {source.abstract && (
           <ScrollArea className="max-h-48">
             <p className="text-ink-2 pr-3 text-xs leading-relaxed">{source.abstract}</p>

@@ -22,6 +22,10 @@ import {
   jsonValidityByGroup,
   meanStd,
   type CitationPair,
+  conflictDetected,
+  evidencePrecisionHuman,
+  fullTextHitRate,
+  lowCredibilityClaimRate,
 } from '../src/verifier/metrics';
 import type { Arm } from '../src/generated/prisma/enums';
 
@@ -53,6 +57,11 @@ type Row = {
   decisions_applied: number | null;
   total_tokens: number;
   wall_ms: number;
+  /* ── làn A · #6 — thêm khoá mới, không sửa khoá cũ. ── */
+  fulltext_hit_rate: number | null;
+  conflict_detected: number;
+  low_credibility_claim_rate: number | null;
+  evidence_precision_human: number | null;
 };
 
 const METRICS = [
@@ -72,6 +81,11 @@ const METRICS = [
   'decisions_applied',
   'total_tokens',
   'wall_ms',
+  // làn A · #6 — thêm vào cuối; thứ tự mảng này quyết định thứ tự dòng trong CSV.
+  'fulltext_hit_rate',
+  'conflict_detected',
+  'low_credibility_claim_rate',
+  'evidence_precision_human',
 ] as const;
 type MetricKey = (typeof METRICS)[number];
 type ArmSummary = Record<MetricKey, ReturnType<typeof meanStd>>;
@@ -193,6 +207,48 @@ async function main() {
     const l4Ratio =
       unitsTotal > 0 ? (vAgg._sum.units_l4 ?? 0) / unitsTotal : null;
 
+    /* ── làn A · #6 ────────────────────────────────────────────────────────
+       Bốn khoá mới dùng lại đúng hàm thuần ở `src/verifier/metrics.ts` mà
+       `ablation-evidence.ts` gọi, nên hai bảng không bao giờ nói lệch nhau.
+       Với batch cũ (chạy trước làn A) chúng ra `null` hoặc 0 — đó là số thật:
+       lúc đó chưa có cơ chế nào để đo. */
+    const projectSources = await s.prisma.source.findMany({
+      where: { project_id: run.project_id },
+      select: { id: true },
+    });
+    const ftRows = await s.prisma.sourceFullText.findMany({
+      where: { source_id: { in: projectSources.map((x) => x.id) } },
+      select: { status: true },
+    });
+    const conflictCount = await s.prisma.cardConflict.count({
+      where: { spec_version_id: lastVersion.id },
+    });
+    const gatedCards = await s.prisma.card.findMany({
+      where: {
+        spec_version_id: lastVersion.id,
+        type: { in: ['CLAIM', 'GAP', 'CONTRIBUTION'] },
+      },
+      select: { card_sources: { select: { source_id: true } } },
+    });
+    const scoreRows = await s.prisma.sourceScore.findMany({
+      where: { source_id: { in: projectSources.map((x) => x.id) } },
+      select: { source_id: true, tier: true },
+    });
+    const tierOf = new Map(scoreRows.map((x) => [x.source_id, x.tier]));
+    const humanChecks = await s.prisma.humanCheck.findMany({
+      where: {
+        card_source_id: {
+          in: (
+            await s.prisma.cardSource.findMany({
+              where: { card: { spec_version_id: lastVersion.id } },
+              select: { id: true },
+            })
+          ).map((x) => x.id),
+        },
+      },
+      select: { match: true },
+    });
+
     const repair = (run.config as { repair?: RepairConfig | null }).repair ?? null;
 
     rows.push({
@@ -215,6 +271,20 @@ async function main() {
       decisions_applied: repair?.decisions_applied ?? null,
       total_tokens: run.total_tokens,
       wall_ms: run.wall_ms,
+      fulltext_hit_rate: fullTextHitRate(
+        ftRows.map((x) => x.status),
+        projectSources.length,
+      ),
+      conflict_detected: conflictDetected(conflictCount),
+      low_credibility_claim_rate: lowCredibilityClaimRate(
+        gatedCards.map((c) => ({
+          tiers: c.card_sources.flatMap((cs) => {
+            const t = tierOf.get(cs.source_id);
+            return t ? [t] : [];
+          }),
+        })),
+      ),
+      evidence_precision_human: evidencePrecisionHuman(humanChecks),
     });
   }
 
