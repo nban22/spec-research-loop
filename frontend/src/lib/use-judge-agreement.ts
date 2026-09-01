@@ -2,20 +2,21 @@ import { useQuery } from '@tanstack/react-query';
 import { api, qk } from '@/lib/api';
 
 /**
- * Làn B · #9 — hook riêng cho số đo bất đồng.
+ * Lane B · #9 — a dedicated hook for the disagreement metrics.
  *
- * Để ở file riêng chứ không nhét vào `use-project.ts`: ba làn cùng sửa file đó là chỗ dễ đụng
- * nhau nhất. Cùng lý do `use-overclaim.ts` tồn tại.
+ * It lives in its own file rather than inside `use-project.ts`: that file is where three lanes
+ * collide most often. Same reason `use-overclaim.ts` exists.
  */
 
 /**
- * Lý do **không tính được** hệ số. Phải khớp `KappaReason` của backend — đây là bản chép tay giữa
- * hai package, TypeScript không gác được sự lệch, nên nơi dùng phải là `Record<KappaReason, …>`
- * để trình biên dịch bắt buộc liệt kê đủ (xem `REASON_TEXT` ở `judge-agreement-panel.tsx`).
+ * Why the coefficient **could not be computed**. Must match the backend `KappaReason` — this is a
+ * hand copy across two packages and TypeScript cannot guard the drift, so every consumer has to
+ * use `Record<KappaReason, …>` and let the compiler force a complete enumeration (see
+ * `REASON_TEXT` in `judge-agreement-panel.tsx`).
  *
- * `MALFORMED_COUNTS` từng bị **bỏ sót** ở đây: backend sinh ra nó, zod của service cho đi qua, và
- * panel rơi vào nhánh `else` trần nên báo "Chưa có thẻ nào để đo" — một câu sai sự thật, che mất
- * đúng vấn đề toàn vẹn dữ liệu mà chốt đó sinh ra để phát hiện.
+ * `MALFORMED_COUNTS` was once **missing** here: the backend emitted it, the service zod let it
+ * through, and the panel fell into a bare `else` branch reporting "No cards to measure yet" — a
+ * false statement that hid exactly the data-integrity problem that check exists to surface.
  */
 export type KappaReason =
   | 'NO_ITEMS'
@@ -30,7 +31,7 @@ export type ApiKappa = {
   raters: number;
   items: number;
   unanimous: boolean;
-  /** Phải khớp `KappaResult.degenerate` của backend — đây là bản chép tay, TS không gác được. */
+  /** Must match the backend `KappaResult.degenerate` — a hand copy, TS cannot guard it. */
   degenerate: 'IDENTICAL_ROWS' | null;
 };
 
@@ -52,9 +53,9 @@ export type ApiAgreement = {
   unanimousGroups: number;
   raters: string[];
   /**
-   * Kiểm định null cho hai dòng buộc tội. `draws: 0` = bản ghi cũ chưa kiểm định.
-   * `p` là dạng cộng-một nên không bao giờ bằng 0, và thống kê là **max trên các judge** —
-   * đã hiệu chỉnh cho việc panel chỉ in ra người dẫn đầu.
+   * Null tests for the two accusatory lines. `draws: 0` = an old record with no test run.
+   * `p` uses the add-one form so it is never exactly 0, and the statistic is the **max across
+   * judges** — already corrected for the fact that the panel only prints the leader.
    */
   nullTest: {
     draws: number;
@@ -71,11 +72,11 @@ export type NullVerdict = {
   significant: boolean;
 };
 
-/** Dưới ngưỡng này Jaccard là ngẫu nhiên — phải khớp `MIN_UNION` của backend. */
+/** Below this threshold Jaccard is noise — must match the backend `MIN_UNION`. */
 export const MIN_UNION = 5;
 
 export type ApiAgreementResponse = {
-  /** `null` khi chưa chạy judge vòng nào. Không có cờ bật/tắt — xem `AgreementService.forDisplay`. */
+  /** `null` when no judge round has run yet. There is no on/off flag — see `AgreementService.forDisplay`. */
   agreement: ApiAgreement | null;
 };
 

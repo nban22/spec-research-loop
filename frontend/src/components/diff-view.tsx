@@ -14,11 +14,12 @@ type DiffPayload = {
 };
 
 /**
- * Bọc `react-diff-viewer-continued`, ép màu về họ `ok`/`danger` (DESIGN_SYSTEM §5.3).
+ * Wraps `react-diff-viewer-continued`, forcing its colours into the `ok`/`danger` families
+ * (DESIGN_SYSTEM §5.3).
  *
- * **Chuyển sang chế độ hợp nhất dưới mốc `md`** — diff hai cột ở 375px thì mỗi cột quá hẹp,
- * không đọc được (§6.5). Khối code trong diff là **một trong hai vùng duy nhất** được phép
- * cuộn ngang (§6.10).
+ * **Switches to unified mode below the `md` breakpoint** — a two-column diff at 375px leaves each
+ * column too narrow to read (§6.5). The code block inside a diff is **one of only two regions**
+ * allowed to scroll horizontally (§6.10).
  */
 export function DiffView({ versionId, against }: { versionId: string; against?: string }) {
   const [splitView, setSplitView] = useState(false);
@@ -41,7 +42,7 @@ export function DiffView({ versionId, against }: { versionId: string; against?: 
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
   if (isError || !data) {
-    return <p className="text-ink-3 text-xs">Không dựng được so sánh cho hai phiên bản này.</p>;
+    return <p className="text-ink-3 text-xs">A comparison could not be built for these two versions.</p>;
   }
 
   return (

@@ -30,15 +30,15 @@ import { CredibilityTag } from './credibility-tag';
 import { SupportTag } from './support-tag';
 
 /**
- * Bấm để mở thông tin nguồn — **bấm**, không phải hover: cảm ứng không có hover
- * (DESIGN_SYSTEM §6.7 luật 1).
+ * Tap to open the source details — **tap**, not hover: touch has no hover
+ * (DESIGN_SYSTEM §6.7 rule 1).
  */
 export function SourceChip({
   source,
   credibility,
 }: {
   source: ApiSource;
-  /** Làn A · #1 — chỉ truyền khi cờ `source_credibility` bật. */
+  /** Lane A · #1 — only passed when the `source_credibility` flag is on. */
   credibility?: { tier: CredibilityTier; reason: string } | null;
 }) {
   return (
@@ -60,16 +60,16 @@ export function SourceChip({
         <DialogHeader>
           <DialogTitle className="text-sm leading-snug">{source.title}</DialogTitle>
           <DialogDescription className="text-xs">
-            {source.authors.slice(0, 6).join(', ') || 'Không rõ tác giả'}
-            {source.authors.length > 6 ? ' và cộng sự' : ''}
+            {source.authors.slice(0, 6).join(', ') || 'Authors unknown'}
+            {source.authors.length > 6 ? ' et al.' : ''}
           </DialogDescription>
         </DialogHeader>
         <dl className="space-y-1.5 text-xs">
-          <Row label="Năm" value={source.year ? String(source.year) : '—'} />
-          <Row label="Nơi công bố" value={source.venue ?? '—'} />
-          <Row label="Lấy từ" value={source.retrieved_from} />
+          <Row label="Year" value={source.year ? String(source.year) : '—'} />
+          <Row label="Venue" value={source.venue ?? '—'} />
+          <Row label="Retrieved from" value={source.retrieved_from} />
           <Row
-            label="Số trích dẫn"
+            label="Citations"
             value={source.citation_count === null ? '—' : String(source.citation_count)}
           />
           <Row
@@ -78,10 +78,10 @@ export function SourceChip({
             mono
             extra={
               source.doi_verified === true
-                ? 'đã tra ra ở registry'
+                ? 'found in the registry'
                 : source.doi_verified === false
-                  ? 'không tra ra'
-                  : 'chưa kiểm được'
+                  ? 'not found'
+                  : 'could not be checked'
             }
           />
         </dl>
@@ -101,7 +101,7 @@ export function SourceChip({
             className="text-brand-strong inline-flex items-center gap-1 text-xs underline underline-offset-2"
           >
             <ExternalLink className="size-3.5" aria-hidden />
-            Mở nguồn gốc
+            Open the original
           </a>
         )}
       </DialogContent>
@@ -141,23 +141,23 @@ export type RelatedRow = {
 };
 
 /**
- * Năm cột theo mockup 2. Dưới mốc `md` **đổi hẳn sang card list**, không phải bảng thu nhỏ:
- * ít hàng và người dùng đọc **từng paper một**, nên cuộn ngang là tệ nhất trong ba lựa chọn
- * (DESIGN_SYSTEM §6.5).
+ * Five columns per mockup 2. Below the `md` breakpoint it **switches entirely to a card list**,
+ * not a shrunken table: there are few rows and the user reads **one paper at a time**, so
+ * horizontal scrolling would be the worst of the three options (DESIGN_SYSTEM §6.5).
  */
 export function RelatedWorkTable({ rows }: { rows: RelatedRow[] }) {
   return (
     <>
-      {/* ≥ md: bảng thật */}
+      {/* ≥ md: a real table */}
       <div className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[22%]">Nghiên cứu</TableHead>
-              <TableHead>Đã làm gì</TableHead>
-              <TableHead className="w-[14%]">Loại feedback</TableHead>
-              <TableHead>Điểm còn thiếu</TableHead>
-              <TableHead className="w-[12%]">Nguồn</TableHead>
+              <TableHead className="w-[22%]">Study</TableHead>
+              <TableHead>What it did</TableHead>
+              <TableHead className="w-[14%]">Feedback type</TableHead>
+              <TableHead>What is missing</TableHead>
+              <TableHead className="w-[12%]">Source</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -185,7 +185,7 @@ export function RelatedWorkTable({ rows }: { rows: RelatedRow[] }) {
         </Table>
       </div>
 
-      {/* < md: mỗi paper một card, có cấu trúc riêng chứ không phải bảng bị bẻ */}
+      {/* < md: one card per paper, with its own structure rather than a broken-up table */}
       <ul className="space-y-2 md:hidden">
         {rows.map((r) => (
           <li
@@ -200,9 +200,9 @@ export function RelatedWorkTable({ rows }: { rows: RelatedRow[] }) {
               {r.feedback_type}
             </Badge>
             <div className="space-y-1 text-xs">
-              <p className="text-ink-3 font-medium">Đã làm gì</p>
+              <p className="text-ink-3 font-medium">What it did</p>
               <p className="text-ink-2">{r.what_done}</p>
-              <p className="text-ink-3 font-medium">Điểm còn thiếu</p>
+              <p className="text-ink-3 font-medium">What is missing</p>
               <p className="text-ink-2">{r.what_missing}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -216,7 +216,7 @@ export function RelatedWorkTable({ rows }: { rows: RelatedRow[] }) {
   );
 }
 
-/** Ô nhập + chip từ khoá có nút xoá. Vùng chạm nới bằng padding, không phóng to icon (§6.7). */
+/** An input + removable keyword chips. The touch target grows via padding, not a bigger icon (§6.7). */
 export function KeywordChipInput({
   keywords,
   onChange,
@@ -244,11 +244,11 @@ export function KeywordChipInput({
               add();
             }
           }}
-          placeholder="Thêm từ khoá tiếng Anh…"
-          aria-label="Thêm từ khoá tìm nguồn"
+          placeholder="Add an English keyword…"
+          aria-label="Add a source-search keyword"
         />
         <Button type="button" variant="outline" onClick={add}>
-          Thêm
+          Add
         </Button>
       </div>
       <ul className="flex flex-wrap gap-1.5">
@@ -262,7 +262,7 @@ export function KeywordChipInput({
               type="button"
               onClick={() => onChange(keywords.filter((x) => x !== k))}
               className="hover:bg-brand-line cursor-pointer rounded p-1"
-              aria-label={`Xoá từ khoá ${k}`}
+              aria-label={`Remove keyword ${k}`}
             >
               <X className="size-3" aria-hidden />
             </button>
@@ -273,7 +273,7 @@ export function KeywordChipInput({
   );
 }
 
-/** Danh sách checkbox "Nguồn ưu tiên" (mockup 2). Lọc phía client trên tập đã gom. */
+/** The "Preferred sources" checkbox list (mockup 2). Client-side filtering over the collected set. */
 export function SourceFilterList({
   filters,
   onToggle,

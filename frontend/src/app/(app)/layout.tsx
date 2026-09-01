@@ -9,8 +9,8 @@ import { TopNav } from '@/components/top-nav';
 import { api, qk } from '@/lib/api';
 
 /**
- * Mọi trang trong nhóm này nằm **sau đăng nhập** và phụ thuộc dữ liệu riêng của người dùng
- * ⇒ render phía client, không có nhu cầu SEO (SYSTEM_DESIGN_ANALYSIS S7 · F.8).
+ * Every page in this group sits **behind the login** and depends on user-specific data
+ * ⇒ client rendered, with no SEO requirement (SYSTEM_DESIGN_ANALYSIS S7 · F.8).
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <>
       <TopNav />
       <main className="flex-1">{children}</main>
-      {/* Nghe phím tắt ở cấp layout: ⌘K phải chạy được từ bất kỳ màn nào sau đăng nhập. */}
+      {/* The shortcut listener lives at layout level: ⌘K must work from any screen after login. */}
       <CommandPalette />
     </>
   );

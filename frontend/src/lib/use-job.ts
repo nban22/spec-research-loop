@@ -13,16 +13,16 @@ export type JobView = {
 };
 
 /**
- * Theo dõi một job nền.
+ * Track a background job.
  *
- * **SSE là đường tăng tốc, không phải nguồn sự thật** (SYSTEM_DESIGN_ANALYSIS S5 · F.8):
- * trạng thái sống trong TanStack Query của `GET /jobs/:id`; `EventSource` chỉ *đẩy* cập nhật
- * vào đó. Mất kết nối thì poll vẫn chạy, nên màn hình không bao giờ đứng im không giải thích được.
- * Không giữ tiến độ trong `useState` của component — mất kết nối là mất luôn tiến độ.
+ * **SSE is an accelerator, not the source of truth** (SYSTEM_DESIGN_ANALYSIS S5 · F.8): the state
+ * lives in the TanStack Query for `GET /jobs/:id`; `EventSource` only *pushes* updates into it.
+ * If the connection drops, polling keeps running, so the screen never freezes inexplicably. Never
+ * hold progress in a component `useState` — losing the connection would lose the progress too.
  */
 export function useJob(
   jobId: string | null,
-  /** Gọi một lần khi job về trạng thái cuối. Nhận cả `job` để nơi gọi đọc `message` / `error_code`. */
+  /** Called once when the job reaches a terminal state. Receives `job` so the caller can read `message` / `error_code`. */
   onSettled?: (job: ApiJob) => void,
 ): JobView {
   const queryClient = useQueryClient();
@@ -33,7 +33,7 @@ export function useJob(
     queryKey: qk.job(jobId ?? 'none'),
     queryFn: () => api.get<{ job: ApiJob }>(`/jobs/${jobId}`),
     enabled: Boolean(jobId),
-    // Poll đều đặn: đây là đường thứ hai không phụ thuộc SSE (§5.5 luật 4).
+    // Steady polling: the second path, independent of SSE (§5.5 rule 4).
     refetchInterval: (q) => {
       const s = q.state.data?.job.status;
       return s === 'DONE' || s === 'FAILED' ? false : 2500;
@@ -44,9 +44,9 @@ export function useJob(
   const isRunning = job?.status === 'QUEUED' || job?.status === 'RUNNING';
 
   /**
-   * Đồng hồ "đã trôi bao lâu" (§5.5 luật 3). Mốc thời gian lấy **bên trong** effect và chỉ cập
-   * nhật state từ callback của `setInterval` — không gọi `setState` đồng bộ trong thân effect,
-   * cũng không đọc ref lúc render.
+   * The "how long has this been running" clock (§5.5 rule 3). The start timestamp is taken
+   * **inside** the effect and state is only updated from the `setInterval` callback — no
+   * synchronous `setState` in the effect body, and no ref reads during render.
    */
   useEffect(() => {
     if (!jobId || !isRunning) return;
@@ -57,8 +57,8 @@ export function useJob(
 
   useEffect(() => {
     if (!jobId) return;
-    // `withCredentials` là bắt buộc khi gọi thẳng sang api.<domain>: không có nó thì
-    // EventSource **không gửi cookie** và server trả 401 — luồng tiến độ chết im lặng.
+    // `withCredentials` is mandatory when calling api.<domain> directly: without it
+    // EventSource **sends no cookie** and the server answers 401 — the progress stream dies silently.
     const es = new EventSource(apiUrl(`/jobs/${jobId}/stream`), {
       withCredentials: true,
     });
@@ -84,11 +84,11 @@ export function useJob(
   }, [jobId, queryClient]);
 
   /**
-   * Bắn **đúng một lần** cho mỗi job, ở trạng thái cuối — `DONE` hoặc `FAILED`.
+   * Fires **exactly once** per job, at a terminal state — `DONE` or `FAILED`.
    *
-   * Không dựa vào deps để chống lặp: `onSettled` là callback của nơi gọi, đổi identity là
-   * effect chạy lại và người dùng ăn hai toast cho cùng một job. `notifiedRef` chốt theo
-   * `jobId` nên dù re-render kiểu gì cũng chỉ báo một lần.
+   * Deduplication does not rely on deps: `onSettled` is the caller's callback, and a change of
+   * identity would re-run the effect and hit the user with two toasts for one job. `notifiedRef`
+   * latches on `jobId`, so no re-render pattern can notify twice.
    */
   const notifiedRef = useRef<string | null>(null);
   useEffect(() => {

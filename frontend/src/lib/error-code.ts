@@ -1,77 +1,78 @@
 /**
- * Mã lỗi của backend → thông báo tiếng Việt. FE **không bao giờ** parse `message` để phân nhánh
- * logic (STACK §3.1 luật 3), và **không** in mã lỗi thô ra màn hình (DESIGN_SYSTEM §5.5 luật 6).
+ * Backend error codes → English messages. The FE **never** parses `message` to branch
+ * logic (STACK §3.1 rule 3), and **never** prints the raw error code on screen
+ * (DESIGN_SYSTEM §5.5 rule 6).
  *
- * Chuỗi mô tả trạng thái chờ cũng để ở đây, cùng lý do với ánh xạ enum: một nơi sửa,
- * không phải mười chỗ (§7.3).
+ * Waiting-state copy lives here too, for the same reason as the enum maps: one place to
+ * edit, not ten (§7.3).
  */
 
 export const ERROR_MESSAGE: Record<string, string> = {
-  VALIDATION_FAILED: 'Thông tin nhập vào chưa hợp lệ. Bạn vui lòng kiểm tra lại các ô đã nhập.',
-  NOT_FOUND: 'Rất tiếc, hệ thống không tìm thấy nội dung bạn yêu cầu.',
+  VALIDATION_FAILED: 'The information you entered is not valid. Please review the fields above.',
+  NOT_FOUND: 'Sorry, we could not find the content you requested.',
   INTERNAL_ERROR:
-    'Máy chủ đang gặp sự cố. Thành thật xin lỗi bạn, vui lòng thử lại sau ít phút.',
+    'The server ran into a problem. We are sorry — please try again in a few minutes.',
 
-  INVALID_CREDENTIALS: 'Email hoặc mật khẩu chưa đúng. Bạn vui lòng kiểm tra lại.',
+  INVALID_CREDENTIALS: 'That email or password is not correct. Please check and try again.',
   EMAIL_ALREADY_USED:
-    'Email này đã được đăng ký. Bạn vui lòng đăng nhập, hoặc dùng một email khác.',
-  UNAUTHENTICATED: 'Phiên đăng nhập đã hết hạn. Bạn vui lòng đăng nhập lại.',
-  REFRESH_TOKEN_INVALID: 'Phiên đăng nhập đã hết hạn. Bạn vui lòng đăng nhập lại.',
+    'This email is already registered. Please sign in, or use a different email.',
+  UNAUTHENTICATED: 'Your session has expired. Please sign in again.',
+  REFRESH_TOKEN_INVALID: 'Your session has expired. Please sign in again.',
 
   SOURCE_PROVIDER_UNAVAILABLE:
-    'Rất tiếc, hệ thống chưa lấy được nguồn từ Semantic Scholar lẫn OpenAlex nên xin phép dừng bước này. Hệ thống không tự nghĩ ra paper, để bảo đảm mọi trích dẫn bạn nhận được đều có thật.',
-  NO_SOURCES_YET: 'Chưa có nguồn nào. Bạn vui lòng chạy tìm nguồn trước.',
+    'Sorry, we could not reach Semantic Scholar or OpenAlex, so this step has been stopped. The system never invents papers, so that every citation you receive is real.',
+  NO_SOURCES_YET: 'No sources yet. Please run the source search first.',
 
-  LLM_UNAVAILABLE: 'Hệ thống chưa gọi được mô hình. Bạn vui lòng chạy lại bước này.',
+  LLM_UNAVAILABLE: 'We could not reach the model. Please run this step again.',
   LLM_INVALID_JSON:
-    'Mô hình trả về dữ liệu chưa đúng khuôn. Bạn vui lòng chạy lại bước này.',
+    'The model returned data in an unexpected shape. Please run this step again.',
 
   JUDGE_ROUND_EXISTS:
-    'Vòng judge này đã chạy trên phiên bản hiện tại. Bạn vui lòng tạo phiên bản mới trước khi chạy tiếp.',
-  JUDGE_ROUND_LIMIT: 'Dự án này đã dùng hết 3 vòng judge theo quy định.',
+    'This judge round has already run on the current version. Please create a new version before running again.',
+  JUDGE_ROUND_LIMIT: 'This project has used all 3 judge rounds allowed.',
   JUDGE_QUORUM_NOT_MET:
-    'Số judge chạy được quá ít nên hệ thống chưa tính được điểm đồng thuận. Bạn vui lòng chạy lại.',
+    'Too few judges completed, so the agreement score could not be computed. Please run again.',
 
-  DECISION_ALREADY_APPLIED: 'Quyết định này đã được áp dụng trước đó.',
+  DECISION_ALREADY_APPLIED: 'This decision has already been applied.',
   VERSION_CONFLICT:
-    'Bản đặc tả đã thay đổi ở nơi khác. Bạn vui lòng tải lại trang rồi chọn lại.',
-  OTHER_REASON_REQUIRED: 'Khi chọn “Khác”, bạn vui lòng nhập lý do.',
+    'The spec changed somewhere else. Please reload the page and choose again.',
+  OTHER_REASON_REQUIRED: 'When you choose “Other”, please enter a reason.',
   DECISION_OPTION_UNKNOWN:
-    'Phương án này không còn trong danh sách. Bạn vui lòng tải lại trang rồi chọn lại.',
+    'This option is no longer on the list. Please reload the page and choose again.',
 
   EXPORT_BLOCKED_UNSUPPORTED_CITATION:
-    'Vẫn còn trích dẫn chưa được nguồn hỗ trợ, nên hệ thống xin phép chưa xuất bản.',
+    'Some citations are still unsupported by their sources, so publishing is on hold.',
   EXPORT_BLOCKED_NOT_VERIFIED:
-    'Phiên bản này chưa qua bước kiểm chứng cứ, nên hệ thống xin phép chưa xuất bản.',
+    'This version has not been through evidence verification, so publishing is on hold.',
   PDF_ENGINE_UNAVAILABLE:
-    'Máy chủ chưa dựng được bản PDF, rất mong bạn thông cảm. Bản Markdown vẫn tải bình thường.',
+    'The server could not build the PDF — sorry about that. The Markdown file still downloads normally.',
 
-  STEP_PRECONDITION_FAILED: 'Bạn vui lòng hoàn tất bước trước đã.',
+  STEP_PRECONDITION_FAILED: 'Please complete the previous step first.',
   JOB_ALREADY_RUNNING:
-    'Đang có một tiến trình cùng loại chạy. Bạn vui lòng đợi tiến trình đó hoàn tất.',
+    'A job of the same kind is already running. Please wait for it to finish.',
 };
 
 export function messageOf(code: string | undefined, fallback?: string): string {
   if (code && ERROR_MESSAGE[code]) return ERROR_MESSAGE[code];
-  return fallback ?? 'Rất tiếc, đã có lỗi xảy ra. Bạn vui lòng thử lại.';
+  return fallback ?? 'Sorry, something went wrong. Please try again.';
 }
 
 /**
- * Câu mô tả "hệ thống đang làm gì" cho từng loại job. Luôn nói bằng chữ, tiếng Việt, kể cả khi
- * kết quả sinh ra là tiếng Anh (§5.5 luật 2).
+ * A sentence describing "what the system is doing" for each job kind. Always spelled out in
+ * words (§5.5 rule 2).
  */
 export const JOB_LABEL: Record<string, string> = {
-  ANALYZE: 'Hệ thống đang phân tích và phân rã ý tưởng của bạn…',
-  SEARCH: 'Hệ thống đang tìm nguồn trên Semantic Scholar và OpenAlex…',
-  RELATED_WORK: 'Hệ thống đang đọc abstract và dựng bảng nghiên cứu liên quan…',
-  GENERATE: 'Hệ thống đang sinh nội dung đặc tả…',
-  JUDGE: 'Hệ thống đang chạy 5 judge độc lập…',
-  VERIFY: 'Hệ thống đang kiểm từng cặp (khẳng định, nguồn)…',
-  EXPORT: 'Hệ thống đang dựng tệp xuất bản…',
+  ANALYZE: 'Analysing and breaking down your idea…',
+  SEARCH: 'Searching Semantic Scholar and OpenAlex for sources…',
+  RELATED_WORK: 'Reading abstracts and building the related-work table…',
+  GENERATE: 'Generating the spec content…',
+  JUDGE: 'Running the 5 independent judges…',
+  VERIFY: 'Checking every (claim, source) pair…',
+  EXPORT: 'Building the export files…',
 };
 
-/** Quá ~60 giây thì thêm một dòng trấn an rằng job vẫn chạy (§5.5 luật 3). */
+/** Past roughly 60 seconds, add a line reassuring that the job is still alive (§5.5 rule 3). */
 export const LONG_WAIT_HINT =
-  'Việc này vẫn đang chạy ở máy chủ. Bạn có thể rời trang rồi quay lại — tiến độ không bị mất.';
+  'This is still running on the server. You can leave the page and come back — progress is not lost.';
 
-export const SSE_LOST_HINT = 'Mất kết nối theo dõi, hệ thống đang thử lại…';
+export const SSE_LOST_HINT = 'Lost the live connection, retrying…';

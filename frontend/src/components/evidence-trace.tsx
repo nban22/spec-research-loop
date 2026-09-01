@@ -14,28 +14,30 @@ import { cn } from '@/lib/utils';
 import type { ApiEvidencePair, ApiEvidenceTrace } from '@/lib/use-project';
 
 /**
- * Trang "vì sao nhãn này" (#5) — phần vẽ.
+ * The "why this label" page (#5) — the rendering half.
  *
- * Không phải màn debug. Đây là câu trả lời cho câu chắc chắn bị hỏi khi vấn đáp: *"làm sao tin
- * nhãn này đúng?"*. Mỗi cặp mở ra được **đường đi qua các tầng**, và mọi con số hiện ra đều kèm
- * ngưỡng của **chính lần chạy đó** — đọc từ `VerifierRun.config`, không phải hằng số hiện tại.
+ * This is not a debug screen. It is the answer to the question that will certainly be asked at the
+ * defence: *"how do I know this label is right?"*. Every pair expands into the **path through the
+ * layers**, and every number shown carries the thresholds of **that particular run** — read from
+ * `VerifierRun.config`, not from today's constants.
  *
- * Tách khỏi `page.tsx` để test được mà không cần mạng, đúng khuôn bốn màn hình đọc của làn C.
+ * Split out of `page.tsx` so it can be tested without a network, following the same shape as
+ * lane C's four read-only screens.
  */
 
 /**
- * `UNVERIFIED` **không** phải một `SupportLabel` — nó là "verifier chưa nhìn tới cặp này".
- * Phải có mặt ở đây vì cặp chưa kiểm mang sẵn `support_label = 'WEAK'` (mặc định của schema):
- * thiếu nó thì bộ lọc "Yếu" gộp luôn cả những cặp chưa hề được chấm.
+ * `UNVERIFIED` is **not** a `SupportLabel` — it means "the verifier never looked at this pair".
+ * It has to be here because an unverified pair already carries `support_label = 'WEAK'` (the schema
+ * default): without it, the "Weak" filter would sweep in pairs that were never scored at all.
  */
 type PairFilter = SupportLabel | 'ALL' | 'UNVERIFIED';
 
 const LABEL_FILTERS: { key: PairFilter; label: string }[] = [
-  { key: 'ALL', label: 'Tất cả' },
-  { key: 'SUPPORTED', label: 'Có nguồn hỗ trợ' },
-  { key: 'WEAK', label: 'Yếu' },
-  { key: 'UNSUPPORTED', label: 'Không hỗ trợ' },
-  { key: 'UNVERIFIED', label: 'Chưa kiểm' },
+  { key: 'ALL', label: 'All' },
+  { key: 'SUPPORTED', label: 'Supported' },
+  { key: 'WEAK', label: 'Weak' },
+  { key: 'UNSUPPORTED', label: 'Unsupported' },
+  { key: 'UNVERIFIED', label: 'Unverified' },
 ];
 
 export function EvidenceTraceView({ data }: { data: ApiEvidenceTrace }) {
@@ -51,7 +53,7 @@ export function EvidenceTraceView({ data }: { data: ApiEvidenceTrace }) {
 
   const pairs = data.pairs.filter((p) => {
     if (label === 'UNVERIFIED' && p.verified) return false;
-    // Cặp chưa kiểm không được lọt vào bất kỳ bộ lọc nhãn nào: nhãn của nó chưa tồn tại.
+    // An unverified pair must not slip into any label filter: its label does not exist yet.
     if (label !== 'ALL' && label !== 'UNVERIFIED') {
       if (!p.verified || p.support_label !== label) return false;
     }
@@ -76,7 +78,7 @@ export function EvidenceTraceView({ data }: { data: ApiEvidenceTrace }) {
         <div className="flex flex-wrap gap-1.5">
           <FilterChip
             active={flag === 'ALL'}
-            label="Mọi cờ chẩn đoán"
+            label="All diagnostic flags"
             onClick={() => setFlag('ALL')}
           />
           {flagsPresent.map((f) => (
@@ -91,8 +93,8 @@ export function EvidenceTraceView({ data }: { data: ApiEvidenceTrace }) {
       )}
 
       {pairs.length === 0 ? (
-        <HintBox tone="info" title="Không có cặp nào khớp bộ lọc">
-          <p>Bỏ bớt bộ lọc ở trên để xem lại toàn bộ danh sách.</p>
+        <HintBox tone="info" title="No pair matches these filters">
+          <p>Clear some of the filters above to see the full list again.</p>
         </HintBox>
       ) : (
         <ul className="space-y-2">
@@ -154,7 +156,7 @@ function PairRow({
 }) {
   return (
     <div className="border-hairline bg-surface rounded-md border">
-      {/* Nút thật, không phải div onClick (frontend/CLAUDE.md §7). */}
+      {/* A real button, not a div with onClick (frontend/CLAUDE.md §7). */}
       <button
         type="button"
         onClick={onToggle}
@@ -186,17 +188,17 @@ function PairRow({
 
           <dl className="grid gap-x-4 gap-y-1 text-xs md:grid-cols-2">
             <Metric
-              label="Độ tương đồng"
+              label="Similarity"
               value={pair.similarity === null ? '—' : pair.similarity.toFixed(3)}
-              note={`ngưỡng dưới ${thresholds.tau_low} · ngưỡng trên ${thresholds.tau_high}`}
+              note={`lower threshold ${thresholds.tau_low} · upper threshold ${thresholds.tau_high}`}
             />
             <Metric
-              label="Phán quyết của mô hình"
-              value={pair.entailment ?? 'không gọi tới mô hình'}
+              label="Model verdict"
+              value={pair.entailment ?? 'the model was not called'}
               note={
                 pair.confidence === null
-                  ? 'không có độ chắc chắn'
-                  : `độ chắc chắn ${pair.confidence.toFixed(2)} · tối thiểu ${thresholds.conf_min}`
+                  ? 'no confidence recorded'
+                  : `confidence ${pair.confidence.toFixed(2)} · minimum ${thresholds.conf_min}`
               }
             />
           </dl>
@@ -204,7 +206,7 @@ function PairRow({
           {pair.evidence_sentence && (
             <div>
               <p className="text-ink-4 text-2xs tracking-wide uppercase">
-                Câu được trích làm bằng chứng
+                The sentence quoted as evidence
               </p>
               <p className="text-ink-1 mt-1 text-sm leading-relaxed italic">
                 “{pair.evidence_sentence}”
@@ -223,7 +225,7 @@ function PairRow({
           {pair.passages.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-ink-4 text-2xs tracking-wide uppercase">
-                Các đoạn toàn văn đã gửi cho mô hình
+                Full-text passages sent to the model
               </p>
               {pair.passages.map((ps) => (
                 <p
@@ -236,9 +238,9 @@ function PairRow({
                   )}
                 >
                   <span className="text-ink-4">
-                    #{ps.rank + 1} · tương đồng {ps.similarity.toFixed(3)} · vị trí{' '}
+                    #{ps.rank + 1} · similarity {ps.similarity.toFixed(3)} · offset{' '}
                     {ps.char_start}
-                    {ps.is_evidence ? ' · đoạn chứa câu trích' : ''}
+                    {ps.is_evidence ? ' · contains the quoted sentence' : ''}
                   </span>
                   <br />
                   {ps.text}
@@ -253,17 +255,18 @@ function PairRow({
 }
 
 /**
- * Thanh các tầng, tô đậm tầng đã quyết định. SVG không cần thiết ở đây — div là đủ và rẻ hơn.
+ * The layer bar, with the deciding layer highlighted. SVG is unnecessary here — divs are enough
+ * and cheaper.
  *
- * `layer === null` ⇒ **không vẽ gì**. Cặp chưa kiểm chứng thì không tầng nào từng chạm vào nó;
- * vẽ thanh với toàn bộ tầng mờ vẫn ngụ ý "đã đi qua đường này mà không tầng nào chốt được",
- * trong khi sự thật là đường đi chưa bắt đầu. `layer_why` ngay dưới đã nói đúng câu đó.
+ * `layer === null` ⇒ **draw nothing**. An unverified pair was never touched by any layer; drawing
+ * the bar with every layer dimmed would still imply "it went down this path and no layer could
+ * decide", when in truth the path never started. The `layer_why` line just below says exactly that.
  */
 function LayerBar({ layer }: { layer: string | null }) {
   if (layer === null) return null;
   return (
     <div className="overflow-x-auto">
-      <ol className="flex min-w-[520px] gap-1" aria-label="Đường đi qua các tầng">
+      <ol className="flex min-w-[520px] gap-1" aria-label="Path through the verifier layers">
         {VERIFIER_LAYER_ORDER.map((l) => {
           const hit = l === layer;
           return (

@@ -7,33 +7,33 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { api, qk } from '@/lib/api';
 
 /**
- * Chiều **ra** của bảo vệ route (#25) — đối xứng với `(app)/layout.tsx`.
+ * The **outbound** direction of route protection (#25) — the mirror of `(app)/layout.tsx`.
  *
- * Trước layout này việc canh route chỉ có một chiều: `(app)/layout.tsx` đá người **chưa** đăng
- * nhập về `/login`, nhưng không gì đá người **đã** đăng nhập ra khỏi `/login`. Vào lại bằng
- * bookmark hay lịch sử trình duyệt là thấy form đăng nhập dù phiên vẫn hợp lệ; tệ hơn, ở
- * `/register` thì tạo được tài khoản thứ hai ngay trong phiên đang đăng nhập.
+ * Before this layout, route guarding only worked one way: `(app)/layout.tsx` kicks a **signed-out**
+ * visitor to `/login`, but nothing kicked a **signed-in** one off `/login`. Returning via a
+ * bookmark or browser history showed the sign-in form despite a valid session; worse, `/register`
+ * let a second account be created from inside a live session.
  *
- * ## Vì sao hỏi `/auth/me` chứ không đọc cookie trong middleware
+ * ## Why we ask `/auth/me` instead of reading the cookie in middleware
  *
- * Cookie phiên là `httpOnly` nên client không đọc được, còn middleware thì chỉ thấy cookie
- * **có mặt hay không**, không biết nó còn hạn hay không. Chuyển hướng theo "có cookie" sẽ tạo
- * vòng lặp với token đã hết hạn:
+ * The session cookie is `httpOnly`, so the client cannot read it, and middleware only sees whether
+ * the cookie is **present**, not whether it is still valid. Redirecting on "a cookie exists" creates
+ * a loop once the token expires:
  *
- *   `/login` → middleware thấy cookie → đẩy sang `/` → `(app)` gọi `/auth/me` nhận 401
- *   → đẩy về `/login` → lặp vô tận.
+ *   `/login` → middleware sees a cookie → pushes to `/` → `(app)` calls `/auth/me`, gets 401
+ *   → pushes back to `/login` → forever.
  *
- * Hỏi `/auth/me` là **kiểm chứng** thay vì đoán, nên không bao giờ rơi vào vòng đó — tiêu chí
- * "không vòng lặp chuyển hướng" của #25.
+ * Asking `/auth/me` **verifies** instead of guessing, so it can never fall into that loop — the
+ * "no redirect loops" criterion of #25.
  *
- * Giá phải trả: người **chưa** đăng nhập tốn một request 401 trước khi thấy form. Chấp nhận
- * được, vì `qk.me` dùng chung khoá với `(app)/layout.tsx` — đi từ trong app ra thì đã có cache,
- * không thêm round-trip nào.
+ * The cost: a **signed-out** visitor pays one 401 request before seeing the form. Acceptable,
+ * because `qk.me` shares its key with `(app)/layout.tsx` — arriving from inside the app the cache
+ * is already warm and no round trip is added.
  *
- * ⚠️ Chính vì dùng chung khoá `qk.me`, layout này **phụ thuộc** vào việc `top-nav.tsx` gọi
- * `queryClient.clear()` **trước** khi đẩy về `/login` lúc đăng xuất. Bỏ dòng clear đó thì cache
- * còn giữ phiên cũ, layout này thấy `data` và đá ngược về `/` — vừa đăng xuất đã bị kéo lại vào
- * app. Sửa `logout` thì phải xem lại chỗ này.
+ * ⚠️ Precisely because it shares the `qk.me` key, this layout **depends** on `top-nav.tsx` calling
+ * `queryClient.clear()` **before** redirecting to `/login` on sign-out. Drop that clear and the
+ * cache still holds the old session, this layout sees `data` and bounces back to `/` — signed out
+ * and instantly dragged back into the app. Revisit this if you change `logout`.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -44,13 +44,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // `/` là nơi `auth-form.tsx` đưa người dùng tới sau khi đăng nhập thành công —
-    // giữ đúng một đích đến cho mọi đường vào app.
+    // `/` is where `auth-form.tsx` sends the user after a successful sign-in —
+    // keeping exactly one destination for every way into the app.
     if (data) router.replace('/');
   }, [data, router]);
 
-  // Đang hỏi, **hoặc** đã biết là có phiên và đang chờ chuyển hướng ⇒ không render form.
-  // Chớp form một khung hình rồi mới nhảy còn khó chịu hơn chính cái lỗi này.
+  // Still asking, **or** we know a session exists and the redirect is pending ⇒ do not render the
+  // form. Flashing it for one frame before jumping is worse than the bug itself.
   if (isLoading || data) {
     return (
       <main className="bg-canvas flex min-h-svh items-center justify-center px-4 py-10">

@@ -27,12 +27,12 @@ import { CommandPaletteTrigger } from './command-palette';
 
 type Me = { user: { id: string; email: string; display_name: string } };
 
-/** Bốn mục nav của mockup 5, **bỏ chuông** — không có tính năng thông báo trong 16 chức năng (§8 #3). */
+/** The four nav entries of mockup 5, **minus the bell** — notifications are not one of the 16 features (§8 #3). */
 const NAV = [
-  { href: '/', label: 'Trang chủ' },
-  { href: '/projects', label: 'Dự án' },
-  { href: '/versions', label: 'Lịch sử phiên bản' },
-  { href: '/help', label: 'Trợ giúp' },
+  { href: '/', label: 'Home' },
+  { href: '/projects', label: 'Projects' },
+  { href: '/versions', label: 'Version history' },
+  { href: '/help', label: 'Help' },
 ];
 
 export function TopNav() {
@@ -62,10 +62,10 @@ export function TopNav() {
   return (
     <header className="border-hairline bg-surface sticky top-0 z-30 border-b">
       <div className="mx-auto flex h-12 max-w-[1400px] items-center gap-2 px-3 md:h-14 md:px-4">
-        {/* Mobile: nút ☰ mở drawer. Tần suất thấp nên không đáng chiếm đáy màn hình (§6.6). */}
+        {/* Mobile: the ☰ button opens a drawer. Used rarely, so it does not deserve the bottom of the screen (§6.6). */}
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden" aria-label="Mở menu">
+            <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
               <Menu className="size-5" aria-hidden />
             </Button>
           </SheetTrigger>
@@ -99,7 +99,7 @@ export function TopNav() {
                 className="w-full"
                 onClick={() => logout.mutate()}
               >
-                Đăng xuất
+                Sign out
               </Button>
             </div>
           </SheetContent>
@@ -137,7 +137,7 @@ export function TopNav() {
               <button
                 type="button"
                 className="ease-out-quart hover:bg-sunken flex cursor-pointer items-center gap-2 rounded-full p-0.5 pr-2 transition-colors duration-150"
-                aria-label="Tài khoản"
+                aria-label="Account"
               >
                 <Avatar className="size-8">
                   <AvatarFallback className="bg-brand-soft text-brand-strong text-xs font-semibold">
@@ -151,10 +151,10 @@ export function TopNav() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-xs font-normal">
-                {user?.email ?? 'Chưa đăng nhập'}
+                {user?.email ?? 'Not signed in'}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => logout.mutate()}>Đăng xuất</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => logout.mutate()}>Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

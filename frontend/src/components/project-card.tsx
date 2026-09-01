@@ -15,15 +15,15 @@ export type ProjectSummary = {
 };
 
 const STATUS_LABEL: Record<ProjectSummary['status'], string> = {
-  DRAFT: 'Nháp',
-  IN_PROGRESS: 'Đang làm',
-  FINAL: 'Đã chốt',
+  DRAFT: 'Draft',
+  IN_PROGRESS: 'In progress',
+  FINAL: 'Final',
 };
 
 /**
- * Mỗi dự án một card: tên (lấy từ ý tưởng thô, cắt bớt), bước đang đứng, số version,
- * thời điểm sửa cuối, nút mở (DESIGN_SYSTEM §5.3). Mockup không vẽ màn này nhưng nav có
- * mục "Dự án" và ARCHITECTURE §3 đã cấp route.
+ * One card per project: title (taken from the raw idea, truncated), current step, version count,
+ * last edit time, and an open action (DESIGN_SYSTEM §5.3). The mockups never draw this screen,
+ * but the nav has a "Projects" entry and ARCHITECTURE §3 already assigns the route.
  */
 export function ProjectCard({ project }: { project: ProjectSummary }) {
   const stepNo = STEPS.find((s) => s.step === project.step)?.no ?? 1;
@@ -33,8 +33,8 @@ export function ProjectCard({ project }: { project: ProjectSummary }) {
         'group border-hairline bg-surface shadow-card relative rounded-lg border',
         'ease-out-quart transition-[border-color,box-shadow,transform] duration-150',
         'hover:border-brand-line hover:shadow-lift hover:-translate-y-px',
-        // Vòng focus đặt trên `<li>` chứ không trên `<a>`: người dùng bàn phím phải thấy
-        // **cả card** được chọn, giống hệt thứ chuột đang rê lên (§6.10).
+        // The focus ring sits on the `<li>`, not the `<a>`: a keyboard user must see the
+        // **whole card** selected, exactly like what the mouse hovers (§6.10).
         'focus-within:border-brand-line focus-within:shadow-lift',
       )}
     >
@@ -47,13 +47,13 @@ export function ProjectCard({ project }: { project: ProjectSummary }) {
         </h3>
         <p className="text-ink-3 line-clamp-2 text-xs">{project.raw_idea}</p>
         <div className="text-ink-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums">
-          <span className="text-brand-strong font-medium">Bước {stepNo}/5</span>
+          <span className="text-brand-strong font-medium">Step {stepNo}/5</span>
           <span>{STATUS_LABEL[project.status]}</span>
-          <span>{project.version_count} phiên bản</span>
-          <span>{project.decision_count} quyết định</span>
+          <span>{project.version_count} versions</span>
+          <span>{project.decision_count} decisions</span>
         </div>
         <p className="text-ink-4 text-2xs tabular-nums">
-          Sửa lần cuối {new Date(project.updated_at).toLocaleString('vi-VN')}
+          Last edited {new Date(project.updated_at).toLocaleString('en-US')}
         </p>
       </Link>
     </li>

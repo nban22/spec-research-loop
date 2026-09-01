@@ -29,7 +29,7 @@ import { SourceChip } from './sources';
 
 export type JudgeState = 'idle' | 'running' | 'done' | 'failed';
 
-/** Pill `J1`…`J5` — bằng chứng trace mà đề yêu cầu tường minh. */
+/** The `J1`…`J5` pills — the explicit trace evidence the brief asks for. */
 export function JudgeTracePill({ keys }: { keys: JudgeKey[] }) {
   return (
     <span className="inline-flex flex-wrap gap-1">
@@ -70,9 +70,9 @@ function JudgeCard({ judgeKey, state }: { judgeKey: JudgeKey; state: JudgeState 
         {state === 'done' && <CircleCheck className="text-ok-ink size-4 shrink-0" aria-hidden />}
         {state === 'failed' && <CircleX className="text-danger-ink size-4 shrink-0" aria-hidden />}
       </div>
-      {/* Dãy chấm trạng thái bám SSE — chính nó **là** tiến độ, không cần thanh thứ hai (§5.5). */}
+      {/* The status dot row follows SSE — it **is** the progress, no second bar needed (§5.5). */}
       <div className="mt-2 flex gap-1" aria-hidden>
-        {['chờ', 'chạy', 'xong'].map((_, i) => (
+        {['queued', 'running', 'done'].map((_, i) => (
           <span
             key={i}
             className={cn(
@@ -87,21 +87,21 @@ function JudgeCard({ judgeKey, state }: { judgeKey: JudgeKey; state: JudgeState 
       </div>
       <p className="text-ink-3 mt-1.5 text-xs leading-snug">{meta.task}</p>
       <p className="mt-1 text-xs">
-        {state === 'failed' && <span className="text-danger-strong">Lỗi — bỏ qua judge này</span>}
-        {state === 'done' && <span className="text-ok-strong">Đã chấm xong</span>}
-        {state === 'running' && <span className="text-brand-strong">Đang chấm…</span>}
-        {state === 'idle' && <span className="text-ink-4">Chưa chạy</span>}
+        {state === 'failed' && <span className="text-danger-strong">Failed — this judge is skipped</span>}
+        {state === 'done' && <span className="text-ok-strong">Finished scoring</span>}
+        {state === 'running' && <span className="text-brand-strong">Scoring…</span>}
+        {state === 'idle' && <span className="text-ink-4">Not started</span>}
       </p>
     </li>
   );
 }
 
 /**
- * Năm `JudgeCard` + dải chữ khẳng định tính độc lập.
+ * Five `JudgeCard`s + the strip of text asserting their independence.
  *
- * Mobile: **cuộn ngang có điểm dừng** — ngoại lệ duy nhất được cuộn ngang (§6.5).
- * Năm judge là các phần tử **ngang hàng nhau**; xếp dọc thành năm thẻ cao là mất ẩn dụ
- * "panel hội đồng", mà đó chính là điều đề bài nhấn mạnh.
+ * Mobile: **horizontal scroll with snap points** — the only place horizontal scrolling is allowed
+ * (§6.5). The five judges are **peers**; stacking them into five tall cards loses the "panel of
+ * a committee" metaphor, which is exactly what the brief emphasises.
  */
 export function JudgePanel({ states }: { states: Record<JudgeKey, JudgeState> }) {
   const keys: JudgeKey[] = ['J1', 'J2', 'J3', 'J4', 'J5'];
@@ -115,8 +115,8 @@ export function JudgePanel({ states }: { states: Record<JudgeKey, JudgeState> })
       <p className="text-ink-3 bg-sunken flex items-start gap-2 rounded-md px-3 py-2 text-xs">
         <Scale className="mt-0.5 size-3.5 shrink-0" aria-hidden />
         <span>
-          Các Judge đánh giá độc lập, không xem nhận xét của nhau. Mỗi Judge phụ trách một khía
-          cạnh riêng, nên phần lớn vấn đề chỉ do một Judge nêu — đó là bình thường.
+          The judges score independently and never see each other’s comments. Each one owns a
+          separate aspect, so most issues are raised by a single judge — that is normal.
         </span>
       </p>
     </div>
@@ -124,11 +124,11 @@ export function JudgePanel({ states }: { states: Record<JudgeKey, JudgeState> })
 }
 
 /**
- * Nửa **đồng thuận** của chức năng 13. Mẫu số là **số judge chạy xong**, không phải hằng số 5 —
- * judge lỗi phải nói thẳng ra (SYSTEM_DESIGN_ANALYSIS C3 · F.7).
+ * The **agreement** half of feature 13. The denominator is the **number of judges that finished**,
+ * not the constant 5 — a failed judge has to be stated plainly (SYSTEM_DESIGN_ANALYSIS C3 · F.7).
  *
- * `agreement` là mức đồng thuận **cao nhất trong cả bảng**, không phải của một nhóm cụ thể:
- * thanh này đứng trên toàn bộ `IssueTable` nên nó phải nói về toàn bộ bảng.
+ * `agreement` is the **highest agreement in the whole table**, not that of one group: this bar
+ * sits above the entire `IssueTable`, so it must speak about the entire table.
  */
 export function ConsensusMeter({
   agreement,
@@ -144,10 +144,10 @@ export function ConsensusMeter({
     <div className="space-y-1">
       <p className="text-ink-2 text-xs">
         <span className="text-ink-1 font-semibold">
-          Đồng thuận cao nhất: {agreement}/{completed} judge
+          Highest agreement: {agreement}/{completed} judges
         </span>
         {failedKeys.length > 0 && (
-          <span className="text-warn-strong"> ({failedKeys.join(', ')} lỗi)</span>
+          <span className="text-warn-strong"> ({failedKeys.join(', ')} failed)</span>
         )}
       </p>
       <div className="bg-hairline h-1.5 overflow-hidden rounded-full">
@@ -158,18 +158,19 @@ export function ConsensusMeter({
 }
 
 /**
- * Nửa **bất đồng** của chức năng 13 — phần mockup không vẽ và dễ quên nhất
- * (DESIGN_SYSTEM §5.3, §8). Bất đồng là **thông tin để cân nhắc**, không phải lỗi ⇒ dùng họ
- * `neutral`, không dùng `warn`.
+ * The **disagreement** half of feature 13 — the part no mockup draws and the easiest to forget
+ * (DESIGN_SYSTEM §5.3, §8). Disagreement is **information to weigh**, not an error ⇒ it uses the
+ * `neutral` family, not `warn`.
  *
- * Hai luật của câu chữ ở đây:
+ * Two rules govern the wording here:
  *
- * 1. Mẫu số là `judges_completed`, **không** phải hằng số 5 — một judge lỗi thì mẫu số là 4,
- *    và cột "Judge" ngay bên cạnh đã hiện `agreement_count/judges_completed` rồi; hai con số
- *    trong cùng một hàng không được nói khác nhau.
- * 2. **Không** được suy ra "các judge kia đã xem và thấy ổn". Năm judge phụ trách năm khía cạnh
- *    rời nhau và prompt cấm lấn sân (`prompts/judge_*.md`, khối `## USER`), nên `1/n` là trạng
- *    thái *bình thường*. Nói ngược lại là đẩy người dùng nghi ngờ đúng judge có thẩm quyền.
+ * 1. The denominator is `judges_completed`, **not** the constant 5 — with one judge failed it is
+ *    4, and the "Judge" column right next to it already shows `agreement_count/judges_completed`;
+ *    two numbers in the same row must not disagree.
+ * 2. It must **never** imply "the other judges looked and were fine with it". The five judges own
+ *    five disjoint aspects and the prompts forbid straying (`prompts/judge_*.md`, the `## USER`
+ *    block), so `1/n` is the *normal* state. Saying otherwise pushes the user to doubt precisely
+ *    the judge with authority here.
  */
 export function DisagreementNote({ group }: { group: ApiIssueGroup }) {
   if (group.agreement_count > 1 || group.judges_completed <= 1) return null;
@@ -178,19 +179,20 @@ export function DisagreementNote({ group }: { group: ApiIssueGroup }) {
   const others = group.judges_completed - group.agreement_count;
   return (
     <p className="border-neutral-line bg-neutral-soft text-neutral-strong rounded-md border px-2.5 py-1.5 text-xs">
-      Chỉ <span className="font-medium">{key}</span>
-      {meta ? ` (${meta.name} — ${meta.task.toLowerCase()})` : ''} nêu vấn đề này. {others} judge
-      còn lại phụ trách khía cạnh khác của spec, nên việc họ không nhắc tới{' '}
-      <span className="font-medium">không</span> có nghĩa là đã xem và thấy ổn.
+      Only <span className="font-medium">{key}</span>
+      {meta ? ` (${meta.name} — ${meta.task.toLowerCase()})` : ''} raised this. The other {others}{' '}
+      judges own different aspects of the spec, so their silence does{' '}
+      <span className="font-medium">not</span> mean they looked and were satisfied.
     </p>
   );
 }
 
 /**
- * Judge viết `source_id` **rút gọn 8 ký tự đầu** trong `reason` — `sources_json` gửi đi mang UUID
- * đầy đủ, model tự cắt khi viết văn ("Source 57eea209 reports results for…"). Tra ngược để người
- * dùng mở được abstract mà đối chiếu: phần lớn issue của một vòng judge là *"abstract không nói
- * điều card nói"*, và không đọc được abstract thì không quyết được gì.
+ * Judges write `source_id` **shortened to its first 8 characters** inside `reason` — the
+ * `sources_json` sent to them carries full UUIDs, and the model truncates them in prose ("Source
+ * 57eea209 reports results for…"). We resolve them back so the user can open the abstract and
+ * check: most issues in a judge round are *"the abstract does not say what the card says"*, and
+ * without reading the abstract nothing can be decided.
  */
 const SOURCE_REF = /\b[0-9a-f]{8}\b/g;
 
@@ -200,7 +202,7 @@ function indexByPrefix(sources: ApiSource[]): Map<string, ApiSource> {
   return index;
 }
 
-/** Trả về nguồn tra ra được, **và cả id tra không ra** — cái sau tự nó là một phát hiện. */
+/** Returns the sources we resolved **and the ids we could not** — the latter is a finding in itself. */
 function referencedSources(reason: string, sources: ApiSource[]) {
   const index = indexByPrefix(sources);
   const found = new Map<string, ApiSource>();
@@ -208,36 +210,37 @@ function referencedSources(reason: string, sources: ApiSource[]) {
   for (const token of reason.match(SOURCE_REF) ?? []) {
     const hit = index.get(token.toLowerCase());
     if (hit) found.set(hit.id, hit);
-    // Chuỗi 8 chữ số thuần (năm, ngày `20260826`) cũng khớp regex — đòi ít nhất một chữ cái
-    // hex để không báo nhầm chúng là id lạ.
+    // A run of 8 plain digits (a year, a date like `20260826`) also matches the regex — require at
+    // least one hex letter so those are not reported as unknown ids.
     else if (/[a-f]/.test(token)) missing.add(token);
   }
   return { found: [...found.values()], missing: [...missing] };
 }
 
 /**
- * Chip nguồn đặt **ngoài** vùng bấm của `Đọc thêm`: đoạn `line-clamp-3` đã là một `<button>`,
- * nhét chip vào trong là button lồng button. Dùng lại `SourceChip` — Dialog của nó có abstract,
- * DOI kèm trạng thái tra cứu và nút mở nguồn gốc, đúng thứ cần để đối chiếu.
+ * The source chips sit **outside** the `Read more` hit area: the `line-clamp-3` paragraph is
+ * already a `<button>`, so nesting chips inside would nest buttons. It reuses `SourceChip` — its
+ * dialog carries the abstract, the DOI with its lookup status, and a link to the original, which
+ * is exactly what checking requires.
  */
 function SourceRefList({ found, missing }: { found: ApiSource[]; missing: string[] }) {
   if (found.length === 0 && missing.length === 0) return null;
   return (
     <div className="mt-1.5 space-y-1">
-      <p className="text-ink-4 text-2xs">Nguồn judge đối chiếu:</p>
+      <p className="text-ink-4 text-2xs">Sources the judge checked against:</p>
       <div className="flex flex-wrap gap-1">
         {found.map((s) => (
           <SourceChip key={s.id} source={s} />
         ))}
-        {/* Id judge nhắc tới mà kho nguồn của dự án không có: nói thẳng ra thay vì hiện nguyên
-            văn như thể nó có thật. */}
+        {/* An id the judge cites that the project's source store does not hold: say so plainly
+            rather than print it verbatim as if it were real. */}
         {missing.map((id) => (
           <span
             key={id}
             className="border-warn-line bg-warn-soft text-warn-strong inline-flex items-center gap-1 rounded-sm border px-2 py-1 font-mono text-xs"
           >
             <TriangleAlert className="size-3 shrink-0" aria-hidden />
-            {id} · không có trong kho nguồn
+            {id} · not in the source store
           </span>
         ))}
       </div>
@@ -245,7 +248,7 @@ function SourceRefList({ found, missing }: { found: ApiSource[]; missing: string
   );
 }
 
-/** Trong Dialog `Đọc thêm` thì link **thẳng ra ngoài**, không mở Dialog thứ hai. */
+/** Inside the `Read more` dialog the links go **straight out**, never open a second dialog. */
 function LinkedReason({ reason, sources }: { reason: string; sources: ApiSource[] }) {
   const index = indexByPrefix(sources);
   const parts = reason.split(SOURCE_REF);
@@ -291,13 +294,13 @@ function ReasonCell({ reason, sources }: { reason: string; sources: ApiSource[] 
           <button className="text-ink-2 hover:text-ink-1 w-full cursor-pointer text-left transition-colors focus:outline-none">
             <span className="line-clamp-3">{reason}</span>
             <span className="text-brand-strong mt-1 inline-block text-2xs font-medium tracking-wider uppercase hover:underline">
-              Đọc thêm
+              Read more
             </span>
           </button>
         </DialogTrigger>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Lý do chi tiết</DialogTitle>
+            <DialogTitle>Full reasoning</DialogTitle>
           </DialogHeader>
           <LinkedReason reason={reason} sources={sources} />
         </DialogContent>
@@ -313,8 +316,8 @@ function ReasonCell({ reason, sources }: { reason: string; sources: ApiSource[] 
 }
 
 /**
- * Cột: Severity · Vấn đề · Lý do · **Judge** · Thao tác. Sắp theo severity giảm dần.
- * Dưới `md` đổi sang card list, giữ nguyên thứ tự (§6.5).
+ * Columns: Severity · Issue · Reason · **Judge** · Action. Sorted by descending severity.
+ * Below `md` it switches to a card list, keeping the same order (§6.5).
  */
 export function IssueTable({
   groups,
@@ -323,7 +326,7 @@ export function IssueTable({
   activeId,
 }: {
   groups: ApiIssueGroup[];
-  /** Kho nguồn của dự án — để tra ngược `source_id` rút gọn mà judge viết trong `reason`. */
+  /** The project's source store — used to resolve the shortened `source_id` judges write in `reason`. */
   sources: ApiSource[];
   onPick: (g: ApiIssueGroup) => void;
   activeId?: string | null;
@@ -334,11 +337,11 @@ export function IssueTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-24">Mức độ</TableHead>
-              <TableHead className="whitespace-normal">Vấn đề</TableHead>
-              <TableHead className="whitespace-normal">Lý do</TableHead>
+              <TableHead className="w-24">Severity</TableHead>
+              <TableHead className="whitespace-normal">Issue</TableHead>
+              <TableHead className="whitespace-normal">Reason</TableHead>
               <TableHead className="w-16 text-center">Judge</TableHead>
-              <TableHead className="w-16 text-center">Thao tác</TableHead>
+              <TableHead className="w-16 text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -368,7 +371,7 @@ export function IssueTable({
                 </TableCell>
                 <TableCell className="align-top text-center">
                   <Button size="sm" variant="outline" onClick={() => onPick(g)}>
-                    Xử lý
+                    Resolve
                   </Button>
                 </TableCell>
               </TableRow>
@@ -407,7 +410,7 @@ export function IssueTable({
                 </span>
               </span>
               <Button size="sm" variant="outline" onClick={() => onPick(g)}>
-                Xử lý
+                Resolve
               </Button>
             </div>
           </li>

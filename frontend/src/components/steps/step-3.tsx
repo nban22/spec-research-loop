@@ -18,11 +18,12 @@ import type { ApiEstimate, ApiExperimentPlan } from '@/lib/types';
 import { useAnswerDecision, useCards, useJobAction, useProject } from '@/lib/use-project';
 
 /**
- * **B3 · Contribution & Kế hoạch thí nghiệm** (preset *cân bằng*).
+ * **S3 · Contribution & experiment plan** (the *balanced* preset).
  *
- * **[QĐ] lệch mockup 3:** mockup để cột phải làm việc *thông báo* (kiểm tra khả thi), nên bước
- * này không có chỗ nào để người dùng quyết — trái NFR-G-3. Thêm một khối quyết định gọn ở cuối
- * cột phải: **duyệt kế hoạch · giảm quy mô theo đề xuất · Other** (DESIGN_SYSTEM §5.4 #2, §8 #11).
+ * **[DECISION] diverges from mockup 3:** the mockup leaves the right column purely *informational*
+ * (a feasibility check), so this step would offer the user nothing to decide — against NFR-G-3. A
+ * compact decision block was added at the bottom of the right column: **approve the plan ·
+ * downscale as suggested · Other** (DESIGN_SYSTEM §5.4 #2, §8 #11).
  */
 export function Step3({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -42,9 +43,9 @@ export function Step3({ projectId }: { projectId: string }) {
   const claims = cards.filter((c) => c.type === 'CLAIM');
 
   /**
-   * Verifier chạy ở **bước 5**, nên mọi cặp thẻ–nguồn vừa sinh ra ở đây đều chưa được chấm.
-   * `CardSource.support_label` lại có mặc định `WEAK`, nên nếu không nói ra thì cả bảng thẻ
-   * trông như thể verifier đã đọc hết và không chống lưng được gì — kết luận sai hoàn toàn.
+   * The verifier runs at **step 5**, so every card-source pair just generated here is unscored.
+   * `CardSource.support_label` defaults to `WEAK`, so left unsaid the whole board would look as
+   * though the verifier read everything and could back none of it — a completely wrong conclusion.
    */
   const unverifiedPairs = cards
     .flatMap((c) => c.card_sources)
@@ -58,10 +59,10 @@ export function Step3({ projectId }: { projectId: string }) {
 
   const context = (
     <>
-      <Panel accent="brand" icon={Trophy} title="Đóng góp dự kiến">
+      <Panel accent="brand" icon={Trophy} title="Intended contributions">
         {contributions.length === 0 ? (
           <p className="text-ink-3 text-xs">
-            Chưa sinh. Bấm “Sinh contribution & claim” ở cột giữa.
+            Not generated yet. Press “Generate contributions &amp; claims” in the middle column.
           </p>
         ) : (
           <>
@@ -82,15 +83,15 @@ export function Step3({ projectId }: { projectId: string }) {
 
       <Panel accent="neutral" icon={Gauge} title="Claim – Evidence">
         {claims.length === 0 ? (
-          <p className="text-ink-3 text-xs">Chưa có khẳng định nào.</p>
+          <p className="text-ink-3 text-xs">No claims yet.</p>
         ) : (
           <div className="space-y-2">
             {unverifiedPairs > 0 && (
-              <HintBox tone="info" title="Các cặp này chưa qua kiểm chứng cứ">
+              <HintBox tone="info" title="These pairs have not been through evidence verification">
                 <p>
-                  {unverifiedPairs} cặp khẳng định – nguồn đang mang nhãn{' '}
-                  <strong>CHƯA KIỂM</strong>. Bước kiểm chứng cứ chạy ở bước 5; trước đó chưa có
-                  nhãn nào là kết luận của hệ thống.
+                  {unverifiedPairs} claim-source pairs currently carry the{' '}
+                  <strong>UNVERIFIED</strong> tag. Evidence verification runs at step 5; before
+                  that, no label here is a conclusion of the system.
                 </p>
               </HintBox>
             )}
@@ -107,13 +108,13 @@ export function Step3({ projectId }: { projectId: string }) {
     <>
       <JobProgress view={job.view} onReload={job.reload} />
 
-      <Panel accent="ok" icon={Beaker} title="Kế hoạch thí nghiệm">
+      <Panel accent="ok" icon={Beaker} title="Experiment plan">
         {!hasPlan ? (
           <EmptyState
             icon={Beaker}
             tone="ok"
-            title="Chưa có kế hoạch thí nghiệm"
-            description="Sinh contribution và Claim–Evidence trước, rồi dựng kế hoạch thí nghiệm. Mỗi thí nghiệm phải gắn với ít nhất một khẳng định."
+            title="No experiment plan yet"
+            description="Generate the contributions and claim-evidence pairs first, then build the experiment plan. Every experiment must attach to at least one claim."
             action={
               <div className="mt-2 flex flex-wrap justify-center gap-2">
                 <Button
@@ -121,7 +122,7 @@ export function Step3({ projectId }: { projectId: string }) {
                   disabled={job.busy}
                   onClick={() => job.run(`/projects/${projectId}/contributions`)}
                 >
-                  Sinh contribution &amp; claim
+                  Generate contributions &amp; claims
                 </Button>
                 <Button
                   size="sm"
@@ -129,7 +130,7 @@ export function Step3({ projectId }: { projectId: string }) {
                   disabled={job.busy || claims.length === 0}
                   onClick={() => job.run(`/projects/${projectId}/experiment-plan`)}
                 >
-                  Dựng kế hoạch thí nghiệm
+                  Build the experiment plan
                 </Button>
               </div>
             }
@@ -143,66 +144,66 @@ export function Step3({ projectId }: { projectId: string }) {
 
   const decide = (
     <>
-      <Panel accent="decide" icon={Cpu} title="Kiểm tra tính khả thi">
+      <Panel accent="decide" icon={Cpu} title="Feasibility check">
         {estimate ? (
           <>
             <StatTileGrid
               items={[
                 { label: 'Model', value: `${estimate.inputs.model_params_b}B` },
-                { label: 'Lượng tử hoá', value: String(estimate.inputs.quantization) },
+                { label: 'Quantisation', value: String(estimate.inputs.quantization) },
                 { label: 'Candidates', value: String(estimate.inputs.candidates) },
-                { label: 'Số vòng', value: String(estimate.inputs.rounds) },
+                { label: 'Rounds', value: String(estimate.inputs.rounds) },
               ]}
             />
             <EstimateRows estimate={estimate} />
           </>
         ) : hasPlan ? (
-          /* Đã có kế hoạch mà chưa có ước lượng ⇒ pha 2 của job đang chạy: hiện đúng khung
-             bốn ô sắp tới, không hiện chữ như thể không có gì. */
+          /* A plan without an estimate ⇒ phase 2 of the job is running: show the four-tile frame
+             that is coming, not a sentence implying nothing is happening. */
           <StatTileSkeleton />
         ) : (
           <p className="text-ink-3 text-xs">
-            Ước lượng xuất hiện sau khi có kế hoạch thí nghiệm. Đây là công thức thuần — không
-            gọi mô hình.
+            The estimate appears once the experiment plan exists. It is pure arithmetic — no model
+            call involved.
           </p>
         )}
       </Panel>
 
-      {/* Khối quyết định thêm vào so với mockup 3 — không có nó thì bước này tự chốt. */}
+      {/* A decision block added over mockup 3 — without it this step would confirm itself. */}
       {hasEstimate && (
-        <Panel accent="decide" icon={Beaker} title="Duyệt kế hoạch">
+        <Panel accent="decide" icon={Beaker} title="Approve the plan">
           <OptionList
-            question="Bạn muốn chốt kế hoạch thí nghiệm theo hướng nào?"
+            question="How do you want to settle the experiment plan?"
             options={[
               {
                 key: 'A',
-                label: 'Duyệt kế hoạch',
-                explain: 'Giữ nguyên quy mô hiện tại và sang bước phản biện.',
-                example: 'Chạy đúng số candidate và số mẫu đánh giá đang ước lượng.',
+                label: 'Approve the plan',
+                explain: 'Keep the current scale and move on to the critique step.',
+                example: 'Run exactly the candidate count and evaluation sample size estimated here.',
                 recommended: estimate?.fits_rtx3090 ?? true,
               },
               {
                 key: 'B',
-                label: 'Giảm quy mô theo đề xuất',
-                explain: 'Áp dụng các đề xuất giảm quy mô để vừa tài nguyên.',
+                label: 'Downscale as suggested',
+                explain: 'Apply the downscaling suggestions so it fits the available resources.',
                 example:
                   estimate?.downscale_suggestion?.[0]?.reason ??
-                  'Giảm số candidate hoặc hạ lượng tử hoá.',
+                  'Reduce the candidate count or lower the quantisation.',
                 recommended: !(estimate?.fits_rtx3090 ?? true),
               },
             ]}
             variant="compact"
             submitting={answer.isPending}
-            submitLabel="Chốt kế hoạch"
+            submitLabel="Settle the plan"
             onSubmit={(chosenKey, customText) =>
               answer.mutate(
                 {
                   spec_version_id: versionId,
                   step: 'S3',
-                  question: 'Bạn muốn chốt kế hoạch thí nghiệm theo hướng nào?',
+                  question: 'How do you want to settle the experiment plan?',
                   options: [
-                    { key: 'A', label: 'Duyệt kế hoạch', explain: '', example: '' },
-                    { key: 'B', label: 'Giảm quy mô theo đề xuất', explain: '', example: '' },
+                    { key: 'A', label: 'Approve the plan', explain: '', example: '' },
+                    { key: 'B', label: 'Downscale as suggested', explain: '', example: '' },
                   ],
                   chosen_key: chosenKey,
                   custom_text: customText,
@@ -213,8 +214,8 @@ export function Step3({ projectId }: { projectId: string }) {
           />
           {estimate && !estimate.fits_rtx3090 && (
             <HintBox tone="warn">
-              Cấu hình hiện tại vượt RTX 3090. Chọn “Giảm quy mô theo đề xuất” nếu bạn định chạy
-              trên một card duy nhất.
+              The current configuration exceeds an RTX 3090. Choose “Downscale as suggested” if you
+              plan to run on a single card.
             </HintBox>
           )}
         </Panel>
@@ -225,19 +226,19 @@ export function Step3({ projectId }: { projectId: string }) {
   return (
     <WizardShell
       preset="balanced"
-      contextTitle="Đóng góp & Claim–Evidence"
+      contextTitle="Contributions & claim-evidence"
       contextDefaultOpen
       context={context}
       content={content}
       decide={decide}
       decideCount={hasEstimate ? 1 : 0}
-      decideSummary={hasEstimate ? 'Duyệt kế hoạch thí nghiệm' : undefined}
+      decideSummary={hasEstimate ? 'Approve the experiment plan' : undefined}
       summaryBar={
         <SummaryBar
           round={1}
-          nodes={['Contribution', 'Thí nghiệm', 'Ước lượng', 'Xác nhận']}
+          nodes={['Contribution', 'Experiments', 'Estimate', 'Confirm']}
           activeIndex={claims.length === 0 ? 0 : !hasPlan ? 1 : !hasEstimate ? 2 : 3}
-          hint="Mỗi khẳng định cần một điều kiện bác bỏ — trường hay bị quên nhất."
+          hint="Every claim needs a refutation condition — the field most often forgotten."
         />
       }
     />
@@ -245,8 +246,8 @@ export function Step3({ projectId }: { projectId: string }) {
 }
 
 /**
- * Kế hoạch thí nghiệm + ước lượng tài nguyên của version hiện tại.
- * Một endpoint, một round-trip — cả hai luôn đọc cùng nhau nên không tách hai query.
+ * The experiment plan + the resource estimate of the current version.
+ * One endpoint, one round trip — the two are always read together, so they are not split.
  */
 function usePlanAndEstimate(versionId: string | undefined) {
   return useQuery({
@@ -259,7 +260,7 @@ function usePlanAndEstimate(versionId: string | undefined) {
   });
 }
 
-/** Bản ghi `ResourceEstimate` trong DB — cùng số liệu với `ApiEstimate` nhưng không có `breakdown`. */
+/** The `ResourceEstimate` DB record — the same numbers as `ApiEstimate` but without `breakdown`. */
 type StoredEstimate = {
   inputs: Record<string, string | number>;
   vram_gb: number;
@@ -271,7 +272,7 @@ type StoredEstimate = {
   downscale_suggestion: ApiEstimate['downscale_suggestion'];
 };
 
-/** Dựng lại hình dạng `ApiEstimate` để dùng chung component hiển thị. */
+/** Rebuild the `ApiEstimate` shape so the same display component can be reused. */
 function toApiEstimate(e: StoredEstimate): ApiEstimate {
   return {
     ...e,

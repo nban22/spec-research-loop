@@ -4,13 +4,13 @@ import { EvidenceTraceView } from './evidence-trace';
 import type { ApiEvidencePair, ApiEvidenceTrace } from '@/lib/use-project';
 
 /**
- * Bốn thứ đáng khoá lại ở tầng này:
+ * Four things worth locking down at this layer:
  *
- * 1. **Ngưỡng hiện ra là ngưỡng của lần chạy đó**, không phải hằng số hiện hành — đây là điều kiện
- *    tường minh của #5 và là cả lý do NFR-VER-4 chép ngưỡng vào mỗi `VerifierRun`.
- * 2. **Mọi nhãn truy được về tầng đã quyết định nó.**
- * 3. Lời giải thích và cờ hiện bằng **chữ**, không giấu trong hover (DS §6.7).
- * 4. Bộ lọc thu hẹp thật, và không vỡ khi lọc ra rỗng.
+ * 1. **The thresholds shown belong to that run**, not to today's constants — the explicit
+ *    requirement of #5 and the whole reason NFR-VER-4 copies them into every `VerifierRun`.
+ * 2. **Every label traces back to the layer that decided it.**
+ * 3. Explanations and flags appear as **text**, never hidden behind hover (DS §6.7).
+ * 4. The filters genuinely narrow, and do not break when the result is empty.
  */
 
 const pair = (over: Partial<ApiEvidencePair> = {}): ApiEvidencePair => ({
@@ -32,14 +32,14 @@ const pair = (over: Partial<ApiEvidencePair> = {}): ApiEvidencePair => ({
   evidence_sentence: null,
   flags: [],
   layer: 'L3',
-  layer_why: 'Câu gần nhất trong nguồn đạt độ tương đồng 0.81, vượt ngưỡng trên.',
+  layer_why: 'The closest sentence in the source reached 0.81 similarity, above the upper threshold.',
   credibility: null,
   passages: [],
   ...over,
 });
 
 const data = (over: Partial<ApiEvidenceTrace> = {}): ApiEvidenceTrace => ({
-  // Ngưỡng **khác** mặc định, để test bắt được nếu ai đó hardcode hằng số hiện hành.
+  // Thresholds deliberately **different** from the defaults, so the test catches a hardcoded constant.
   thresholds: {
     tau_low: 0.4,
     tau_high: 0.76,
@@ -55,22 +55,22 @@ const data = (over: Partial<ApiEvidenceTrace> = {}): ApiEvidenceTrace => ({
   ...over,
 });
 
-/** Cặp generator vừa sinh: nhãn `WEAK` là mặc định của schema, verifier chưa hề chạm vào. */
+/** A freshly generated pair: the `WEAK` label is the schema default and the verifier never touched it. */
 const unverifiedPair = () =>
   pair({
     card_source_id: 'cs-2',
-    card: { id: 'c-2', title: 'Chưa kiểm bao giờ', type: 'CLAIM', status: 'PROPOSED' },
+    card: { id: 'c-2', title: 'Never verified', type: 'CLAIM', status: 'PROPOSED' },
     support_label: 'WEAK',
     verified: false,
     similarity: null,
     layer: null,
     layer_why:
-      'Cặp này chưa đi qua bước kiểm chứng cứ lần nào, nên chưa có nhãn. Nhãn WEAK đang hiện là giá trị mặc định của cơ sở dữ liệu, không phải kết luận của verifier.',
+      'This pair has never been through evidence verification, so it has no label. The WEAK shown is the database default, not a verifier conclusion.',
   });
 
-describe('trang vì sao nhãn này', () => {
-  it('hiện ngưỡng của chính lần chạy đó, không phải hằng số hiện hành', () => {
-    // Cặp có phán quyết của mô hình, để cả ba ngưỡng cùng lộ ra một chỗ.
+describe('the why-this-label page', () => {
+  it('shows the thresholds of that particular run, not today constants', () => {
+    // A pair with a model verdict, so all three thresholds surface in one place.
     render(
       <EvidenceTraceView
         data={data({
@@ -79,20 +79,20 @@ describe('trang vì sao nhãn này', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /Hybrid retrieval helps/ }));
-    expect(screen.getByText(/ngưỡng dưới 0.4/)).toBeInTheDocument();
-    expect(screen.getByText(/ngưỡng trên 0.76/)).toBeInTheDocument();
-    expect(screen.getByText(/tối thiểu 0.8/)).toBeInTheDocument();
+    expect(screen.getByText(/lower threshold 0.4/)).toBeInTheDocument();
+    expect(screen.getByText(/upper threshold 0.76/)).toBeInTheDocument();
+    expect(screen.getByText(/minimum 0.8/)).toBeInTheDocument();
   });
 
-  it('mỗi nhãn truy được về tầng đã quyết định nó', () => {
+  it('traces every label back to the layer that decided it', () => {
     render(<EvidenceTraceView data={data()} />);
     fireEvent.click(screen.getByRole('button', { name: /Hybrid retrieval helps/ }));
     const step = screen.getByRole('listitem', { current: 'step' });
     expect(step).toHaveTextContent('L3');
-    expect(screen.getByText(/vượt ngưỡng trên/)).toBeInTheDocument();
+    expect(screen.getByText(/above the upper threshold/)).toBeInTheDocument();
   });
 
-  it('cờ chẩn đoán hiện thành câu, không phải mã enum trần', () => {
+  it('renders diagnostic flags as sentences, not bare enum codes', () => {
     render(
       <EvidenceTraceView
         data={data({ pairs: [pair({ flags: ['FULLTEXT_USED'], layer: 'L3b' })] })}
@@ -100,11 +100,11 @@ describe('trang vì sao nhãn này', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Hybrid retrieval helps/ }));
     expect(
-      screen.getByText(/^· Nhãn này đọc từ toàn văn bài báo/),
+      screen.getByText(/^· This label was read from the full paper/),
     ).toBeInTheDocument();
   });
 
-  it('hiện các đoạn toàn văn và đánh dấu đoạn chứa câu trích', () => {
+  it('shows the full-text passages and marks the one holding the quote', () => {
     render(
       <EvidenceTraceView
         data={data({
@@ -134,45 +134,45 @@ describe('trang vì sao nhãn này', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /Hybrid retrieval helps/ }));
-    expect(screen.getByText(/đoạn chứa câu trích/)).toBeInTheDocument();
+    expect(screen.getByText(/contains the quoted sentence/)).toBeInTheDocument();
   });
 
   /**
-   * Ba tính chất của cặp **chưa kiểm chứng** — thứ làm cả bảng thẻ ở bước 3 trông như thể
-   * verifier đã chấm và chấm hỏng, trong khi nó chưa chạy lần nào.
+   * Three properties of an **unverified** pair — the thing that makes the whole card board at
+   * step 3 look as though the verifier scored it and scored it badly, while it never ran at all.
    */
-  it('cặp chưa kiểm hiện CHƯA KIỂM chứ không phải WEAK', () => {
+  it('shows UNVERIFIED rather than WEAK for an unverified pair', () => {
     render(<EvidenceTraceView data={data({ pairs: [unverifiedPair()], unverified: 1 })} />);
-    expect(screen.getByText('CHƯA KIỂM')).toBeInTheDocument();
+    expect(screen.getByText('UNVERIFIED')).toBeInTheDocument();
     expect(screen.queryByText('WEAK')).toBeNull();
   });
 
-  it('cặp chưa kiểm không vẽ thanh tầng — không tầng nào từng chạm vào nó', () => {
+  it('draws no layer bar for an unverified pair — no layer ever touched it', () => {
     render(<EvidenceTraceView data={data({ pairs: [unverifiedPair()], unverified: 1 })} />);
-    fireEvent.click(screen.getByRole('button', { name: /Chưa kiểm bao giờ/ }));
-    expect(screen.queryByRole('list', { name: 'Đường đi qua các tầng' })).toBeNull();
-    expect(screen.getByText(/chưa đi qua bước kiểm chứng cứ lần nào/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Never verified/ }));
+    expect(screen.queryByRole('list', { name: 'Path through the verifier layers' })).toBeNull();
+    expect(screen.getByText(/never been through evidence verification/)).toBeInTheDocument();
   });
 
-  it('bộ lọc "Yếu" không nuốt cặp chưa kiểm, bộ lọc "Chưa kiểm" thì bắt đúng nó', () => {
+  it('keeps unverified pairs out of the "Weak" filter and catches them with "Unverified"', () => {
     render(
       <EvidenceTraceView
         data={data({ pairs: [pair(), unverifiedPair()], unverified: 1 })}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Yếu' }));
-    expect(screen.getByText(/Không có cặp nào khớp bộ lọc/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Weak' }));
+    expect(screen.getByText(/No pair matches these filters/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Chưa kiểm' }));
-    expect(screen.getByText('Chưa kiểm bao giờ')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Unverified' }));
+    expect(screen.getByText('Never verified')).toBeInTheDocument();
     expect(screen.queryByText('Hybrid retrieval helps')).toBeNull();
   });
 
-  it('lọc theo nhãn thu hẹp danh sách và không vỡ khi rỗng', () => {
+  it('narrows the list by label and does not break when empty', () => {
     render(<EvidenceTraceView data={data()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Không hỗ trợ' }));
-    expect(screen.getByText(/Không có cặp nào khớp bộ lọc/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Tất cả' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Unsupported' }));
+    expect(screen.getByText(/No pair matches these filters/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
     expect(screen.getByText('Hybrid retrieval helps')).toBeInTheDocument();
   });
 });

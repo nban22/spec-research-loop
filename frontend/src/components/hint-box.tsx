@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 export type HintTone = 'info' | 'ok' | 'warn' | 'danger';
 
-/** Bốn sắc thái của `HintBox` (DESIGN_SYSTEM §5.3). Hộp lồng trong Panel **không** có bóng (§4.5). */
+/** The four tones of `HintBox` (DESIGN_SYSTEM §5.3). A box nested in a Panel has **no** shadow (§4.5). */
 const TONE: Record<HintTone, { wrap: string; icon: typeof Info }> = {
   info: { wrap: 'bg-brand-soft border-brand-line text-brand-strong', icon: Info },
   ok: { wrap: 'bg-ok-soft border-ok-line text-ok-strong', icon: Lightbulb },

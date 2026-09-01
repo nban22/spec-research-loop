@@ -21,10 +21,11 @@ import { StatusChip } from './status-chip';
 import { SupportTag } from './support-tag';
 
 /**
- * Một thẻ trong 8 loại: **vạch màu trạng thái cạnh trái** + `StatusChip` + nội dung + nguồn
- * đính kèm (DESIGN_SYSTEM §3.7). Thẻ **không** tô nền theo trạng thái — sáu nền màu cạnh nhau
- * sẽ rối. Riêng `MISSING`: viền đứt nét, nền chìm, chữ mờ — thẻ trông như một ô còn trống
- * chờ điền, vì đó chính xác là nó.
+ * One card of the 8 types: a **status colour rail on the left** + `StatusChip` + content +
+ * attached sources (DESIGN_SYSTEM §3.7). The card is **never** filled by status — six coloured
+ * fills side by side turn into noise. `MISSING` is the exception: dashed border, sunken fill,
+ * dimmed text — the card looks like an empty slot waiting to be filled, because that is exactly
+ * what it is.
  */
 export function SpecCard({ card }: { card: ApiCard }) {
   const missing = card.status === 'MISSING';
@@ -44,8 +45,8 @@ export function SpecCard({ card }: { card: ApiCard }) {
           : 'border-hairline bg-surface hover:border-brand-line',
       )}
     >
-      {/* Vạch màu dày thêm 1px khi rê chuột — tín hiệu "thẻ này đang được nhắm" mà không
-          cần đổi màu nền, vì nền là tài sản của trạng thái (§3.7). */}
+      {/* The rail gains 1px on hover — a "this card is targeted" signal that does not touch the
+          background colour, because the background belongs to the status (§3.7). */}
       <span
         className={cn(
           'absolute inset-y-0 left-0 w-1 group-hover/card:w-1.5',
@@ -111,33 +112,34 @@ export function SpecCard({ card }: { card: ApiCard }) {
   );
 }
 
-/** Bốn câu hỏi bắt buộc của gap + năm trường của claim — nhãn tiếng Việt cho người đọc. */
+/** The four mandatory gap questions + the five claim fields — reader-facing labels. */
 const FIELD_LABEL: Record<string, string> = {
-  prior_work: 'Nghiên cứu trước đã làm được gì',
-  limitation: 'Điểm nào vẫn còn hạn chế',
-  why_it_matters: 'Vì sao hạn chế đó quan trọng',
-  testable_experiment: 'Kiểm nghiệm bằng thí nghiệm nào',
+  prior_work: 'What prior work achieved',
+  limitation: 'What is still limited',
+  why_it_matters: 'Why that limitation matters',
+  testable_experiment: 'Which experiment would test it',
   baseline: 'Baseline',
   metric: 'Metric',
   evidence: 'Evidence',
-  refutation_condition: 'Điều kiện bác bỏ',
+  refutation_condition: 'Refutation condition',
 };
 
 /**
- * **`CardBoard` — bảng thẻ phân rã 8 loại × 6 trạng thái.**
+ * **`CardBoard` — the decomposition board of 8 types × 6 statuses.**
  *
- * Khối **bắt buộc** của đề (bước 2 + chức năng 3) mà **không mockup nào vẽ**
- * (DESIGN_SYSTEM §5.4 #1, §8 #10). Bỏ nó thì sáu `CardStatus` ở §3.2 không bao giờ xuất hiện
- * trên màn hình nào và cả §3 trở thành trang trí.
+ * A **mandatory** block of the brief (step 2 + feature 3) that **no mockup draws**
+ * (DESIGN_SYSTEM §5.4 #1, §8 #10). Drop it and the six `CardStatus` values of §3.2 never appear
+ * on any screen, turning the whole of §3 into decoration.
  *
- * Mobile: một cột, mỗi loại thẻ một accordion; nhóm nào còn thẻ cần chú ý thì **mở sẵn**,
- * nhóm đã `CONFIRMED` hết thì đóng — mở hay đóng tuỳ chỗ đó còn việc hay không (§6.9).
+ * Mobile: a single column with one accordion per card type; a group that still holds cards needing
+ * attention is **open by default**, a fully `CONFIRMED` group is closed — open or shut depends on
+ * whether there is work there (§6.9).
  */
 const NEEDS_ATTENTION: CardStatus[] = ['MISSING', 'AMBIGUOUS', 'CONFLICT', 'UNSUPPORTED'];
 
 export function CardBoard({ cards }: { cards: ApiCard[] }) {
-  // Bộ lọc ở `useUiStore` chứ không ở `useState`: `CardBoard` unmount mỗi lần đổi bước trên
-  // stepper, để local thì lọc xong đi xem bước khác rồi quay lại là mất bộ lọc (§6.9).
+  // The filter lives in `useUiStore`, not `useState`: `CardBoard` unmounts on every stepper
+  // change, so a local filter would be lost the moment the user visits another step (§6.9).
   const filter = useUiStore((s) => s.cardFilter);
   const setFilter = useUiStore((s) => s.setCardFilter);
   const shown = filter === 'ALL' ? cards : cards.filter((c) => c.status === filter);
@@ -163,7 +165,7 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
 
   return (
     <div className="space-y-3">
-      {/* Lọc nhanh theo trạng thái — sáu giá trị luôn hiện đủ nhãn chữ, kể cả ở 375px. */}
+      {/* Quick status filter — all six values keep their full text label, even at 375px. */}
       <div className="flex flex-wrap gap-1.5">
         <Button
           size="sm"
@@ -171,7 +173,7 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
           onClick={() => setFilter('ALL')}
           className="ease-out-quart tabular-nums transition-all duration-150"
         >
-          Tất cả ({cards.length})
+          All ({cards.length})
         </Button>
         {counts.map(({ status, n }) => (
           <Button
@@ -189,7 +191,7 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
 
       {groups.length === 0 ? (
         <div className="border-hairline bg-surface rounded-lg border p-4 text-center">
-          <p className="text-ink-3 text-xs">Không có thẻ nào khớp bộ lọc.</p>
+          <p className="text-ink-3 text-xs">No cards match this filter.</p>
         </div>
       ) : (
         <Accordion
@@ -202,7 +204,7 @@ export function CardBoard({ cards }: { cards: ApiCard[] }) {
             <AccordionItem
               key={g.type}
               value={g.type}
-              /* So le 40ms theo thứ tự đọc; trần 6 nhóm để nhóm cuối không phải chờ quá lâu. */
+              /* Staggered 40ms in reading order; capped at 6 groups so the last one does not wait too long. */
               style={{ animationDelay: `${Math.min(i, 6) * 40}ms` }}
               className={cn(
                 'border-hairline bg-surface animate-rise rounded-lg border px-3',

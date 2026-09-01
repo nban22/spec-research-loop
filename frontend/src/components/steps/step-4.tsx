@@ -39,11 +39,11 @@ import {
 } from '@/lib/use-project';
 
 /**
- * **B4 · Judge độc lập & Sửa spec** (preset *giữa rộng*).
+ * **S4 · Independent judges & spec fixes** (the *wide-middle* preset).
  *
- * Vòng lặp của bước 10 trong đề: Judge ra issue → hệ thống đưa lựa chọn A/B/C/Other →
- * user chọn → sửa spec → **hiển thị diff** → xác nhận → version mới.
- * Bốn điểm dừng, không có đường vòng nào bỏ qua chúng (ARCHITECTURE §1.2).
+ * The loop of step 10 in the brief: judges raise issues → the system offers A/B/C/Other →
+ * the user chooses → the spec is edited → **the diff is shown** → confirmation → a new version.
+ * Four checkpoints, with no shortcut past any of them (ARCHITECTURE §1.2).
  */
 export function Step4({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -54,8 +54,8 @@ export function Step4({ projectId }: { projectId: string }) {
   const { data: sectionData } = useSections(versionId);
   const { data: groupData } = useIssueGroups(versionId);
   const { data: runData } = useJudgeRuns(versionId);
-  /* Cùng `queryKey` với B2 nên lấy từ cache — không thêm round-trip. Dùng để tra ngược
-     `source_id` rút gọn mà judge viết trong `reason`. */
+  /* Same `queryKey` as S2, so it comes from cache — no extra round trip. Used to resolve the
+     shortened `source_id` judges write inside `reason`. */
   const { data: sourceData } = useSources(projectId);
   const job = useJobAction(projectId);
   const applyDecision = useApplyDecision(projectId);
@@ -77,8 +77,8 @@ export function Step4({ projectId }: { projectId: string }) {
   const groups = groupData?.groups ?? [];
   const runs = runData?.runs ?? [];
   /**
-   * Đếm theo **dự án**, không theo version: `judge_round` reset mỗi lần tạo version mới, nên
-   * dùng nó thì nhãn "tối đa 3 vòng cho mỗi dự án" ở dưới là nói sai.
+   * Counted per **project**, not per version: `judge_round` resets on every new version, so using
+   * it would make the "at most 3 rounds per project" label below a lie.
    */
   const roundsTotal = detail?.project.judge_rounds_total ?? 0;
   const roundsExhausted = roundsTotal >= MAX_JUDGE_ROUNDS;
@@ -89,8 +89,8 @@ export function Step4({ projectId }: { projectId: string }) {
   const failedKeys = runs.filter((r) => r.status === 'FAILED').map((r) => r.judge_key);
 
   /**
-   * `POST /issue-groups/:id/options` trả **thẳng** `options[]`, không mở job — một lời gọi ~10s
-   * và người dùng đang đứng chờ ngay tại chỗ (SYSTEM_DESIGN_ANALYSIS §4.4 #1).
+   * `POST /issue-groups/:id/options` returns `options[]` **directly**, without opening a job — a
+   * single ~10s call with the user waiting right there (SYSTEM_DESIGN_ANALYSIS §4.4 #1).
    */
   const pickIssue = async (g: ApiIssueGroup) => {
     setActive(g);
@@ -107,7 +107,7 @@ export function Step4({ projectId }: { projectId: string }) {
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa sinh được phương án. Bạn vui lòng thử lại.',
+          : 'The options could not be generated. Please try again.',
       );
     } finally {
       setLoadingOptions(false);
@@ -137,7 +137,7 @@ export function Step4({ projectId }: { projectId: string }) {
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa lưu được lựa chọn của bạn. Vui lòng thử lại.',
+          : 'Your choice could not be saved. Please try again.',
       );
     } finally {
       setLoadingOptions(false);
@@ -145,16 +145,16 @@ export function Step4({ projectId }: { projectId: string }) {
   };
 
   const context = (
-    <Panel accent="brand" icon={FileText} title="Spec tạm thời">
+    <Panel accent="brand" icon={FileText} title="Working spec">
       {sectionData ? (
         <>
           <SpecOutline sections={sectionData.sections} />
           <p className="text-ink-3 text-xs">
-            {sectionData.completeness}/14 mục đã có nội dung
+            {sectionData.completeness}/14 sections have content
           </p>
         </>
       ) : (
-        <p className="text-ink-3 text-xs">Đang dựng bản spec tạm thời…</p>
+        <p className="text-ink-3 text-xs">Building the working spec…</p>
       )}
     </Panel>
   );
@@ -166,39 +166,39 @@ export function Step4({ projectId }: { projectId: string }) {
       <Panel
         accent="ok"
         icon={Gavel}
-        title="Hội đồng Judge"
+        title="The judge panel"
         action={
           <Button
             size="sm"
             disabled={job.busy || roundsExhausted}
             onClick={() => job.run(`/spec-versions/${versionId}/judge`)}
           >
-            {roundsTotal === 0 ? 'Chạy Judge' : `Chạy vòng ${roundsTotal + 1}`}
+            {roundsTotal === 0 ? 'Run the judges' : `Run round ${roundsTotal + 1}`}
           </Button>
         }
       >
         {runData ? <JudgePanel states={judgeStates} /> : <JudgePanelSkeleton />}
         {roundsExhausted && (
           <HintBox tone="warn">
-            Đã dùng hết {MAX_JUDGE_ROUNDS} vòng judge cho dự án này.
+            All {MAX_JUDGE_ROUNDS} judge rounds for this project have been used.
           </HintBox>
         )}
       </Panel>
 
-      <Panel accent="neutral" icon={ListChecks} title="Tổng hợp issue">
+      <Panel accent="neutral" icon={ListChecks} title="Issue roll-up">
         {!hasJudged ? (
           <EmptyState
             icon={Gavel}
             tone="decide"
-            title="Judge chưa chạy vòng nào"
-            description="Bấm “Chạy Judge” ở trên. 5 judge chấm độc lập, mỗi judge một context sạch — không judge nào thấy nhận xét của judge khác."
+            title="No judge round has run yet"
+            description="Press “Run the judges” above. The 5 judges score independently, each with a clean context — none of them ever sees another judge's comments."
           />
         ) : groups.length === 0 ? (
           <EmptyState
             icon={ShieldCheck}
             tone="ok"
-            title="Không có vấn đề nào được nêu"
-            description="Cả 5 judge đều không tìm thấy defect nào đáng báo. Bạn có thể sang bước chốt spec."
+            title="No issues were raised"
+            description="None of the 5 judges found a defect worth reporting. You can move on to finalising the spec."
           />
         ) : (
           <>
@@ -217,17 +217,17 @@ export function Step4({ projectId }: { projectId: string }) {
         )}
       </Panel>
 
-      {/* Làn B · #9 — nửa *bất đồng* của chức năng 13, panel tự chứa nên diff ở file này
-          chỉ một dòng. */}
+      {/* Lane B · #9 — the *disagreement* half of feature 13; the panel is self-contained, so the
+          diff in this file is a single line. */}
       <JudgeAgreementPanel versionId={versionId} />
 
-      {/* Làn B · #7 — cờ phóng đại đứng cạnh bảng issue, không trộn vào nó: nó đến từ một cơ
-          chế khác (luật + vùng xám), và nó có ba đường ra riêng của Bước 10. */}
+      {/* Lane B · #7 — overclaim flags sit beside the issue table rather than inside it: they come
+          from a different mechanism (rules + a grey zone) and have their own three exits from Step 10. */}
       <OverclaimPanel versionId={versionId} />
 
-      {/* Bằng chứng độc lập đọc thẳng từ dữ liệu — endpoint bằng chứng, không phải debug. */}
+      {/* Independence evidence read straight from the data — an evidence endpoint, not a debug one. */}
       {hasJudged && (
-        <Panel accent="neutral" icon={ShieldCheck} title="Bằng chứng Judge chạy độc lập">
+        <Panel accent="neutral" icon={ShieldCheck} title="Proof the judges ran independently">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -236,7 +236,7 @@ export function Step4({ projectId }: { projectId: string }) {
                   <th className="py-1 pr-2">Model</th>
                   <th className="py-1 pr-2">input_digest</th>
                   <th className="py-1 pr-2">sha(raw_output)</th>
-                  <th className="py-1">Bắt đầu</th>
+                  <th className="py-1">Started</th>
                 </tr>
               </thead>
               <tbody className="font-mono">
@@ -259,10 +259,10 @@ export function Step4({ projectId }: { projectId: string }) {
             </table>
           </div>
           <p className="text-ink-3 text-xs">
-            Cùng <span className="text-ok-strong font-medium">input_digest</span> ⇒ 5 judge nhận
-            đúng một đầu vào. Khác{' '}
-            <span className="text-brand-strong font-medium">sha(raw_output)</span> ⇒ chúng chấm
-            độc lập, không sao chép nhau.
+            The same <span className="text-ok-strong font-medium">input_digest</span> ⇒ all 5 judges
+            received exactly one input. Different{' '}
+            <span className="text-brand-strong font-medium">sha(raw_output)</span> ⇒ they scored
+            independently and did not copy each other.
           </p>
         </Panel>
       )}
@@ -270,17 +270,17 @@ export function Step4({ projectId }: { projectId: string }) {
   );
 
   const decide = (
-    <Panel accent="decide" icon={Gavel} title="Việc cần bạn quyết">
+    <Panel accent="decide" icon={Gavel} title="Decisions waiting on you">
       {!active ? (
         <p className="text-ink-3 text-xs">
-          Chọn một vấn đề ở bảng bên trái để xem các phương án xử lý. Hệ thống không tự sửa gì —
-          bạn là người quyết định cuối cùng.
+          Pick an issue from the table on the left to see the ways to handle it. The system never
+          edits anything on its own — the final call is yours.
         </p>
       ) : loadingOptions && !options ? (
-        <p className="text-ink-3 text-xs">Đang sinh phương án cho vấn đề này…</p>
+        <p className="text-ink-3 text-xs">Generating options for this issue…</p>
       ) : preview ? (
         <div className="space-y-3">
-          <HintBox tone="info" title="Bản nháp đã sẵn sàng">
+          <HintBox tone="info" title="The draft is ready">
             {preview.summary}
           </HintBox>
           <ul className="space-y-2">
@@ -302,8 +302,8 @@ export function Step4({ projectId }: { projectId: string }) {
                   setActive(null);
                   setOptions(null);
                   setPreview(null);
-                  // Bám vào job kiểm lại chứng cứ mà backend vừa mở, để thanh tiến độ hiện
-                  // ngay tại bước 4 — đúng thứ hộp thoại xác nhận đã hứa.
+                  // Attach to the evidence re-check job the backend just opened, so the progress
+                  // bar appears right here at step 4 — exactly what the confirm dialog promised.
                   if (res.verifyJobId) job.attach(res.verifyJobId);
                   void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
                 },
@@ -317,7 +317,7 @@ export function Step4({ projectId }: { projectId: string }) {
           options={options.options}
           variant="stacked"
           submitting={loadingOptions}
-          submitLabel="Xem bản nháp thay đổi"
+          submitLabel="Preview the changes"
           onSubmit={submitChoice}
         />
       ) : null}
@@ -329,7 +329,7 @@ export function Step4({ projectId }: { projectId: string }) {
           disabled={skipStep.isPending}
           onClick={() => skipStep.mutate()}
         >
-          Sang bước chốt spec
+          Move on to finalising the spec
         </Button>
       )}
       {hasJudged && groups.length > 0 && (
@@ -340,7 +340,7 @@ export function Step4({ projectId }: { projectId: string }) {
           disabled={skipStep.isPending}
           onClick={() => skipStep.mutate()}
         >
-          Tôi thấy đủ tốt — sang bước chốt spec
+          Good enough for me — finalise the spec
         </Button>
       )}
     </Panel>
@@ -349,27 +349,27 @@ export function Step4({ projectId }: { projectId: string }) {
   return (
     <WizardShell
       preset="wide-middle"
-      contextTitle="Spec tạm thời"
+      contextTitle="Working spec"
       context={context}
       content={content}
       decide={decide}
       decideCount={groups.filter((g) => g.status === 'OPEN').length}
       decideSummary={
-        active ? 'Đang xử lý một vấn đề' : `Cần bạn quyết: ${groups.length} vấn đề`
+        active ? 'Working on one issue' : `Waiting on you: ${groups.length} issues`
       }
       summaryBar={
         <SummaryBar
           round={Math.max(1, roundsTotal)}
-          nodes={['Judge độc lập', 'Chọn cách sửa', 'Xem diff', 'Xác nhận', 'Hoàn tất']}
+          nodes={['Independent judges', 'Choose a fix', 'Review diff', 'Confirm', 'Done']}
           activeIndex={!hasJudged ? 0 : !options ? 1 : !preview ? 2 : 3}
-          hint={`Tối đa ${MAX_JUDGE_ROUNDS} vòng judge cho mỗi dự án.`}
+          hint={`At most ${MAX_JUDGE_ROUNDS} judge rounds per project.`}
         />
       }
     />
   );
 }
 
-/** Cửa ngõ **bắt buộc** cho mọi thao tác tạo version mới (DESIGN_SYSTEM §5.3 `ConfirmDialog`). */
+/** The **mandatory** gate for every action that creates a new version (DESIGN_SYSTEM §5.3 `ConfirmDialog`). */
 function ConfirmApply({
   decisionId,
   pending,
@@ -384,21 +384,21 @@ function ConfirmApply({
   return (
     <>
       <Button className="w-full" size="lg" onClick={() => setOpen(true)} disabled={pending}>
-        Xác nhận &amp; tạo phiên bản mới
+        Confirm &amp; create a new version
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Bạn xác nhận tạo phiên bản mới?</DialogTitle>
+            <DialogTitle>Create a new version?</DialogTitle>
             <DialogDescription>
-              Phiên bản hiện tại được giữ nguyên và không bao giờ bị sửa đè — bạn luôn so
-              lại được hai bản. Sau khi áp dụng, hệ thống sẽ tự chạy lại phần kiểm chứng cứ
-              trên những chỗ vừa đụng tới.
+              The current version is kept intact and is never overwritten — you can always compare
+              the two. After applying, the system re-runs evidence verification over the parts that
+              were just touched.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Để sau
+              Later
             </Button>
             <Button
               disabled={pending}
@@ -407,7 +407,7 @@ function ConfirmApply({
                 onConfirm(decisionId);
               }}
             >
-              {pending ? 'Hệ thống đang tạo…' : 'Xác nhận'}
+              {pending ? 'Creating…' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

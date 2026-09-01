@@ -3,67 +3,67 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ResearchFlowAnimation } from './research-flow';
 
 /**
- * Bốn hợp đồng, không test từng khung hình:
+ * Four contracts, no frame-by-frame testing:
  *
- * 1. **Tự chạy được nhưng dừng được** — animation không tắt được là quảng cáo.
- * 2. **Nhảy thẳng tới một chặng bằng nút thật**, và bấm tay thì dừng tự chạy — nếu không thì vừa
- *    chọn xong hai giây sau nó nhảy đi mất.
- * 3. **Mỗi chặng có chữ mô tả**, không chỉ có hình. Hình một mình không đọc được bằng trình đọc
- *    màn hình.
- * 4. Chặng đang xem đánh dấu bằng `aria-current`.
+ * 1. **It plays but can be paused** — an animation that cannot be stopped is an advert.
+ * 2. **Real buttons jump straight to a stage**, and a manual pick stops autoplay — otherwise the
+ *    stage you just chose jumps away two seconds later.
+ * 3. **Every stage has descriptive text**, not just a picture. A picture alone cannot be read by a
+ *    screen reader.
+ * 4. The current stage is marked with `aria-current`.
  */
 describe('ResearchFlowAnimation', () => {
   beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
   afterEach(() => vi.useRealTimers());
 
-  it('mở ra là đã ở chặng đầu và đang tự chạy', () => {
+  it('opens on the first stage and is already playing', () => {
     render(<ResearchFlowAnimation />);
-    expect(screen.getByText('Ý tưởng còn mơ hồ')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Dừng minh hoạ' })).toBeInTheDocument();
+    expect(screen.getByText('A still-vague idea')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pause the walkthrough' })).toBeInTheDocument();
   });
 
-  it('tự chuyển sang chặng kế tiếp sau một nhịp', async () => {
+  it('advances to the next stage after one beat', async () => {
     render(<ResearchFlowAnimation />);
     await vi.advanceTimersByTimeAsync(3500);
-    expect(await screen.findByText('Phân rã thành thẻ')).toBeInTheDocument();
+    expect(await screen.findByText('Decomposed into cards')).toBeInTheDocument();
   });
 
-  it('bấm Dừng thì đứng yên, không nhảy tiếp', async () => {
+  it('stays put after Pause is pressed', async () => {
     render(<ResearchFlowAnimation />);
-    fireEvent.click(screen.getByRole('button', { name: 'Dừng minh hoạ' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pause the walkthrough' }));
     await vi.advanceTimersByTimeAsync(12_000);
-    expect(screen.getByText('Ý tưởng còn mơ hồ')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Chạy minh hoạ' })).toBeInTheDocument();
+    expect(screen.getByText('A still-vague idea')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Play the walkthrough' })).toBeInTheDocument();
   });
 
-  it('nhảy thẳng tới một chặng bằng nút, và việc đó dừng luôn tự chạy', async () => {
+  it('jumps straight to a stage by button, and that stops autoplay', async () => {
     render(<ResearchFlowAnimation />);
-    fireEvent.click(screen.getByRole('button', { name: 'Chặng 5: Năm judge phản biện' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stage 5: Five judges push back' }));
 
-    expect(await screen.findByText('Năm judge phản biện')).toBeInTheDocument();
-    // Không dừng thì 3,4 giây sau nó tự nhảy sang chặng 6 và người dùng mất chỗ đang đọc.
+    expect(await screen.findByText('Five judges push back')).toBeInTheDocument();
+    // Without stopping, 3.4 seconds later it would jump to stage 6 and the reader loses their place.
     await vi.advanceTimersByTimeAsync(8000);
-    expect(screen.getByText('Năm judge phản biện')).toBeInTheDocument();
+    expect(screen.getByText('Five judges push back')).toBeInTheDocument();
   });
 
-  it('chặng đang xem được đánh dấu aria-current', () => {
+  it('marks the current stage with aria-current', () => {
     render(<ResearchFlowAnimation />);
     expect(
-      screen.getByRole('button', { name: 'Chặng 1: Ý tưởng còn mơ hồ' }),
+      screen.getByRole('button', { name: 'Stage 1: A still-vague idea' }),
     ).toHaveAttribute('aria-current', 'step');
     expect(
-      screen.getByRole('button', { name: 'Chặng 2: Phân rã thành thẻ' }),
+      screen.getByRole('button', { name: 'Stage 2: Decomposed into cards' }),
     ).not.toHaveAttribute('aria-current');
   });
 
-  it('mỗi chặng có chữ mô tả, không chỉ có hình', async () => {
+  it('gives every stage descriptive text, not just a picture', async () => {
     render(<ResearchFlowAnimation />);
-    fireEvent.click(screen.getByRole('button', { name: 'Chặng 6: Bản đặc tả 14 mục' }));
-    expect(await screen.findByText(/chặn xuất bản/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Stage 6: The 14-section specification' }));
+    expect(await screen.findByText(/publishing is blocked/)).toBeInTheDocument();
   });
 
-  it('có sáu chặng, khớp năm bước của quy trình', () => {
+  it('has six stages, matching the five steps of the process', () => {
     render(<ResearchFlowAnimation />);
-    expect(screen.getAllByRole('button', { name: /^Chặng \d/ })).toHaveLength(6);
+    expect(screen.getAllByRole('button', { name: /^Stage \d/ })).toHaveLength(6);
   });
 });

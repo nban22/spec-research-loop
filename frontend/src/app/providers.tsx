@@ -14,7 +14,7 @@ export function Providers({ children }: { children: ReactNode }) {
             staleTime: 15_000,
             refetchOnWindowFocus: false,
             retry: (count, error) => {
-              // 401/404 không đáng thử lại; lỗi mạng thì thử một lần.
+              // 401/404 are not worth retrying; a network error gets one retry.
               if (error instanceof ApiError && error.status < 500) return false;
               return count < 1;
             },

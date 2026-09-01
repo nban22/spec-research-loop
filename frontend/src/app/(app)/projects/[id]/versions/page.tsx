@@ -30,8 +30,8 @@ type VersionRow = {
 
 /**
  * `/projects/:id/versions` — `VersionTimeline` + `DiffView` + `DecisionLog`.
- * Hai cột ở desktop (chọn bên trái, diff bên phải); mobile xếp dọc và chọn bằng select
- * thay vì hai dropdown cạnh nhau (DESIGN_SYSTEM §5.4).
+ * Two columns on desktop (picker on the left, diff on the right); on mobile it stacks and picks
+ * with a select rather than two side-by-side dropdowns (DESIGN_SYSTEM §5.4).
  */
 export default function VersionsPage({ params }: PageProps<'/projects/[id]/versions'>) {
   const { id } = use(params);
@@ -45,7 +45,7 @@ export default function VersionsPage({ params }: PageProps<'/projects/[id]/versi
   const { data: decisionData } = useDecisionLog(id);
 
   const versions = data?.versions ?? [];
-  /* Mặc định so hai bản mới nhất — suy ra trong lúc render, không setState trong effect. */
+  /* Default to comparing the two newest — derived during render, no setState in an effect. */
   const to = pickedTo ?? versions[0]?.id ?? null;
   const from = pickedFrom ?? versions[1]?.id ?? null;
   const setTo = setPickedTo;
@@ -53,17 +53,17 @@ export default function VersionsPage({ params }: PageProps<'/projects/[id]/versi
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-3 px-3 py-4 md:px-4">
-      <h1 className="text-ink-1 text-xl font-semibold">Lịch sử phiên bản</h1>
+      <h1 className="text-ink-1 text-xl font-semibold">Version history</h1>
 
       <div className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,2fr)]">
         <div className="space-y-3">
-          <Panel accent="brand" icon={History} title="Các phiên bản">
+          <Panel accent="brand" icon={History} title="Versions">
             {isLoading ? (
               <CardSkeleton rows={2} />
             ) : versions.length === 0 ? (
               <EmptyState
-                title="Chưa có phiên bản nào"
-                description="Phiên bản đầu tiên xuất hiện ngay khi bạn tạo dự án."
+                title="No versions yet"
+                description="The first version appears as soon as you create the project."
               />
             ) : (
               <ol className="space-y-2">
@@ -80,18 +80,18 @@ export default function VersionsPage({ params }: PageProps<'/projects/[id]/versi
                     </div>
                     {v.label && <p className="text-ink-1 mt-1 text-xs">{v.label}</p>}
                     <p className="text-ink-3 mt-1 text-xs">
-                      {v._count.cards} thẻ · {v._count.judge_runs} lượt judge ·{' '}
-                      {v._count.export_artifacts} lần xuất
+                      {v._count.cards} cards · {v._count.judge_runs} judge runs ·{' '}
+                      {v._count.export_artifacts} exports
                     </p>
                     <p className="text-ink-4 text-xs">
-                      {new Date(v.created_at).toLocaleString('vi-VN')}
+                      {new Date(v.created_at).toLocaleString('en-US')}
                     </p>
-                    {/* Không có `created_by_decision_id` thì đó là v1 — mọi version sau
-                        đều phải sinh ra từ một quyết định của người dùng (NFR-G-3). */}
+                    {/* No `created_by_decision_id` means this is v1 — every later version must
+                        have been created by a decision the user made (NFR-G-3). */}
                     <p className="text-ink-4 text-xs">
                       {v.created_by_decision_id
-                        ? 'Sinh ra từ một quyết định của bạn'
-                        : 'Phiên bản gốc'}
+                        ? 'Created by a decision you made'
+                        : 'Original version'}
                     </p>
                   </li>
                 ))}
@@ -99,27 +99,27 @@ export default function VersionsPage({ params }: PageProps<'/projects/[id]/versi
             )}
           </Panel>
 
-          <Panel accent="neutral" icon={ScrollText} title="Lịch sử quyết định">
+          <Panel accent="neutral" icon={ScrollText} title="Decision log">
             <DecisionLog decisions={decisionData?.decisions ?? []} />
           </Panel>
         </div>
 
-        <Panel accent="ok" icon={GitBranch} title="So sánh hai phiên bản">
+        <Panel accent="ok" icon={GitBranch} title="Compare two versions">
           {versions.length < 2 ? (
             <EmptyState
-              title="Cần ít nhất hai phiên bản"
-              description="Áp dụng một quyết định ở bước 4 để tạo phiên bản thứ hai, rồi quay lại đây so sánh."
+              title="At least two versions are needed"
+              description="Apply a decision at step 4 to create a second version, then come back here to compare."
             />
           ) : (
             <>
               <div className="grid grid-cols-2 gap-2">
                 <VersionSelect
-                  label="Từ"
+                  label="From"
                   value={from}
                   versions={versions}
                   onChange={setFrom}
                 />
-                <VersionSelect label="Đến" value={to} versions={versions} onChange={setTo} />
+                <VersionSelect label="To" value={to} versions={versions} onChange={setTo} />
               </div>
               {from && to && from !== to && <DiffView versionId={to} against={from} />}
             </>
@@ -146,7 +146,7 @@ function VersionSelect({
       <span className="text-ink-3 text-xs">{label}</span>
       <Select value={value ?? undefined} onValueChange={onChange}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Chọn phiên bản" />
+          <SelectValue placeholder="Choose a version" />
         </SelectTrigger>
         <SelectContent>
           {versions.map((v) => (
@@ -160,13 +160,13 @@ function VersionSelect({
   );
 }
 
-/** Mục 14 của spec: thời điểm · câu hỏi · option đã chọn · lý do. Card list ở mobile. */
+/** Section 14 of the spec: timestamp · question · chosen option · reason. A card list on mobile. */
 function DecisionLog({ decisions }: { decisions: ApiDecision[] }) {
   if (decisions.length === 0) {
     return (
       <p className="text-ink-3 text-xs">
-        Chưa có quyết định nào. Mọi lựa chọn của bạn đều được ghi lại ở đây và xuất ra mục 14
-        của bản đặc tả.
+        No decisions yet. Every choice you make is recorded here and exported as section 14 of the
+        specification.
       </p>
     );
   }
@@ -175,14 +175,14 @@ function DecisionLog({ decisions }: { decisions: ApiDecision[] }) {
       {decisions.map((d) => {
         const chosen =
           d.chosen_key === 'OTHER'
-            ? (d.custom_text ?? 'Khác')
+            ? (d.custom_text ?? 'Other')
             : (d.options.find((o) => o.key === d.chosen_key)?.label ?? d.chosen_key);
         return (
           <li key={d.id} className="border-hairline bg-surface rounded-lg border px-3 py-2">
             <p className="text-ink-4 text-xs">
-              {new Date(d.created_at).toLocaleString('vi-VN')} · {d.step} ·{' '}
-              {d.actor === 'SCRIPTED' ? 'kịch bản' : 'bạn'}
-              {!d.applied && ' · chưa áp dụng'}
+              {new Date(d.created_at).toLocaleString('en-US')} · {d.step} ·{' '}
+              {d.actor === 'SCRIPTED' ? 'scripted' : 'you'}
+              {!d.applied && ' · not applied'}
             </p>
             <p className="text-ink-1 mt-0.5 text-xs font-medium">{d.question}</p>
             <p className="text-ink-2 text-xs">

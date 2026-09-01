@@ -18,10 +18,10 @@ describe('AuthForm', () => {
     expect(emailInput).toHaveAttribute('type', 'email');
     expect(emailInput).toHaveAttribute('autoComplete', 'email');
 
-    const passwordInput = screen.getByLabelText('Mật khẩu');
+    const passwordInput = screen.getByLabelText('Password');
     expect(passwordInput).toHaveAttribute('type', 'password');
 
-    expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
   });
 
   it('shows client-side registration validation before calling the API', async () => {
@@ -32,11 +32,11 @@ describe('AuthForm', () => {
       </QueryClientProvider>,
     );
 
-    const nameInput = screen.getByLabelText('Tên hiển thị');
+    const nameInput = screen.getByLabelText('Display name');
     expect(nameInput).toHaveAttribute('id', 'display_name');
 
-    await user.click(screen.getByRole('button', { name: 'Đăng ký' }));
-    expect(await screen.findByText('Email không hợp lệ')).toBeInTheDocument();
-    expect(screen.getByText('Mật khẩu tối thiểu 8 ký tự')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByText('That email address is not valid')).toBeInTheDocument();
+    expect(screen.getByText('Password must be at least 8 characters')).toBeInTheDocument();
   });
 });

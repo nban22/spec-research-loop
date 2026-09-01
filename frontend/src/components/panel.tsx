@@ -6,11 +6,11 @@ import { cn } from '@/lib/utils';
 export type PanelAccent = 'brand' | 'ok' | 'decide' | 'neutral';
 
 /**
- * Card cấp một có accent — viên gạch dựng nên mọi cột (DESIGN_SYSTEM §5.3).
- * Mỗi cột một vai, vai nào màu đó: trái = ngữ cảnh (`brand`), giữa = nội dung hệ thống sinh
- * (`ok`/trung tính), phải = chỗ phải quyết (`decide`) — §1 nguyên tắc 2.
+ * A top-level accented card — the brick every column is built from (DESIGN_SYSTEM §5.3).
+ * One role per column, one colour per role: left = context (`brand`), middle = system-generated
+ * content (`ok`/neutral), right = where a decision is due (`decide`) — §1 principle 2.
  *
- * Chỉ card cấp một mới có bóng, và bóng gần như không thấy (§4.5).
+ * Only top-level cards carry a shadow, and that shadow is barely visible (§4.5).
  */
 const ACCENT: Record<
   PanelAccent,
@@ -81,8 +81,8 @@ export function Panel({
           {action}
         </header>
       )}
-      {/* Kẻ ngang dùng `Separator` của Radix: nó tự gắn `role`/`aria-orientation`.
-          Lưu ý màu phải là `bg-*` chứ không `border-*` — component vẽ bằng nền, không bằng viền. */}
+      {/* The rule uses the Radix `Separator`: it sets `role`/`aria-orientation` for us.
+          Note the colour must be `bg-*`, not `border-*` — the component paints a fill, not a border. */}
       {title && <Separator className={a.rule} />}
       <div className={cn('space-y-3 px-3 py-3 sm:px-4', bodyClassName)}>{children}</div>
     </section>

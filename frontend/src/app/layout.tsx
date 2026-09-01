@@ -5,8 +5,9 @@ import { Providers } from './providers';
 import './globals.css';
 
 /**
- * `Be Vietnam Pro` nạp qua `next/font` — có sẵn trong Next.js, **không phải dependency mới**.
- * Lý do chọn: UI toàn tiếng Việt và font này vẽ dấu riêng chứ không ghép (DESIGN_SYSTEM §2).
+ * `Be Vietnam Pro` loaded through `next/font` — built into Next.js, **not a new dependency**.
+ * Kept as the type family of the design system (DESIGN_SYSTEM §2); the `vietnamese` subset stays
+ * because paper titles and abstracts are rendered verbatim and some of them are Vietnamese.
  */
 const beVietnamPro = Be_Vietnam_Pro({
   variable: '--font-be-vietnam-pro',
@@ -18,12 +19,12 @@ const beVietnamPro = Be_Vietnam_Pro({
 export const metadata: Metadata = {
   title: 'SpecResearch Loop',
   description:
-    'Biến một ý tưởng nghiên cứu mơ hồ thành bản đặc tả 14 mục đã được phản biện và truy được nguồn.',
+    'Turn a vague research idea into a 14-section specification that has been critiqued and traced back to real sources.',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="vi" className={`${beVietnamPro.variable} h-full antialiased`}>
+    <html lang="en" className={`${beVietnamPro.variable} h-full antialiased`}>
       <body className="bg-canvas text-ink-1 flex min-h-full flex-col">
         <Providers>{children}</Providers>
         <Toaster position="top-center" richColors />

@@ -6,7 +6,7 @@ import type { ApiEstimate, ApiExperimentPlan, ApiSpecSection } from '@/lib/types
 import { cn } from '@/lib/utils';
 import { HintBox } from './hint-box';
 
-/** TN1…TNn: mã thí nghiệm + tiêu đề + các gạch đầu dòng. */
+/** E1…En: experiment code + title + bullet points. */
 export function ExperimentPlanList({ plan }: { plan: ApiExperimentPlan }) {
   return (
     <ol className="space-y-2">
@@ -28,7 +28,7 @@ export function ExperimentPlanList({ plan }: { plan: ApiExperimentPlan }) {
           </ul>
           {e.linked_claim_title && (
             <p className="text-ink-3 mt-1.5 text-xs italic">
-              Kiểm chứng khẳng định: {e.linked_claim_title}
+              Tests the claim: {e.linked_claim_title}
             </p>
           )}
         </li>
@@ -37,7 +37,7 @@ export function ExperimentPlanList({ plan }: { plan: ApiExperimentPlan }) {
   );
 }
 
-/** Lưới ô thông số. Container query: ô ngắn, hai cột ở 375px vẫn thoải mái (§6.5, §6.8). */
+/** The stat-tile grid. Container query: short tiles, two columns still comfortable at 375px (§6.5, §6.8). */
 export function StatTileGrid({ items }: { items: { label: string; value: string }[] }) {
   return (
     <div className="@container">
@@ -56,13 +56,13 @@ export function StatTileGrid({ items }: { items: { label: string; value: string 
   );
 }
 
-/** VRAM · Thời gian · Token · Chi phí + cảnh báo khi vượt ngưỡng RTX 3090. */
+/** VRAM · Time · Tokens · Cost + a warning when the RTX 3090 limit is exceeded. */
 export function EstimateRows({ estimate }: { estimate: ApiEstimate }) {
   const rows = [
     { label: 'VRAM', value: `${estimate.vram_gb} GB`, warn: !estimate.fits_rtx3090 },
-    { label: 'Thời gian', value: `${estimate.hours_min}–${estimate.hours_max} giờ` },
-    { label: 'Token', value: estimate.tokens_est.toLocaleString('vi-VN') },
-    { label: 'Chi phí API', value: `~$${estimate.cost_usd}` },
+    { label: 'Time', value: `${estimate.hours_min}–${estimate.hours_max} hours` },
+    { label: 'Tokens', value: estimate.tokens_est.toLocaleString('en-US') },
+    { label: 'API cost', value: `~$${estimate.cost_usd}` },
   ];
 
   return (
@@ -84,15 +84,15 @@ export function EstimateRows({ estimate }: { estimate: ApiEstimate }) {
       </dl>
 
       {estimate.warn_near_limit && (
-        <HintBox tone={estimate.fits_rtx3090 ? 'warn' : 'danger'} title="Kiểm tra tính khả thi">
+        <HintBox tone={estimate.fits_rtx3090 ? 'warn' : 'danger'} title="Feasibility check">
           {estimate.fits_rtx3090
-            ? `Ước tính ${estimate.vram_gb} GB — vẫn vừa RTX 3090 (24 GB) nhưng đã sát ngưỡng.`
-            : `Ước tính ${estimate.vram_gb} GB — vượt 24 GB của RTX 3090.`}
+            ? `Estimated ${estimate.vram_gb} GB — still fits an RTX 3090 (24 GB), but close to the limit.`
+            : `Estimated ${estimate.vram_gb} GB — over the 24 GB of an RTX 3090.`}
         </HintBox>
       )}
 
       {estimate.downscale_suggestion && (
-        <HintBox tone="warn" title="Đề xuất giảm quy mô">
+        <HintBox tone="warn" title="Suggested downscaling">
           <ul className="space-y-1">
             {estimate.downscale_suggestion.map((s, i) => (
               <li key={i}>
@@ -107,7 +107,7 @@ export function EstimateRows({ estimate }: { estimate: ApiEstimate }) {
       )}
 
       <details className="text-ink-3 text-xs">
-        <summary className="cursor-pointer">Công thức đã dùng</summary>
+        <summary className="cursor-pointer">Formulas used</summary>
         <ul className="mt-1 space-y-0.5 pl-3">
           {estimate.breakdown.map((b) => (
             <li key={b.label}>
@@ -121,21 +121,21 @@ export function EstimateRows({ estimate }: { estimate: ApiEstimate }) {
 }
 
 /**
- * **14 mục** của spec kèm trạng thái đủ/thiếu (mockup 5 chỉ vẽ 10 — lấy 14 theo đề, §8 #9).
- * Phải cuộn được ở mobile vì 14 dòng dài hơn một màn 375px.
+ * The **14 sections** of the spec with a present/missing state (mockup 5 only draws 10 — 14 comes
+ * from the brief, §8 #9). It must scroll on mobile because 14 rows are taller than a 375px screen.
  */
 export function SpecChecklist({ sections }: { sections: ApiSpecSection[] }) {
   const present = sections.filter((s) => s.present).length;
   return (
     <div className="space-y-2">
       <p className="text-ink-2 text-xs">
-        Đã có <span className="text-ink-1 font-semibold tabular-nums">{present}/14</span> mục
+        <span className="text-ink-1 font-semibold tabular-nums">{present}/14</span> sections filled in
       </p>
       <ol className="space-y-1">
         {sections.map((s, i) => (
           <li
             key={s.key}
-            /* So le 30ms: 14 mục tick lần lượt theo thứ tự đọc thay vì bật ra cùng lúc. */
+            /* Staggered 30ms: the 14 sections tick in reading order instead of popping in at once. */
             style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}
             className="animate-rise flex items-start gap-2 text-xs"
           >
@@ -161,7 +161,7 @@ export function SpecChecklist({ sections }: { sections: ApiSpecSection[] }) {
   );
 }
 
-/** Mục lục để **đọc** — khác `SpecChecklist` là bảng kiểm đủ/thiếu (§5.3). */
+/** A table of contents to **read** — unlike `SpecChecklist`, which is a present/missing checklist (§5.3). */
 export function SpecOutline({ sections }: { sections: ApiSpecSection[] }) {
   return (
     <ol className="space-y-1.5">
@@ -173,7 +173,7 @@ export function SpecOutline({ sections }: { sections: ApiSpecSection[] }) {
           <span className="min-w-0">
             <span className="text-ink-1 block text-xs font-medium">{s.title}</span>
             <span className="text-ink-3 line-clamp-1 block text-xs">
-              {s.body.replace(/[#*_`|-]/g, ' ').slice(0, 90) || 'Chưa có nội dung'}
+              {s.body.replace(/[#*_`|-]/g, ' ').slice(0, 90) || 'No content yet'}
             </span>
           </span>
         </li>
@@ -182,7 +182,7 @@ export function SpecOutline({ sections }: { sections: ApiSpecSection[] }) {
   );
 }
 
-/** "LLM tóm tắt cách làm" (mockup 5 cột phải): 4 bước đánh số trong vòng tròn `ok`. */
+/** "How the LLM did it" (mockup 5, right column): 4 numbered steps in `ok` circles. */
 export function HowItWorksList({ steps }: { steps: string[] }) {
   return (
     <ol className="space-y-2">
@@ -198,16 +198,16 @@ export function HowItWorksList({ steps }: { steps: string[] }) {
   );
 }
 
-/** Hai hàng Trước/Sau (mockup 5); dùng lại làm preview trước khi tạo version mới. */
+/** The Before/After pair of rows (mockup 5); reused as the preview before creating a new version. */
 export function BeforeAfter({ before, after }: { before: string; after: string }) {
   return (
     <div className="space-y-2">
       <div className="border-hairline bg-sunken rounded-md border px-3 py-2">
-        <p className="text-ink-3 text-xs font-medium">Trước</p>
+        <p className="text-ink-3 text-xs font-medium">Before</p>
         <p className="text-ink-2 text-xs">{before}</p>
       </div>
       <div className="border-ok-line bg-ok-soft rounded-md border px-3 py-2">
-        <p className="text-ok-strong text-xs font-medium">Sau</p>
+        <p className="text-ok-strong text-xs font-medium">After</p>
         <p className="text-ink-1 text-xs">{after}</p>
       </div>
     </div>
@@ -215,9 +215,9 @@ export function BeforeAfter({ before, after }: { before: string; after: string }
 }
 
 /**
- * Xác nhận spec · Xuất PDF · Xuất Markdown.
- * Khi verifier còn chặn thì **disable kèm lý do hiển thị bằng chữ** — tooltip không dùng được
- * trên cảm ứng (§6.7 luật 1).
+ * Confirm spec · Export PDF · Export Markdown.
+ * While the verifier is still blocking, the buttons are **disabled with the reason spelled out in
+ * text** — tooltips are unusable on touch (§6.7 rule 1).
  */
 export function ExportBar({
   blocked,
@@ -242,7 +242,7 @@ export function ExportBar({
           onClick={() => onExport('PDF')}
         >
           <FileText className="size-4" aria-hidden />
-          {exporting === 'PDF' ? 'Đang dựng PDF…' : 'Xuất PDF'}
+          {exporting === 'PDF' ? 'Building PDF…' : 'Export PDF'}
         </Button>
         <Button
           size="lg"
@@ -252,14 +252,14 @@ export function ExportBar({
           onClick={() => onExport('MD')}
         >
           <Download className="size-4" aria-hidden />
-          {exporting === 'MD' ? 'Đang dựng…' : 'Xuất Markdown'}
+          {exporting === 'MD' ? 'Building…' : 'Export Markdown'}
         </Button>
       </div>
       <Button variant="ghost" size="sm" className="w-full" onClick={onBackToEdit}>
-        Quay lại chỉnh sửa thêm
+        Go back and edit further
       </Button>
       {blocked && blockedReason && (
-        <HintBox tone="danger" title="Chưa xuất bản được">
+        <HintBox tone="danger" title="Cannot publish yet">
           {blockedReason}
         </HintBox>
       )}

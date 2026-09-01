@@ -1,9 +1,10 @@
 /**
- * Type khai lại **thủ công** theo `backend/src/contracts/` — hai project rời, không có package
- * dùng chung (STACK §3.1). Backend là nguồn sự thật; sửa enum ở backend thì sửa file này
- * **và** `status-style.ts` trong **cùng một commit**.
+ * Types re-declared **by hand** from `backend/src/contracts/` — two separate projects, no shared
+ * package (STACK §3.1). The backend is the source of truth; when an enum changes there, edit this
+ * file **and** `status-style.ts` in the **same commit**.
  *
- * Ba enum dễ lệch nhất, kiểm bằng mắt mỗi lần đụng tới: CardStatus (6) · Severity (3) · SupportLabel (3).
+ * The three enums that drift most easily, eyeball them every time you touch this file:
+ * CardStatus (6) · Severity (3) · SupportLabel (3).
  */
 
 export type CardType =
@@ -44,13 +45,13 @@ export type VerifierFlag =
   | 'FABRICATED_QUOTE'
   | 'DOI_UNVERIFIED'
   | 'LLM_UNAVAILABLE'
-  // Làn A · #2 — khớp 1-1 `verifierFlagSchema` của backend, sửa cùng commit (STACK §3.1).
+  // Lane A · #2 — 1-to-1 with the backend `verifierFlagSchema`, edit in the same commit (STACK §3.1).
   | 'FULLTEXT_USED'
   | 'FULLTEXT_UNAVAILABLE'
-  /** Cặp dừng sau L2 vì loại thẻ không hỏi bằng phép kéo theo (GAP · CONTRIBUTION). */
+  /** The pair stops after L2 because this card type is not judged by entailment (GAP · CONTRIBUTION). */
   | 'CITATION_ONLY';
 
-/** Làn A · #1 — mức tin cậy của nguồn, khớp cột `SourceScore.tier`. */
+/** Lane A · #1 — source credibility tier, matching the `SourceScore.tier` column. */
 export type CredibilityTier = 'HIGH' | 'MEDIUM' | 'REVIEW';
 
 export const CARD_TYPES: CardType[] = [
@@ -73,42 +74,42 @@ export const CARD_STATUSES: CardStatus[] = [
   'CONFLICT',
 ];
 
-/** Nhãn tiếng Việt cho 8 loại thẻ — dùng làm tiêu đề nhóm trong `CardBoard`. */
+/** Labels for the 8 card types — used as group headings in `CardBoard`. */
 export const CARD_TYPE_LABEL: Record<CardType, string> = {
-  PROBLEM: 'Vấn đề',
-  RESEARCH_QUESTION: 'Câu hỏi nghiên cứu',
-  GAP: 'Khoảng trống nghiên cứu',
-  CONTRIBUTION: 'Đóng góp',
-  CLAIM: 'Khẳng định',
-  EVIDENCE: 'Bằng chứng',
-  CONSTRAINT: 'Ràng buộc',
-  OPEN_QUESTION: 'Câu hỏi mở',
+  PROBLEM: 'Problem',
+  RESEARCH_QUESTION: 'Research question',
+  GAP: 'Research gap',
+  CONTRIBUTION: 'Contribution',
+  CLAIM: 'Claim',
+  EVIDENCE: 'Evidence',
+  CONSTRAINT: 'Constraint',
+  OPEN_QUESTION: 'Open question',
 };
 
-/** Năm bước wizard — nhãn chốt theo mockup 1–4 (ARCHITECTURE §4, DESIGN_SYSTEM §8 #1). */
+/** The five wizard steps — labels fixed by mockups 1–4 (ARCHITECTURE §4, DESIGN_SYSTEM §8 #1). */
 export const STEPS: { step: ProjectStep; no: number; short: string; title: string }[] = [
-  { step: 'S1', no: 1, short: 'Nhập ý tưởng', title: 'Nhập ý tưởng & Làm rõ' },
-  { step: 'S2', no: 2, short: 'Nghiên cứu', title: 'Nghiên cứu liên quan & Research Gap' },
-  { step: 'S3', no: 3, short: 'Contribution', title: 'Contribution & Kế hoạch thí nghiệm' },
-  { step: 'S4', no: 4, short: 'Judge', title: 'Judge độc lập & Sửa spec' },
-  { step: 'S5', no: 5, short: 'Spec cuối', title: 'Spec cuối & Xuất bản' },
+  { step: 'S1', no: 1, short: 'Idea', title: 'Idea intake & clarification' },
+  { step: 'S2', no: 2, short: 'Related work', title: 'Related work & research gap' },
+  { step: 'S3', no: 3, short: 'Contribution', title: 'Contribution & experiment plan' },
+  { step: 'S4', no: 4, short: 'Judges', title: 'Independent judges & spec fixes' },
+  { step: 'S5', no: 5, short: 'Final spec', title: 'Final spec & publish' },
 ];
 
 /**
- * Khai lại `MAX_JUDGE_ROUNDS` của `backend/src/contracts/enums.ts` — cùng luật với các enum
- * ở trên: hai project rời, backend là nguồn sự thật, sửa một chỗ thì sửa cả hai.
+ * Re-declares `MAX_JUDGE_ROUNDS` from `backend/src/contracts/enums.ts` — same rule as the enums
+ * above: two separate projects, the backend is the source of truth, edit both together.
  */
 export const MAX_JUDGE_ROUNDS = 3;
 
 export const JUDGE_META: Record<JudgeKey, { name: string; task: string }> = {
-  J1: { name: 'Research Gap', task: 'Gap có thật sự được tài liệu hỗ trợ không' },
-  J2: { name: 'Contribution', task: 'Đóng góp có mới, rõ, có bị phóng đại không' },
-  J3: { name: 'Experiment', task: 'Thí nghiệm có đủ chứng minh claim không' },
-  J4: { name: 'Evidence', task: 'Citation có thật sự hỗ trợ nội dung đi kèm không' },
+  J1: { name: 'Research Gap', task: 'Is the gap genuinely supported by the literature?' },
+  J2: { name: 'Contribution', task: 'Is the contribution novel, clear, and free of overclaiming?' },
+  J3: { name: 'Experiment', task: 'Do the experiments actually prove the claims?' },
+  J4: { name: 'Evidence', task: 'Does each citation really support the text next to it?' },
   J5: { name: 'Readiness', task: 'Originality · significance · soundness · clarity' },
 };
 
-// ── hình dạng dữ liệu trả về từ API ────────────────────────────────────────
+// ── shapes of the data the API returns ─────────────────────────────────────
 
 export type ApiSource = {
   id: string;
@@ -128,8 +129,8 @@ export type ApiCardSource = {
   id: string;
   support_label: SupportLabel;
   /**
-   * `null` ⇒ cặp chưa đi qua verifier lần nào, và `support_label` chỉ là mặc định `WEAK` của
-   * schema. Phải đọc field này trước khi hiện nhãn, xem `SupportTag`.
+   * `null` ⇒ the pair has never been through the verifier, and `support_label` is only the
+   * schema default `WEAK`. Read this field before showing a label — see `SupportTag`.
    */
   verifier_run_id: string | null;
   similarity: number | null;
@@ -247,7 +248,7 @@ export type ApiProjectDetail = {
     arm: string;
     verifier_gate: boolean;
     judge_round: number;
-    /** Vòng judge tính cả dự án — bộ đếm chặn ở 3, không reset khi tạo version mới. */
+    /** Judge rounds counted across the whole project — capped at 3, never reset by a new version. */
     judge_rounds_total: number;
     current_spec_version_id: string | null;
     created_at: string;

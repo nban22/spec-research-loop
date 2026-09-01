@@ -25,7 +25,7 @@ describe('SupportTag', () => {
     expect(tag).toBeInTheDocument();
     expect(tag).toHaveClass('border-danger-ink', 'text-danger-strong');
     expect(
-      screen.getByText('Không tra ra nguồn này ở registry nào'),
+      screen.getByText('This source was not found in any registry'),
     ).toBeInTheDocument();
   });
 
@@ -41,29 +41,30 @@ describe('SupportTag', () => {
   });
 
   /**
-   * Điều kiện quan trọng nhất của component này: `verified={false}` phải **đè** `label`.
-   * `CardSource.support_label` mặc định là `WEAK` ngay từ lúc generator tạo cặp, nên nếu tag
-   * vẫn hiện WEAK thì cả bảng thẻ ở bước 3 nói rằng verifier đã chấm — trong khi nó chưa chạy.
+   * The most important property of this component: `verified={false}` must **override** `label`.
+   * `CardSource.support_label` defaults to `WEAK` from the moment the generator creates the pair,
+   * so if the tag still showed WEAK the whole card board at step 3 would claim the verifier had
+   * scored it — while it has never run.
    */
-  it('hiện CHƯA KIỂM thay cho nhãn khi cặp chưa qua verifier', () => {
+  it('shows UNVERIFIED instead of the label when the pair has not been through the verifier', () => {
     render(<SupportTag label="WEAK" verified={false} />);
     expect(screen.queryByText('WEAK')).toBeNull();
-    const tag = screen.getByText('CHƯA KIỂM');
+    const tag = screen.getByText('UNVERIFIED');
     expect(tag).toHaveClass('border-neutral-line', 'border-dashed');
     expect(
-      screen.getByText('chưa chạy kiểm chứng cứ cho cặp này'),
+      screen.getByText('evidence verification has not run for this pair'),
     ).toBeInTheDocument();
   });
 
-  it('không hiện cờ chẩn đoán của cặp chưa kiểm', () => {
+  it('does not show diagnostic flags for an unverified pair', () => {
     render(<SupportTag label="WEAK" verified={false} flags={['STALE_SOURCE']} />);
-    expect(screen.getByText('CHƯA KIỂM')).toBeInTheDocument();
-    expect(screen.queryByText(/xuất bản đã lâu/i)).toBeNull();
+    expect(screen.getByText('UNVERIFIED')).toBeInTheDocument();
+    expect(screen.queryByText(/rather old/i)).toBeNull();
   });
 
-  it('mặc định coi như đã kiểm — chỗ gọi cũ không đổi hành vi', () => {
+  it('treats a pair as verified by default — existing call sites keep their behaviour', () => {
     render(<SupportTag label="SUPPORTED" />);
     expect(screen.getByText('SUPPORTED')).toBeInTheDocument();
-    expect(screen.queryByText('CHƯA KIỂM')).toBeNull();
+    expect(screen.queryByText('UNVERIFIED')).toBeNull();
   });
 });

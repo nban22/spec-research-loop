@@ -2,12 +2,12 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * `RoundTracker` — tiến độ **bên trong một vòng**, nằm trong `SummaryBar`.
+ * `RoundTracker` — progress **inside a single round**, rendered inside `SummaryBar`.
  *
- * Đây là dải node mà mockup 1–4 vẽ ở đáy trang, và nó **không phải** stepper 5 bước:
- * nhãn của nó đổi theo từng mockup và luôn kết bằng một node *Xác nhận* (DESIGN_SYSTEM §8 #2).
- * Giữ nó là cách UI thể hiện chữ *Loop* trong tên đồ án và bước 10 của đề
- * (sửa → verify lại → judge lại → xác nhận).
+ * This is the node strip mockups 1–4 draw at the bottom of the page, and it is **not** the
+ * 5-step stepper: its labels change per mockup and it always ends on a *Confirm* node
+ * (DESIGN_SYSTEM §8 #2). Keeping it is how the UI expresses the word *Loop* in the project name
+ * and step 10 of the brief (fix → re-verify → re-judge → confirm).
  */
 export function RoundTracker({
   nodes,
@@ -51,8 +51,8 @@ export function RoundTracker({
 }
 
 /**
- * Dải đáy "Tóm tắt sau vòng N". **Không** lặp lại `Stepper` toàn cục (§5.3).
- * Trên mobile xếp dọc và nằm trên vùng chừa cho `DecisionSheet`.
+ * The bottom bar "Summary after round N". It does **not** repeat the global `Stepper` (§5.3).
+ * On mobile it stacks vertically and sits above the space reserved for `DecisionSheet`.
  */
 export function SummaryBar({
   round,
@@ -67,7 +67,7 @@ export function SummaryBar({
 }) {
   return (
     <section className="border-hairline bg-surface shadow-card animate-rise flex flex-col gap-2 rounded-xl border px-3 py-3 sm:px-4 md:flex-row md:items-center md:gap-4">
-      <p className="text-ink-1 shrink-0 text-sm font-semibold">Tóm tắt sau vòng {round}</p>
+      <p className="text-ink-1 shrink-0 text-sm font-semibold">Summary after round {round}</p>
       <div className="min-w-0 flex-1">
         <RoundTracker nodes={nodes} activeIndex={activeIndex} />
       </div>

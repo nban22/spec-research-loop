@@ -31,23 +31,24 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 /**
- * **Concept map của ý tưởng ở bước 1** — issue #14 (làn C).
+ * **The concept map of the idea at step 1** — issue #14 (lane C).
  *
- * Đề gợi ý trả lời câu *"tôi hiểu đúng ý tưởng của bạn không?"* bằng **sơ đồ · concept map ·
- * danh sách thành phần · animation mô tả luồng nghiên cứu**. MVP đang trả lời bằng một đoạn văn
- * cộng một bảng thẻ; người dùng phải tự đối chiếu trong đầu.
+ * The brief suggests answering *"did I understand your idea correctly?"* with a **diagram · concept
+ * map · component list · animation of the research flow**. The MVP answers with a paragraph plus a
+ * card board; the user has to do the cross-checking in their head.
  *
- * ## Cạnh ở đây là cạnh CẤU TRÚC, không phải quan hệ ngữ nghĩa
+ * ## The edges here are STRUCTURAL, not semantic
  *
- * `generatedCardSchema` không có trường nào mô tả quan hệ giữa hai thẻ, và `Card.parent_card_id`
- * tuy có cột nhưng **không dòng code nào ghi vào**. Nên bản đồ này nối theo *cấu trúc*:
- * ý tưởng → nhóm loại thẻ → thẻ. Vẽ cạnh ngữ nghĩa mà dữ liệu không có sẽ là bịa ra quan hệ.
+ * `generatedCardSchema` has no field describing a relation between two cards, and while
+ * `Card.parent_card_id` exists as a column, **no line of code ever writes to it**. So this map
+ * connects by *structure*: idea → card-type group → card. Drawing semantic edges the data does not
+ * carry would be inventing relations.
  *
- * ## Bố cục là hàm thuần của dữ liệu
+ * ## The layout is a pure function of the data
  *
- * Không dùng thuật toán lực (force-directed): nó có yếu tố ngẫu nhiên và mỗi lần mở lại ra một
- * hình khác. Với một công cụ nghiên cứu thì "cùng dữ liệu, cùng hình" đáng giá hơn hình đẹp —
- * người dùng nhớ được vị trí thẻ giữa hai lần xem.
+ * No force-directed algorithm: it involves randomness and produces a different picture every time.
+ * For a research tool, "same data, same picture" is worth more than a prettier one — the user
+ * remembers where a card sat between two visits.
  */
 
 const W = 860;
@@ -58,13 +59,14 @@ const R_TYPE = 132;
 const R_CARD = 236;
 
 /**
- * `CARD_STATUS_BAR` ở `status-style.ts` cho class **nền** (`bg-ok-ink`), còn SVG cần `fill-*`.
+ * `CARD_STATUS_BAR` in `status-style.ts` yields **background** classes (`bg-ok-ink`), while SVG
+ * needs `fill-*`.
  *
- * Phải khai lại thành literal chứ **không** biến đổi chuỗi lúc chạy: Tailwind quét mã nguồn để
- * tìm tên class, nên `'bg-ok-ink'.replace('bg-','fill-')` sinh ra một chuỗi trình biên dịch
- * không bao giờ nhìn thấy, và class đó sẽ không tồn tại trong CSS.
+ * These must be re-declared as literals rather than **derived at runtime**: Tailwind scans the
+ * source for class names, so `'bg-ok-ink'.replace('bg-','fill-')` produces a string the compiler
+ * never sees, and that class would simply not exist in the CSS.
  *
- * ⚠️ Đổi token màu của một trạng thái ở `status-style.ts` thì đổi cả ở đây.
+ * ⚠️ Change a status colour token in `status-style.ts` and you must change it here too.
  */
 const STATUS_FILL: Record<CardStatus, string> = {
   CONFIRMED: 'fill-ok-ink',
@@ -76,18 +78,18 @@ const STATUS_FILL: Record<CardStatus, string> = {
 };
 
 /**
- * Tra bảng nhãn/màu theo `status` **chịu được giá trị lạ**.
+ * Label/colour lookups by `status` that **tolerate unknown values**.
  *
- * `Record<CardStatus, …>` khiến TypeScript tin mọi khoá đều có, nhưng `status` ở đây đến từ
- * **API lúc chạy**, không từ trình biên dịch: backend thêm một trạng thái thứ bảy trước khi
- * frontend kịp đồng bộ enum là bảng tra trả `undefined`, và `.label` trên `undefined` làm trắng
- * cả trang.
+ * `Record<CardStatus, …>` makes TypeScript believe every key exists, but `status` here comes from
+ * the **API at runtime**, not the compiler: if the backend adds a seventh status before the
+ * frontend syncs its enum, the lookup returns `undefined` and `.label` on `undefined` blanks the
+ * whole page.
  *
- * Bản đồ này lộ ra chỗ đó rõ hơn `CardBoard`: `CardBoard` bọc thẻ trong accordion nên nhóm đang
- * đóng **không được mount**, còn bản đồ vẽ **mọi** thẻ ngay lập tức.
+ * This map exposes that more readily than `CardBoard`: `CardBoard` wraps cards in accordions so a
+ * closed group is **never mounted**, while the map draws **every** card immediately.
  *
- * Cách xử: hiện nguyên văn giá trị lạ thay vì sập — người dùng thấy có gì đó chưa khớp, và
- * lập trình viên đọc ra ngay giá trị nào gây chuyện.
+ * The remedy: show the unknown value verbatim instead of crashing — the user sees that something
+ * does not line up, and the developer reads straight off which value caused it.
  */
 function labelOf(status: CardStatus): string {
   return styleOr(CARD_STATUS_STYLE, status).label;
@@ -101,17 +103,17 @@ type Node = {
   card: ApiCard;
   x: number;
   y: number;
-  /** Thứ tự hiện ra — dùng cho hiệu ứng dựng dần từng nhánh. */
+  /** Reveal order — drives the branch-by-branch build-up animation. */
   order: number;
 };
 
 type Group = { type: CardType; angle: number; x: number; y: number; nodes: Node[] };
 
 /**
- * Cắt **tiêu đề thẻ** cho vừa ô — tiêu đề là câu tự do, cắt vẫn đoán được nội dung.
+ * Truncate a **card title** to fit its box — a title is free prose, and a cut one is still guessable.
  *
- * Nhãn **loại thẻ** thì không cắt: đó là tên phân loại trong bộ 8 loại, cắt thành
- * "Khoảng trống nghi…" là mất nghĩa. Ô nhóm nới rộng cho vừa nhãn dài nhất thay vì cắt chữ.
+ * A **card-type** label is never cut: it is one of the 8 category names, and "Research ga…" loses
+ * its meaning. The group box is widened to fit the longest label instead of trimming the text.
  */
 function short(s: string, max = 26): string {
   return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
@@ -128,10 +130,10 @@ function layout(cards: ApiCard[]): Group[] {
   let order = 0;
 
   return types.map((type, ti) => {
-    // Bắt đầu từ -90° để nhóm đầu tiên nằm trên đỉnh, đọc theo chiều kim đồng hồ.
+    // Start at -90° so the first group sits at the top and reading runs clockwise.
     const angle = (ti / types.length) * Math.PI * 2 - Math.PI / 2;
     const list = byType.get(type) ?? [];
-    // Quạt các thẻ trong cùng một nhóm quanh trục của nhóm đó.
+    // Fan the cards of one group around that group's axis.
     const spread = Math.min(0.44, (Math.PI * 2) / types.length / 1.6);
     const nodes = list.map((card, i) => {
       const t = list.length === 1 ? 0 : i / (list.length - 1) - 0.5;
@@ -167,7 +169,7 @@ export function ConceptMap({
 
   if (cards.length === 0) {
     return (
-      <p className="text-ink-3 text-xs">Chưa có thẻ nào để dựng bản đồ.</p>
+      <p className="text-ink-3 text-xs">No cards yet to build a map from.</p>
     );
   }
 
@@ -178,9 +180,9 @@ export function ConceptMap({
           viewBox={`0 0 ${W} ${H}`}
           className="h-auto w-full min-w-[680px]"
           role="img"
-          aria-label={`Bản đồ khái niệm gồm ${cards.length} thẻ thuộc ${groups.length} loại`}
+          aria-label={`Concept map of ${cards.length} cards across ${groups.length} types`}
         >
-          {/* ── cạnh: ý tưởng → nhóm loại → thẻ ───────────────────────────── */}
+          {/* ── edges: idea → type group → card ───────────────────────────── */}
           <g className="stroke-hairline" strokeWidth={1.5} fill="none">
             {groups.map((g) => (
               <line key={`e-${g.type}`} x1={CX} y1={CY} x2={g.x} y2={g.y} />
@@ -192,7 +194,7 @@ export function ConceptMap({
             )}
           </g>
 
-          {/* ── nút trung tâm: ý tưởng ─────────────────────────────────────── */}
+          {/* ── the centre node: the idea ──────────────────────────────────── */}
           <g className="animate-rise">
             <circle cx={CX} cy={CY} r={54} className="fill-surface stroke-brand-line" strokeWidth={2} />
             <text
@@ -201,14 +203,14 @@ export function ConceptMap({
               textAnchor="middle"
               className="fill-brand-strong text-[13px] font-semibold"
             >
-              Ý tưởng
+              Idea
             </text>
             <text x={CX} y={CY + 13} textAnchor="middle" className="fill-ink-3 text-[10px]">
-              {cards.length} thẻ
+              {cards.length} cards
             </text>
           </g>
 
-          {/* ── nút nhóm loại thẻ ──────────────────────────────────────────── */}
+          {/* ── the card-type group nodes ──────────────────────────────────── */}
           {groups.map((g, i) => (
             <g
               key={g.type}
@@ -235,7 +237,7 @@ export function ConceptMap({
             </g>
           ))}
 
-          {/* ── nút thẻ · bấm để sửa ───────────────────────────────────────── */}
+          {/* ── card nodes · tap to edit ───────────────────────────────────── */}
           {groups.flatMap((g) =>
             g.nodes.map((n) => (
               <g
@@ -251,7 +253,7 @@ export function ConceptMap({
                     setEditing(n.card);
                   }
                 }}
-                aria-label={`Sửa thẻ ${n.card.title}`}
+                aria-label={`Edit card ${n.card.title}`}
               >
                 <rect
                   x={n.x - 74}
@@ -262,7 +264,7 @@ export function ConceptMap({
                   className="fill-surface stroke-hairline"
                   strokeWidth={1.5}
                 />
-                {/* Vạch màu trạng thái — cùng ngữ pháp với `SpecCard` ở bảng thẻ. */}
+                {/* The status colour rail — same grammar as `SpecCard` on the card board. */}
                 <rect
                   x={n.x - 74}
                   y={n.y - 17}
@@ -285,14 +287,14 @@ export function ConceptMap({
 
       {meta?.key_problems && meta.key_problems.length > 0 && (
         <p className="text-ink-3 text-2xs">
-          Vấn đề chính hệ thống rút ra: {meta.key_problems.join(' · ')}
+          Key problems the system extracted: {meta.key_problems.join(' · ')}
         </p>
       )}
 
       <HintBox tone="info">
-        Bấm vào một thẻ để sửa ngay trên bản đồ. Cạnh nối là <strong>cấu trúc</strong> (ý tưởng →
-        loại thẻ → thẻ), không phải quan hệ ngữ nghĩa — hệ thống chưa lưu quan hệ giữa hai thẻ,
-        nên vẽ ra sẽ là bịa.
+        Tap a card to edit it right on the map. The edges are <strong>structural</strong> (idea →
+        card type → card), not semantic — the system stores no relation between two cards, so
+        drawing one would be inventing it.
       </HintBox>
 
       <CardEditor
@@ -305,8 +307,8 @@ export function ConceptMap({
 }
 
 /**
- * Sửa thẻ ngay tại bản đồ qua `PATCH /cards/:id` — endpoint **đã có**, không thêm cái nào mới.
- * Chỉ mở ba trường mà `patchCardSchema` nhận và người dùng thực sự cần ở bước 1.
+ * Edit a card in place on the map via `PATCH /cards/:id` — an **existing** endpoint, nothing new.
+ * Only the three fields `patchCardSchema` accepts and the user actually needs at step 1 are exposed.
  */
 function CardEditor({
   projectId,
@@ -323,8 +325,8 @@ function CardEditor({
   const [status, setStatus] = useState<CardStatus>('PROPOSED');
   const [loaded, setLoaded] = useState<string | null>(null);
 
-  /* Nạp giá trị khi mở một thẻ khác — mẫu "điều chỉnh state khi prop đổi" của React, không
-     dùng `useEffect` (ESLint chặn setState trong effect, và chặn đúng). */
+  /* Load the values when a different card is opened — React's "adjust state when a prop changes"
+     pattern, not `useEffect` (ESLint blocks setState in an effect, and rightly so). */
   if (card && loaded !== card.id) {
     setTitle(card.title);
     setBody(card.body);
@@ -338,14 +340,14 @@ function CardEditor({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
-      toast.success('Đã lưu thay đổi cho thẻ này.');
+      toast.success('Changes to this card have been saved.');
       onClose();
     },
     onError: (err) =>
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa lưu được thẻ. Bạn vui lòng thử lại.',
+          : 'The card could not be saved. Please try again.',
       ),
   });
 
@@ -353,15 +355,15 @@ function CardEditor({
     <Dialog open={card !== null} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Sửa thẻ</DialogTitle>
+          <DialogTitle>Edit card</DialogTitle>
           <DialogDescription>
-            {card ? CARD_TYPE_LABEL[card.type] : ''} — thay đổi lưu ngay vào phiên bản hiện tại.
+            {card ? CARD_TYPE_LABEL[card.type] : ''} — changes are saved into the current version.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="cm-title">Tiêu đề</Label>
+            <Label htmlFor="cm-title">Title</Label>
             <Textarea
               id="cm-title"
               rows={2}
@@ -370,7 +372,7 @@ function CardEditor({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="cm-body">Nội dung</Label>
+            <Label htmlFor="cm-body">Body</Label>
             <Textarea
               id="cm-body"
               rows={4}
@@ -379,7 +381,7 @@ function CardEditor({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Trạng thái</Label>
+            <Label>Status</Label>
             <div className="flex flex-wrap gap-1.5">
               {CARD_STATUSES.map((s) => (
                 <button
@@ -400,18 +402,18 @@ function CardEditor({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Để sau
+            Later
           </Button>
           <Button
             disabled={!card || save.isPending || title.trim().length === 0}
             onClick={() => card && save.mutate(card.id)}
           >
             {save.isPending ? (
-              'Hệ thống đang lưu…'
+              'Saving…'
             ) : (
               <>
                 <Save className="size-4" aria-hidden />
-                Lưu thay đổi
+                Save changes
               </>
             )}
           </Button>
@@ -422,8 +424,8 @@ function CardEditor({
 }
 
 /**
- * Chuyển giữa bản đồ và bảng thẻ. Hai nút thay vì `Tabs` của shadcn: `components/ui/**` nằm
- * ngoài phạm vi được sửa của issue #14, và hai nút là đủ cho hai lựa chọn.
+ * Switch between the map and the card board. Two buttons instead of the shadcn `Tabs`:
+ * `components/ui/**` is outside issue #14's editable scope, and two buttons suffice for two options.
  */
 export function ViewToggle({
   view,
@@ -436,8 +438,8 @@ export function ViewToggle({
     <div className="border-hairline bg-sunken inline-flex gap-0.5 rounded-md border p-0.5">
       {(
         [
-          ['map', 'Bản đồ'],
-          ['board', 'Bảng thẻ'],
+          ['map', 'Map'],
+          ['board', 'Card board'],
         ] as const
       ).map(([v, label]) => (
         <button
