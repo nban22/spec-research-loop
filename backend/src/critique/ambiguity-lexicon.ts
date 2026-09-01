@@ -1,10 +1,10 @@
 /**
  * Từ điển của bộ bắt thẻ mơ hồ (#12) — **0 token**.
  *
- * Cùng bài học ngôn ngữ với #7: đề bài liệt ví dụ tiếng Việt ("hiệu quả", "tốt hơn", "nhiều",
- * "cải thiện") nhưng `prompts/generator.md` §"Language rule" bắt mọi `title`/`body`/`payload`
- * của card phải là **tiếng Anh**. Từ điển chính vì thế là tiếng Anh; phần tiếng Việt giữ cho
- * card `origin = USER` do người dùng tự gõ.
+ * Cùng bài học ngôn ngữ với #7: đề bài liệt ví dụ bằng tiếng bản địa, nhưng
+ * `prompts/generator.md` §"Language rule" bắt mọi `title`/`body`/`payload` của card phải là
+ * **tiếng Anh**, và toàn bộ giao diện cũng đã chuyển sang tiếng Anh — nên từ điển chỉ còn
+ * tiếng Anh, kể cả cho card `origin = USER`.
  */
 
 export type LexEntry = { pattern: RegExp; label: string };
@@ -43,12 +43,6 @@ export const VAGUE_TERMS: LexEntry[] = [
   { pattern: /\bmultiple\b/gi, label: 'multiple' },
   { pattern: /\ba\s+lot\s+of\b/gi, label: 'a lot of' },
   { pattern: /\bsome\s+(?:of\s+)?(?:the\s+)?\w+/gi, label: 'some …' },
-  // Card `origin = USER` — luật ngôn ngữ của generator không với tới.
-  { pattern: /\bhiệu quả\b/gi, label: 'hiệu quả' },
-  { pattern: /\btốt hơn\b/gi, label: 'tốt hơn' },
-  { pattern: /\bnhiều\b/gi, label: 'nhiều' },
-  { pattern: /\bcải thiện\b/gi, label: 'cải thiện' },
-  { pattern: /\bđáng kể\b/gi, label: 'đáng kể' },
 ];
 
 /**

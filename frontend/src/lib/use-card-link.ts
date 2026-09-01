@@ -5,16 +5,17 @@ import { toast } from 'sonner';
 import { ApiError, api, qk } from '@/lib/api';
 
 /**
- * Ba lệnh ghi của bản đồ claim–evidence (#15), khớp với module `card-link/` ở backend.
+ * The three write commands of the claim-evidence map (#15), mirroring the backend `card-link/`
+ * module.
  *
- * Cả ba **invalidate cùng một nhánh**: `['spec-versions', versionId, 'cards']`. Thẻ và liên kết
- * của nó cùng nằm trong một payload (`ApiCard.card_sources`), nên tách ra invalidate riêng chỉ
- * tạo ra hai lần fetch cho cùng một thứ.
+ * All three **invalidate the same branch**: `['spec-versions', versionId, 'cards']`. A card and
+ * its links ship in one payload (`ApiCard.card_sources`), so invalidating them separately would
+ * only produce two fetches for the same thing.
  *
- * **Không** làm optimistic update ở tầng này. Kéo thả cần phản hồi tức thì, nhưng phản hồi đó
- * thuộc về component — nó biết thẻ đang được kéo là thẻ nào, còn hook thì không. Nhét optimistic
- * vào đây nghĩa là phải chép lại hình dạng của cả cây `cards` trong cache, và bản chép đó sẽ lệch
- * đi lần đầu ai thêm một trường vào `ApiCard`.
+ * **No** optimistic updates at this layer. Drag and drop needs instant feedback, but that
+ * feedback belongs to the component — it knows which card is being dragged, the hook does not.
+ * Putting optimism here would mean re-implementing the shape of the whole `cards` tree in the
+ * cache, and that copy would drift the first time somebody adds a field to `ApiCard`.
  */
 
 function invalidateCards(
@@ -24,7 +25,7 @@ function invalidateCards(
   if (versionId) void queryClient.invalidateQueries({ queryKey: qk.cards(versionId) });
 }
 
-/** Thông báo lỗi mặc định — `code` không đọc được thì cũng không được để người dùng đoán. */
+/** Default error toast — even when `code` is unreadable, the user must never be left guessing. */
 function fail(err: unknown, fallback: string) {
   toast.error(err instanceof ApiError ? err.message : fallback);
 }
@@ -37,7 +38,7 @@ export function useLinkSource(versionId: string | undefined) {
         source_id: input.sourceId,
       }),
     onSuccess: () => invalidateCards(queryClient, versionId),
-    onError: (err) => fail(err, 'Hệ thống chưa nối được nguồn vào thẻ. Bạn vui lòng thử lại.'),
+    onError: (err) => fail(err, 'The source could not be linked to the card. Please try again.'),
   });
 }
 
@@ -47,7 +48,7 @@ export function useUnlinkSource(versionId: string | undefined) {
     mutationFn: (cardSourceId: string) =>
       api.del<{ id: string; deleted: boolean }>(`/card-sources/${cardSourceId}`),
     onSuccess: () => invalidateCards(queryClient, versionId),
-    onError: (err) => fail(err, 'Hệ thống chưa gỡ được liên kết. Bạn vui lòng thử lại.'),
+    onError: (err) => fail(err, 'The link could not be removed. Please try again.'),
   });
 }
 
@@ -57,8 +58,8 @@ export function useDeleteCard(versionId: string | undefined) {
     mutationFn: (cardId: string) => api.del<{ id: string; deleted: boolean }>(`/cards/${cardId}`),
     onSuccess: () => {
       invalidateCards(queryClient, versionId);
-      toast.success('Đã xoá thẻ.');
+      toast.success('Card deleted.');
     },
-    onError: (err) => fail(err, 'Hệ thống chưa xoá được thẻ. Bạn vui lòng thử lại.'),
+    onError: (err) => fail(err, 'The card could not be deleted. Please try again.'),
   });
 }

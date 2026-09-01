@@ -4,15 +4,16 @@ import { ClaimEvidenceMap, type ClaimCard } from './claim-evidence-map';
 import type { ApiSource } from '@/lib/types';
 
 /**
- * Test **hợp đồng**, không test cơ chế kéo thả.
+ * These test the **contract**, not the drag-and-drop mechanism.
  *
- * Kéo thả thật cần toạ độ chuột, `PointerEvent`, và phép đo bố cục — jsdom không có cái nào cho
- * ra kết quả đáng tin, nên test kéo thả ở đây chỉ tạo cảm giác an toàn giả. Thứ đáng khoá lại là:
+ * Real dragging needs mouse coordinates, `PointerEvent`, and layout measurement — jsdom gives
+ * trustworthy results for none of those, so a drag test here would only create false confidence.
+ * What is worth locking down:
  *
- * 1. **Kéo thả không phải đường duy nhất** — mọi thao tác đều có nút thật, dùng được bằng ngón
- *    tay và bằng bàn phím (frontend/CLAUDE.md §7).
- * 2. **Claim treo phải nhìn ra được** — đó là lý do màn hình này tồn tại.
- * 3. Mọi nút có **tên**, không phải icon trần.
+ * 1. **Dragging is not the only path** — every action has a real button, usable by finger and by
+ *    keyboard (frontend/CLAUDE.md §7).
+ * 2. **A dangling claim must be visible** — that is why this screen exists.
+ * 3. Every button has a **name**, not a bare icon.
  */
 
 const source = (over: Partial<ApiSource> = {}): ApiSource => ({
@@ -32,7 +33,7 @@ const source = (over: Partial<ApiSource> = {}): ApiSource => ({
 
 const claim = (over: Partial<ClaimCard> = {}): ClaimCard => ({
   id: 'c-1',
-  title: 'Mô hình đề xuất giảm 20% lỗi dịch',
+  title: 'The proposed model cuts translation errors by 20%',
   status: 'PROPOSED',
   type: 'CLAIM',
   card_sources: [],
@@ -65,73 +66,79 @@ function setup(props: Partial<Parameters<typeof ClaimEvidenceMap>[0]> = {}) {
 }
 
 describe('ClaimEvidenceMap', () => {
-  it('claim chưa có nguồn nào thì nói thẳng ra, không để người dùng tự đoán', () => {
+  it('says plainly when a claim has no source, instead of leaving the user to guess', () => {
     setup();
-    expect(screen.getByText(/Claim này chưa có nguồn nào đỡ/)).toBeInTheDocument();
+    expect(screen.getByText(/No source backs this claim yet/)).toBeInTheDocument();
   });
 
-  it('nối được nguồn bằng NÚT, không bắt buộc phải kéo', () => {
+  it('links a source with a BUTTON, without requiring a drag', () => {
     const { onLink } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Nối vào…' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Link to…' }));
     fireEvent.click(
-      screen.getByRole('button', { name: 'Mô hình đề xuất giảm 20% lỗi dịch' }),
+      screen.getByRole('button', { name: 'The proposed model cuts translation errors by 20%' }),
     );
     expect(onLink).toHaveBeenCalledWith('c-1', 's-1');
   });
 
-  it('gỡ được liên kết bằng nút có tên rõ ràng', () => {
+  it('detaches a link with a clearly named button', () => {
     const { onUnlink } = setup({ claims: [claim({ card_sources: [linked()] })] });
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'Gỡ nguồn Neural machine translation with attention khỏi claim',
+        name: 'Detach source Neural machine translation with attention from this claim',
       }),
     );
     expect(onUnlink).toHaveBeenCalledWith('cs-1');
   });
 
-  it('xoá được thẻ bằng nút có tên rõ ràng', () => {
+  it('deletes a card with a clearly named button', () => {
     const { onDeleteCard } = setup();
     fireEvent.click(
-      screen.getByRole('button', { name: 'Xoá thẻ Mô hình đề xuất giảm 20% lỗi dịch' }),
+      screen.getByRole('button', {
+        name: 'Delete card The proposed model cuts translation errors by 20%',
+      }),
     );
     expect(onDeleteCard).toHaveBeenCalledWith('c-1');
   });
 
-  it('đếm đúng số nguồn đang được dùng', () => {
+  it('counts the sources in use correctly', () => {
     setup({
       claims: [claim({ card_sources: [linked()] })],
-      sources: [source(), source({ id: 's-2', title: 'Nguồn chưa ai dùng' })],
+      sources: [source(), source({ id: 's-2', title: 'A source nobody uses' })],
     });
-    expect(screen.getByText('1/2 đang dùng')).toBeInTheDocument();
+    expect(screen.getByText('1/2 in use')).toBeInTheDocument();
   });
 
-  it('hiện nhãn kiểm chứng của từng liên kết, không giấu trong hover', () => {
+  it('shows each link verification label as text, never hidden behind hover', () => {
     setup({
       claims: [claim({ card_sources: [linked({ support_label: 'UNSUPPORTED' })] })],
     });
-    const section = screen.getByLabelText('Claim Mô hình đề xuất giảm 20% lỗi dịch');
-    // Nhãn giữ nguyên tiếng Anh: đây là kết quả verifier, FE không dịch (CLAUDE.md §6).
+    const section = screen.getByLabelText(
+      'Claim The proposed model cuts translation errors by 20%',
+    );
+    // The label stays as the verifier produced it; the FE never rewrites it (CLAUDE.md §6).
     expect(within(section).getByText('UNSUPPORTED')).toBeInTheDocument();
   });
 
-  it('chưa có claim nào thì chỉ đường sang bước sinh claim, không hiện bản đồ rỗng', () => {
+  it('points at the claim-generation step when there are no claims, not an empty map', () => {
     setup({ claims: [] });
-    expect(screen.getByText(/Chưa có claim nào/)).toBeInTheDocument();
+    expect(screen.getByText(/No claims yet/)).toBeInTheDocument();
   });
 
-  it('chưa có nguồn nào thì chỉ đường sang bước tìm nguồn', () => {
+  it('points at the source-search step when there are no sources', () => {
     setup({ sources: [] });
-    expect(screen.getByText(/Chưa có nguồn nào/)).toBeInTheDocument();
+    expect(screen.getByText(/No sources yet/)).toBeInTheDocument();
   });
 
-  it('đang có lệnh chạy thì khoá mọi nút ghi, tránh bấm hai lần', () => {
+  it('disables every write button while a command is in flight, avoiding double clicks', () => {
     setup({ claims: [claim({ card_sources: [linked()] })], busy: true });
     expect(
-      screen.getByRole('button', { name: 'Xoá thẻ Mô hình đề xuất giảm 20% lỗi dịch' }),
+      screen.getByRole('button', {
+        name: 'Delete card The proposed model cuts translation errors by 20%',
+      }),
     ).toBeDisabled();
     expect(
       screen.getByRole('button', {
-        name: 'Gỡ nguồn Neural machine translation with attention khỏi claim',
+        name: 'Detach source Neural machine translation with attention from this claim',
       }),
     ).toBeDisabled();
   });

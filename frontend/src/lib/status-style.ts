@@ -23,59 +23,59 @@ import type {
 } from './types';
 
 /**
- * **Nơi §3 của DESIGN_SYSTEM biến thành code.** Đây là file **duy nhất** trong `app/` và
- * `components/` được phép chứa class màu thô của Tailwind (§7.2), và ba component
- * `StatusChip` / `SeverityBadge` / `SupportTag` là nơi **duy nhất** được đọc nó (§7.1).
+ * **Where §3 of DESIGN_SYSTEM turns into code.** This is the **only** file under `app/` and
+ * `components/` allowed to hold raw Tailwind colour classes (§7.2), and the three components
+ * `StatusChip` / `SeverityBadge` / `SupportTag` are its **only** readers (§7.1).
  *
- * Khai bằng `Record<Enum, …>` để thiếu một giá trị enum là **lỗi TypeScript lúc build**,
- * không phải badge trắng lúc chạy.
+ * Declared as `Record<Enum, …>` so a missing enum value is a **TypeScript error at build time**,
+ * not a blank badge at runtime.
  *
- * Nguyên tắc: **hình dạng mã hoá NHÓM, màu mã hoá GIÁ TRỊ** (§3.1).
- *   CardStatus  → pill bo tròn hoàn toàn, nền rất nhạt, icon họ VÒNG TRÒN
- *   Severity    → khối đặc, góc vuông nhất, CHỮ HOA, icon họ ĐA GIÁC
- *   SupportLabel→ tag rỗng ruột, viền dày, CHỮ HOA, icon họ KHIÊN
+ * Principle: **shape encodes the GROUP, colour encodes the VALUE** (§3.1).
+ *   CardStatus   -> fully rounded pill, very pale fill, CIRCLE icon family
+ *   Severity     -> solid block, squarest corners, UPPERCASE, POLYGON icon family
+ *   SupportLabel -> hollow tag, thick border, UPPERCASE, SHIELD icon family
  */
 
 export type StatusStyle = { label: string; icon: LucideIcon; className: string };
 
 export const CARD_STATUS_STYLE: Record<CardStatus, StatusStyle> = {
   CONFIRMED: {
-    label: 'Đã xác nhận',
+    label: 'Confirmed',
     icon: CircleCheck,
     className: 'bg-ok-soft text-ok-strong border-ok-line',
   },
   PROPOSED: {
-    // Nền trắng, không tô — báo hiệu chưa được người dùng đóng dấu (§3.2).
-    label: 'Đề xuất',
+    // White background, no fill — signals the user has not stamped it yet (§3.2).
+    label: 'Proposed',
     icon: Circle,
     className: 'bg-surface text-brand-strong border-brand-line',
   },
   MISSING: {
-    // Viền đứt nét là tín hiệu "chỗ trống", đọc được cả khi in trắng đen.
-    label: 'Còn thiếu',
+    // The dashed border is the "empty slot" signal, readable even printed in black and white.
+    label: 'Missing',
     icon: CircleDashed,
     className: 'bg-neutral-soft text-neutral-strong border-neutral-line border-dashed',
   },
   AMBIGUOUS: {
-    label: 'Chưa rõ nghĩa',
+    label: 'Ambiguous',
     icon: CircleHelp,
     className: 'bg-warn-soft text-warn-strong border-warn-line',
   },
   UNSUPPORTED: {
-    // Lỗi chặn export (verifier gate) — phải đỏ.
-    label: 'Không có nguồn',
+    // An export-blocking failure (verifier gate) — has to be red.
+    label: 'Unsupported',
     icon: CircleSlash,
     className: 'bg-danger-soft text-danger-strong border-danger-line',
   },
   CONFLICT: {
-    // Tím = cần người dùng phân xử; máy không tự chọn bên nào được.
-    label: 'Mâu thuẫn',
+    // Purple = the user must arbitrate; the machine cannot pick a side on its own.
+    label: 'Conflict',
     icon: CircleAlert,
     className: 'bg-decide-soft text-decide-strong border-decide-line',
   },
 };
 
-/** Vạch màu dọc cạnh trái `SpecCard` — thẻ **không** tô nền theo trạng thái (§3.7). */
+/** The colour rail on the left edge of `SpecCard` — the card is **never** filled by status (§3.7). */
 export const CARD_STATUS_BAR: Record<CardStatus, string> = {
   CONFIRMED: 'bg-ok-ink',
   PROPOSED: 'bg-brand-ink',
@@ -97,7 +97,7 @@ export const SEVERITY_STYLE: Record<Severity, StatusStyle> = {
     className: 'bg-major-ink text-white',
   },
   MINOR: {
-    // [QĐ] lệch mockup 4: chữ trắng trên nền vàng không đọc nổi → đổi sang chữ màu mực (§3.3).
+    // [DECISION] diverges from mockup 4: white on yellow is unreadable, switched to ink text (§3.3).
     label: 'MINOR',
     icon: Info,
     className: 'bg-minor-ink text-minor-strong',
@@ -123,119 +123,123 @@ export const SUPPORT_STYLE: Record<SupportLabel, StatusStyle> = {
 };
 
 /**
- * **Trạng thái thứ tư của cặp thẻ–nguồn: chưa hề kiểm chứng.**
+ * **The fourth state of a card-source pair: never verified at all.**
  *
- * Cố ý **không** thêm vào `SupportLabel` — enum đó là ba phán quyết của verifier, còn đây là
- * "verifier chưa nhìn tới". Trộn hai thứ vào một enum thì mọi chỗ đếm nhãn đều nói dối.
- * Tín hiệu lấy từ `CardSource.verifier_run_id === null`, không phải từ nhãn.
+ * Deliberately **not** added to `SupportLabel` — that enum holds the verifier's three verdicts,
+ * while this one means "the verifier has not looked yet". Mixing the two into one enum makes
+ * every label tally lie. The signal comes from `CardSource.verifier_run_id === null`, not from
+ * a label.
  *
- * Dùng `neutral` chứ **không** dùng `warn`: chưa đo không phải là một kết quả xấu, nó là chưa
- * có kết quả — cùng lý lẽ với ghi chú của `CONFIDENCE_STYLE` ngay dưới đây.
+ * Uses `neutral`, **not** `warn`: not measured is not a bad result, it is the absence of a
+ * result — the same reasoning as the note on `CONFIDENCE_STYLE` just below.
  */
 export const UNVERIFIED_STYLE: StatusStyle = {
-  // Viền đứt nét mượn đúng tín hiệu "chỗ trống" của `MISSING`: đọc được cả khi in trắng đen,
-  // là chỗ dựa duy nhất khi ba tag `SupportLabel` kia đều rỗng ruột và cùng cỡ chữ.
-  label: 'CHƯA KIỂM',
+  // The dashed border borrows the "empty slot" signal of `MISSING`: readable in black and white,
+  // and the only cue left when the other three `SupportLabel` tags are hollow and same-sized.
+  label: 'UNVERIFIED',
   icon: ShieldQuestion,
   className: 'border-neutral-line border-dashed text-neutral-strong',
 };
 
 /**
- * Nhóm enum thứ tư. Cố ý **không** có component badge riêng: ba vật thể ở §3.1 đã dùng hết ba
- * hình dạng phân biệt được khi in trắng đen. Render thành một dòng trong `HintBox` (§3.8).
- * `LOW` dùng `warn` chứ **không** dùng `danger` — hệ thống hiểu chưa chắc không phải là *lỗi*.
+ * The fourth enum family. Deliberately has **no** badge component of its own: the three objects
+ * in §3.1 already spend all three shapes that stay distinguishable in black and white. Rendered
+ * as a line inside `HintBox` (§3.8). `LOW` uses `warn`, **not** `danger` — the system being
+ * unsure is not an *error*.
  */
 export const CONFIDENCE_STYLE: Record<
   ConfidenceLevel,
   { label: string; tone: 'ok' | 'warn'; hint: string }
 > = {
   HIGH: {
-    label: 'Cao',
+    label: 'High',
     tone: 'ok',
-    hint: 'Hệ thống hiểu chắc ý tưởng của bạn.',
+    hint: 'The system is confident it understood your idea.',
   },
   MEDIUM: {
-    label: 'Trung bình',
+    label: 'Medium',
     tone: 'warn',
-    hint: 'Nên đọc lại phần diễn giải bên trên xem có đúng ý bạn không.',
+    hint: 'Read the paraphrase above again and check that it says what you meant.',
   },
   LOW: {
-    label: 'Thấp',
+    label: 'Low',
     tone: 'warn',
-    hint: 'Hệ thống chưa chắc đã hiểu đúng — cân nhắc sửa lại ý tưởng cho cụ thể hơn rồi phân tích lại.',
+    hint: 'The system is not sure it understood you — consider rewriting the idea more concretely, then analyse again.',
   },
 };
 
-/** Cờ chẩn đoán của verifier → câu giải thích tiếng Việt hiện cạnh `SupportTag`. */
+/** Verifier diagnostic flags → the explanation sentence shown next to `SupportTag`. */
 export const VERIFIER_FLAG_LABEL: Record<string, string> = {
-  SOURCE_NOT_FOUND: 'Không tra ra nguồn này ở registry nào',
-  EMPTY_ABSTRACT: 'Nguồn không có abstract để đối chiếu',
-  STALE_SOURCE: 'Nguồn khá cũ so với khẳng định “mới nhất”',
-  NUMBER_NOT_IN_SOURCE: 'Con số trong khẳng định không có trong abstract',
-  FABRICATED_QUOTE: 'Câu trích dẫn không nằm trong abstract',
-  DOI_UNVERIFIED: 'Chưa kiểm được DOI (registry không trả lời)',
-  LLM_UNAVAILABLE: 'Không kiểm được bằng mô hình ở bước này',
-  // Làn A · #2 — hai cờ của tầng đọc toàn văn.
-  FULLTEXT_USED: 'Nhãn này đọc từ toàn văn bài báo, không chỉ abstract',
+  SOURCE_NOT_FOUND: 'This source was not found in any registry',
+  EMPTY_ABSTRACT: 'The source has no abstract to check against',
+  STALE_SOURCE: 'The source is rather old for a “state of the art” claim',
+  NUMBER_NOT_IN_SOURCE: 'The number in the claim does not appear in the abstract',
+  FABRICATED_QUOTE: 'The quoted sentence is not in the abstract',
+  DOI_UNVERIFIED: 'The DOI could not be checked (the registry did not answer)',
+  LLM_UNAVAILABLE: 'The model check could not run at this step',
+  // Lane A · #2 — the two flags of the full-text layer.
+  FULLTEXT_USED: 'This label was read from the full paper, not just the abstract',
   FULLTEXT_UNAVAILABLE:
-    'Không lấy được toàn văn — đã lùi về đối chiếu abstract',
-  // Loại thẻ này khẳng định một sự vắng mặt (khoảng trống) hoặc một việc sắp làm (đóng góp),
-  // nên hỏi "nguồn có kéo theo câu này không" là hỏi sai câu. Trích dẫn vẫn được kiểm có thật.
-  CITATION_ONLY: 'Đã kiểm trích dẫn có thật; loại thẻ này không chấm bằng phép kéo theo',
+    'The full text could not be fetched — fell back to the abstract',
+  // This card type asserts an absence (a gap) or an intention (a contribution), so asking
+  // "does the source entail this sentence" is the wrong question. The citation is still
+  // checked for existence.
+  CITATION_ONLY: 'Citation checked as real; this card type is not scored by entailment',
 };
 
 /**
- * Làn A · #1 — mức tin cậy của nguồn.
+ * Lane A · #1 — source credibility.
  *
- * Ba mức, và **không mức nào dùng `danger`**: nguồn yếu không phải là *lỗi*, nó là thứ cần người
- * đọc cân nhắc. Dùng `danger` ở đây sẽ tranh chỗ với `UNSUPPORTED` — thứ thật sự chặn xuất bản.
+ * Three tiers, and **none of them uses `danger`**: a weak source is not an *error*, it is
+ * something the reader has to weigh. Using `danger` here would compete with `UNSUPPORTED` — the
+ * thing that actually blocks publishing.
  *
- * Điểm số không bao giờ hiện ra; thứ hiện ra là `label` cộng câu `reason` backend sinh sẵn
- * (tiêu chí hoàn thành của #1).
+ * The score itself is never shown; what is shown is the `label` plus the `reason` sentence the
+ * backend produces (the acceptance criterion of #1).
  */
 export const CREDIBILITY_STYLE: Record<
   CredibilityTier,
   { label: string; className: string }
 > = {
   HIGH: {
-    label: 'Đáng tin',
+    label: 'Trusted',
     className: 'bg-ok-soft text-ok-strong border-ok-line',
   },
   MEDIUM: {
-    label: 'Trung bình',
+    label: 'Medium',
     className: 'bg-neutral-soft text-neutral-strong border-neutral-line',
   },
   REVIEW: {
-    label: 'Cần cân nhắc',
+    label: 'Needs review',
     className: 'bg-warn-soft text-warn-strong border-warn-line',
   },
 };
 
-/** Làn A · #3 — nhãn tiếng Việt cho hai phạm vi xung đột và bốn tín hiệu phát hiện. */
+/** Lane A · #3 — labels for the two conflict scopes and the four detection signals. */
 export const CONFLICT_SCOPE_LABEL: Record<string, string> = {
-  INTRA_CARD: 'Hai nguồn của cùng một thẻ nói ngược nhau',
-  CROSS_CARD: 'Hai thẻ dùng cùng một bài báo theo hai chiều',
+  INTRA_CARD: 'Two sources on the same card contradict each other',
+  CROSS_CARD: 'Two cards use the same paper in opposite directions',
 };
 
 export const CONFLICT_SIGNAL_LABEL: Record<string, string> = {
-  POLARITY: 'Trái chiều kết luận',
-  NUMERIC: 'Lệch số liệu',
-  DIRECTION: 'Trái chiều diễn đạt',
-  LLM: 'Mô hình xác nhận',
+  POLARITY: 'Opposite conclusions',
+  NUMERIC: 'Numbers disagree',
+  DIRECTION: 'Opposite phrasing',
+  LLM: 'Confirmed by the model',
 };
 
-/** Làn A · #5 — tên bảy tầng của verifier, hiện trên thanh truy vết. */
+/** Lane A · #5 — the names of the verifier's seven layers, shown on the trace bar. */
 export const VERIFIER_LAYER_LABEL: Record<string, string> = {
-  L0: 'Nguồn có thật',
-  L1: 'Đủ dữ liệu',
-  L2: 'Đối chiếu số',
-  L3: 'Độ tương đồng',
-  L3b: 'Đọc toàn văn',
-  L4: 'Hỏi mô hình',
-  L4b: 'Chống bịa trích',
+  L0: 'Source is real',
+  L1: 'Enough data',
+  L2: 'Number check',
+  L3: 'Similarity',
+  L3b: 'Full-text read',
+  L4: 'Ask the model',
+  L4b: 'Quote-fabrication guard',
 };
 
-/** Thứ tự hiển thị của thanh tầng — cũng là thứ tự chạy thật trong verifier. */
+/** Display order of the layer bar — also the real execution order inside the verifier. */
 export const VERIFIER_LAYER_ORDER = [
   'L0',
   'L1',

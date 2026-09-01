@@ -12,10 +12,10 @@ import { useDeleteCard, useLinkSource, useUnlinkSource } from '@/lib/use-card-li
 import { useCards, useProject, useSources } from '@/lib/use-project';
 
 /**
- * **Bản đồ claim–evidence kéo thả** — issue #15 (làn C), điểm nhấn demo.
+ * **The drag-and-drop claim-evidence map** — issue #15 (lane C), the demo centrepiece.
  *
- * Trang riêng chứ không nhét vào bước 3: thao tác ở đây là **sửa tay bản nháp**, không phải một
- * bước của quy trình. Cùng khuôn với `/map` (#16), `/simulate` (#18), `/cost` (#17).
+ * Its own page rather than folded into step 3: what happens here is **hand-editing the draft**, not
+ * a step of the process. Same shape as `/map` (#16), `/simulate` (#18), `/cost` (#17).
  */
 export default function ClaimMapPage({ params }: PageProps<'/projects/[id]/claim-map'>) {
   const { id } = use(params);
@@ -29,8 +29,9 @@ export default function ClaimMapPage({ params }: PageProps<'/projects/[id]/claim
   const del = useDeleteCard(versionId);
   const busy = link.isPending || unlink.isPending || del.isPending;
 
-  /* Chỉ `CLAIM` — `CONTRIBUTION` là lời hứa về đóng góp, không phải phát biểu cần nguồn đỡ.
-     Trộn hai loại vào đây làm mọi thẻ contribution hiện ra như "claim treo", mà chúng không treo. */
+  /* `CLAIM` only — a `CONTRIBUTION` is a promise about what will be contributed, not a statement
+     needing a source. Mixing the two would make every contribution card look like a "dangling
+     claim" when it is nothing of the sort. */
   const claims: ClaimCard[] = (cardData?.cards ?? []).filter((c) => c.type === 'CLAIM');
   const sources = sourceData?.sources ?? [];
 
@@ -47,8 +48,8 @@ export default function ClaimMapPage({ params }: PageProps<'/projects/[id]/claim
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4">
         <EmptyState
           icon={Network}
-          title="Dự án chưa có bản đặc tả nào"
-          description="Bạn chạy bước 1 để phân tích ý tưởng trước, rồi quay lại đây."
+          title="This project has no specification yet"
+          description="Run step 1 to analyse the idea first, then come back here."
         />
       </div>
     );
@@ -60,42 +61,43 @@ export default function ClaimMapPage({ params }: PageProps<'/projects/[id]/claim
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-3 px-3 py-4 md:px-4">
       <header className="space-y-1">
-        <h1 className="text-ink-1 text-lg font-semibold md:text-xl">Bản đồ claim–evidence</h1>
+        <h1 className="text-ink-1 text-lg font-semibold md:text-xl">Claim-evidence map</h1>
         <p className="text-ink-3 text-xs md:text-sm">
-          Kéo nguồn thả vào claim để nối ·{' '}
+          Drag a source onto a claim to link it ·{' '}
           <Link
             href={`/projects/${id}/step/3`}
             className="text-brand-strong underline underline-offset-2"
           >
-            quay lại bước 3
+            back to step 3
           </Link>
         </p>
       </header>
 
-      <Panel accent={dangling > 0 ? 'decide' : 'ok'} icon={Network} title="Tình trạng">
+      <Panel accent={dangling > 0 ? 'decide' : 'ok'} icon={Network} title="Status">
         <StatTileGrid
           items={[
-            { label: 'Claim', value: String(claims.length) },
-            { label: 'Claim đang treo', value: String(dangling) },
-            { label: 'Nguồn đang dùng', value: `${usedSources.size}/${sources.length}` },
+            { label: 'Claims', value: String(claims.length) },
+            { label: 'Dangling claims', value: String(dangling) },
+            { label: 'Sources in use', value: `${usedSources.size}/${sources.length}` },
           ]}
         />
         <HintBox tone={dangling > 0 ? 'warn' : 'ok'}>
           {dangling > 0 ? (
             <>
-              Có <strong>{dangling} claim chưa có nguồn nào đỡ</strong>. Đó là chỗ verifier sẽ gắn
-              nhãn <code>UNSUPPORTED</code> và chặn xuất bản. Bạn nối nguồn cho chúng trước.
+              <strong>{dangling} claims have no source behind them</strong>. Those are exactly where
+              the verifier will attach <code>UNSUPPORTED</code> and block publishing. Link sources
+              to them first.
             </>
           ) : (
             <>
-              Mọi claim đều đã có ít nhất một nguồn. Cặp bạn vừa nối tay được đánh dấu{' '}
-              <strong>chưa kiểm</strong> — chạy kiểm chứng ở bước 5 để verifier chấm chúng.
+              Every claim has at least one source. The pairs you linked by hand are marked{' '}
+              <strong>unverified</strong> — run verification at step 5 so the verifier scores them.
             </>
           )}
         </HintBox>
       </Panel>
 
-      <Panel accent="neutral" icon={Network} title="Bản đồ">
+      <Panel accent="neutral" icon={Network} title="Map">
         <ClaimEvidenceMap
           claims={claims}
           sources={sources}

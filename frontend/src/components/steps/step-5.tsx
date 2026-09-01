@@ -28,16 +28,16 @@ import {
 } from '@/lib/use-project';
 
 const HOW_IT_WORKS = [
-  'Diễn giải lại ý tưởng thô của bạn và phân rã thành thẻ 8 loại, mỗi thẻ mang một trạng thái.',
-  'Tìm tài liệu thật trên Semantic Scholar và OpenAlex, rồi mới cho mô hình đọc abstract để dựng bảng nghiên cứu liên quan.',
-  'Rút khoảng trống nghiên cứu trả lời đủ bốn câu hỏi, sinh Claim–Evidence năm trường và kế hoạch thí nghiệm.',
-  'Cho 5 Judge phản biện độc lập, gộp ý kiến, và để bạn quyết định từng thay đổi trước khi tạo phiên bản mới.',
+  'Paraphrased your raw idea back and decomposed it into cards of 8 types, each carrying a status.',
+  'Found real literature on Semantic Scholar and OpenAlex, and only then let the model read the abstracts to build the related-work table.',
+  'Extracted a research gap answering all four questions, generated five-field claim-evidence pairs and an experiment plan.',
+  'Put it through 5 independent judges, merged their findings, and let you decide every change before a new version was created.',
 ];
 
 /**
- * **B5 · Spec cuối & Xuất bản** — preset *hai cột*, **không có cột quyết định riêng**.
- * Bước này hành động bằng `ExportBar`, nên trên mobile `ExportBar` thành thanh dính đáy
- * thay cho `DecisionSheet` (DESIGN_SYSTEM §6.4).
+ * **S5 · Final spec & publish** — the *two-column* preset, **with no separate decision column**.
+ * This step acts through `ExportBar`, so on mobile `ExportBar` becomes the bottom-pinned bar in
+ * place of `DecisionSheet` (DESIGN_SYSTEM §6.4).
  */
 export function Step5({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -63,17 +63,17 @@ export function Step5({ projectId }: { projectId: string }) {
 
   const blockedReason =
     gate?.reason === 'NOT_VERIFIED'
-      ? 'Phiên bản này chưa qua bước kiểm chứng cứ. Chạy kiểm chứng cứ trước khi xuất bản.'
+      ? 'This version has not been through evidence verification. Run it before publishing.'
       : gate?.reason === 'UNSUPPORTED_CITATION'
-        ? `Còn ${gate.offenders.length} trích dẫn không được nguồn hỗ trợ. Xử lý chúng ở khối bên dưới.`
+        ? `${gate.offenders.length} citations are still unsupported by their sources. Resolve them in the block below.`
         : undefined;
 
   /**
-   * Xử **từng cặp một**: mỗi lựa chọn có thể sinh một version mới, nên danh sách cũ hết hiệu lực.
+   * Handled **one pair at a time**: each choice may create a new version, invalidating the old list.
    *
-   * `deferred` là những cặp người dùng đã chọn "tôi sẽ đi tìm nguồn khác" — phương án đó
-   * **không đổi dữ liệu gì**, nên nếu không bỏ chúng ra khỏi hàng đợi thì panel ghim vĩnh viễn
-   * ở cặp đầu và những cặp còn lại không bao giờ tới lượt.
+   * `deferred` holds the pairs where the user chose "I will look for another source" — that option
+   * **changes no data**, so without dropping them from the queue the panel would pin forever on
+   * the first pair and the rest would never get a turn.
    */
   const offenders = gate?.reason === 'UNSUPPORTED_CITATION' ? gate.offenders : [];
   const queue = offenders.filter((o) => !deferred.includes(o.card_source_id));
@@ -87,20 +87,20 @@ export function Step5({ projectId }: { projectId: string }) {
       const res = await api.post<{ artifactId: string; filename: string }>(
         `/spec-versions/${versionId}/export?format=${format.toLowerCase()}`,
       );
-      // Tải bằng thẻ <a download>: cookie httpOnly vẫn tự đi kèm, và trang không rời SPA.
+      // Download via an <a download> tag: the httpOnly cookie still rides along and the SPA stays put.
       const a = document.createElement('a');
       a.href = apiUrl(`/spec-versions/${versionId}/export/${res.artifactId}`);
       a.download = res.filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      toast.success(`Đã xuất bản thành công: ${res.filename}. Xin cảm ơn bạn.`);
+      toast.success(`Exported successfully: ${res.filename}.`);
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
     } catch (err) {
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa xuất được tệp. Bạn vui lòng thử lại.',
+          : 'The file could not be exported. Please try again.',
       );
     } finally {
       setExporting(null);
@@ -109,10 +109,10 @@ export function Step5({ projectId }: { projectId: string }) {
 
   const context = (
     <>
-      <Panel accent="brand" icon={ListChecks} title="Bản đặc tả nghiên cứu — 14 mục">
+      <Panel accent="brand" icon={ListChecks} title="Research specification — 14 sections">
         <SpecChecklist sections={sections} />
       </Panel>
-      <Panel accent="neutral" icon={ShieldCheck} title="Kết quả kiểm chứng cứ">
+      <Panel accent="neutral" icon={ShieldCheck} title="Evidence verification results">
         {summary ? (
           <div className="space-y-2">
             {(['SUPPORTED', 'WEAK', 'UNSUPPORTED'] as const).map((label) => (
@@ -124,8 +124,9 @@ export function Step5({ projectId }: { projectId: string }) {
               </div>
             ))}
             {/*
-              Chỉ hiện khi còn cặp chưa kiểm. Ba ô trên **không** còn cộng gộp chúng nữa, nên
-              không có dòng này thì tổng ba ô nhỏ hơn số cặp thật mà không ai giải thích được.
+              Only shown while unverified pairs remain. The three rows above no longer count them,
+              so without this line their sum would be smaller than the real pair count with no
+              explanation anywhere.
             */}
             {(verification?.unverified ?? 0) > 0 && (
               <div className="flex items-center justify-between gap-2">
@@ -137,7 +138,7 @@ export function Step5({ projectId }: { projectId: string }) {
             )}
           </div>
         ) : (
-          <p className="text-ink-3 text-xs">Chưa có kết quả kiểm chứng cứ.</p>
+          <p className="text-ink-3 text-xs">No evidence verification results yet.</p>
         )}
         <Button
           size="sm"
@@ -146,7 +147,7 @@ export function Step5({ projectId }: { projectId: string }) {
           disabled={job.busy}
           onClick={() => job.run(`/spec-versions/${versionId}/verify`)}
         >
-          Chạy lại kiểm chứng cứ
+          Re-run evidence verification
         </Button>
       </Panel>
     </>
@@ -156,27 +157,27 @@ export function Step5({ projectId }: { projectId: string }) {
     <>
       <JobProgress view={job.view} onReload={job.reload} />
 
-      <Panel accent="ok" icon={Route} title="Hệ thống đã đi tới bản spec này bằng đường nào">
+      <Panel accent="ok" icon={Route} title="How the system arrived at this spec">
         <HowItWorksList steps={HOW_IT_WORKS} />
       </Panel>
 
       {/*
-        Verifier gate chặn thì phải có **đường ra ngay tại chỗ**, không phải một câu bảo người
-        dùng tự quay lại bước 4 (ARCHITECTURE §6.6: bốn lựa chọn A/B/C/Other, mỗi lựa chọn
-        ghi một `Decision`). Đây là chỗ gate thôi làm một cái biển báo và thành một cơ chế.
+        When the verifier gate blocks, there must be a **way out right here**, not a sentence
+        telling the user to walk back to step 4 (ARCHITECTURE §6.6: four options A/B/C/Other, each
+        recorded as a `Decision`). This is where the gate stops being a sign and becomes a mechanism.
       */}
       {offender && (
-        <Panel accent="decide" icon={ShieldAlert} title="Trích dẫn không được nguồn hỗ trợ">
+        <Panel accent="decide" icon={ShieldAlert} title="Citations unsupported by their sources">
           <p className="text-ink-2 text-xs">
-            Còn <span className="font-semibold">{queue.length}</span>/{offenders.length} cặp cần
-            xử. Đang xử: khẳng định{' '}
-            <span className="font-medium">“{offender.card_title}”</span> trích{' '}
+            <span className="font-semibold">{queue.length}</span>/{offenders.length} pairs still
+            need resolving. Currently on: the claim{' '}
+            <span className="font-medium">“{offender.card_title}”</span> citing{' '}
             <span className="font-medium">“{offender.source_title}”</span>.
           </p>
 
           {gatePreview ? (
             <div className="space-y-3">
-              <HintBox tone="info" title="Bản nháp đã sẵn sàng">
+              <HintBox tone="info" title="The draft is ready">
                 {gatePreview.summary}
               </HintBox>
               <Button
@@ -194,44 +195,44 @@ export function Step5({ projectId }: { projectId: string }) {
                   })
                 }
               >
-                {applyDecision.isPending ? 'Đang tạo…' : 'Xác nhận & tạo phiên bản mới'}
+                {applyDecision.isPending ? 'Creating…' : 'Confirm & create a new version'}
               </Button>
             </div>
           ) : (
             <OptionList
               /*
-                `key` theo cặp đang xử: `OptionList` giữ lựa chọn và ô lý do trong state
-                cục bộ. Không remount thì sau khi xử cặp #1 bằng "giữ nguyên + lý do", cặp #2
-                hiện ra với **đúng lý do cũ** đã điền và nút bấm đang bật — một cú click là
-                lý do của cặp này bị gán cho cặp khác.
+                `key` follows the pair being handled: `OptionList` keeps the selection and the
+                reason box in local state. Without a remount, after resolving pair #1 with "keep it
+                + a reason", pair #2 appears with **that same old reason** pre-filled and the button
+                enabled — one click and this pair's reason is attached to a different pair.
               */
               key={offender.card_source_id}
-              question={gateOptions?.question ?? 'Bạn muốn xử lý thế nào?'}
+              question={gateOptions?.question ?? 'How do you want to handle this?'}
               options={gateOptions?.options ?? []}
               variant="stacked"
               disabled={!gateOptions}
               submitting={gateDecision.isPending}
-              submitLabel="Xác nhận cách xử lý"
+              submitLabel="Confirm how to handle it"
               onSubmit={(chosenKey, customText) =>
                 gateDecision.mutate(
                   { cardSourceId: offender.card_source_id, chosenKey, customText },
                   {
                     onSuccess: (res) => {
-                      // `A` và `Other` không đổi spec ⇒ không có bản nháp để xem diff.
+                      // `A` and `Other` do not change the spec ⇒ there is no draft to diff.
                       setGateDecisionId(res.preview ? res.decision.id : null);
                       setGatePreview(res.preview);
                       if (res.preview) return;
                       if (chosenKey === 'A') {
-                        // Không đổi dữ liệu gì ⇒ phải tự đẩy cặp này ra khỏi hàng đợi,
-                        // nếu không panel ghim ở đây mãi.
+                        // Nothing in the data changed ⇒ drop this pair from the queue ourselves,
+                        // otherwise the panel would stay pinned here forever.
                         setDeferred((d) => [...d, offender.card_source_id]);
                         toast.info(
-                          'Hệ thống đã ghi nhận. Trích dẫn này vẫn chặn xuất bản cho tới khi bạn tìm được nguồn khác ở bước 2.',
+                          'Recorded. This citation still blocks publishing until you find another source at step 2.',
                         );
                         return;
                       }
                       toast.success(
-                        'Hệ thống đã ghi nhận lý do của bạn. Trích dẫn được giữ lại và sẽ mang dấu trong tệp xuất ra.',
+                        'Your reason has been recorded. The citation is kept and will be marked in the exported file.',
                       );
                     },
                   },
@@ -242,12 +243,12 @@ export function Step5({ projectId }: { projectId: string }) {
         </Panel>
       )}
 
-      {/* Hoãn hết rồi thì phải nói rõ đang chờ gì, không để người dùng đứng trước gate mù. */}
+      {/* Once everything is deferred, say what is being waited on — never leave the user at a blind gate. */}
       {!offender && offenders.length > 0 && (
-        <HintBox tone="warn" title="Đang chờ bạn tìm nguồn khác">
+        <HintBox tone="warn" title="Waiting for you to find other sources">
           <p>
-            {offenders.length} trích dẫn vẫn chặn xuất bản. Sang bước 2 tìm nguồn khác cho những
-            khẳng định đó, hoặc chọn lại cách xử lý.
+            {offenders.length} citations still block publishing. Go to step 2 to find other sources
+            for those claims, or choose a different resolution.
           </p>
           <Button
             size="sm"
@@ -255,16 +256,16 @@ export function Step5({ projectId }: { projectId: string }) {
             className="mt-2"
             onClick={() => setDeferred([])}
           >
-            Xử lại các trích dẫn đã hoãn
+            Revisit the deferred citations
           </Button>
         </HintBox>
       )}
 
-      {/* Làn A · #3 — hàng đợi mâu thuẫn nguồn. Tự ẩn khi không có xung đột nào. */}
+      {/* Lane A · #3 — the source conflict queue. Hides itself when there are no conflicts. */}
       <ConflictPanel projectId={projectId} versionId={versionId} />
 
-      <Panel accent="neutral" icon={CheckCircle2} title="Xuất bản">
-        {/* Ẩn ở mobile: ExportBar đã nằm ở thanh dính đáy */}
+      <Panel accent="neutral" icon={CheckCircle2} title="Publish">
+        {/* Hidden on mobile: ExportBar already lives in the bottom-pinned bar */}
         <div className="hidden md:block">
           <ExportBar
             blocked={blocked}
@@ -275,13 +276,14 @@ export function Step5({ projectId }: { projectId: string }) {
           />
         </div>
         <p className="text-ink-3 md:hidden text-xs">
-          Nút xuất bản nằm ở thanh dưới cùng màn hình.
+          The export buttons are in the bar at the bottom of the screen.
         </p>
       </Panel>
 
       {!blocked && (
-        <HintBox tone="ok" title="Spec đã sẵn sàng">
-          Bản đặc tả này đã qua kiểm chứng cứ và sẵn sàng cho bước triển khai hoặc viết proposal.
+        <HintBox tone="ok" title="The spec is ready">
+          This specification has been through evidence verification and is ready for implementation
+          or for writing a proposal.
         </HintBox>
       )}
     </>
@@ -290,7 +292,7 @@ export function Step5({ projectId }: { projectId: string }) {
   return (
     <WizardShell
       preset="two-column"
-      contextTitle="Bảng kiểm 14 mục"
+      contextTitle="The 14-section checklist"
       contextDefaultOpen
       context={context}
       content={content}

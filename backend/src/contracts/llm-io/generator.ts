@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { estimatorInputSchema } from '../estimator';
 import {
   cardStatusSchema,
   cardTypeSchema,
@@ -114,15 +115,25 @@ export const experimentOutputSchema = z.object({
   baselines_and_metrics: z.string().min(1),
   ablation_plan: z.string().min(1),
   risks_and_limitations: z.string().min(1),
-  estimator_inputs: z.object({
-    model_params_b: z.number(),
-    quantization: z.enum(['fp16', 'int8', 'int4']),
-    candidates: z.number().int(),
-    rounds: z.number().int(),
-    eval_samples: z.number().int(),
-    avg_prompt_tokens: z.number().int(),
-    avg_output_tokens: z.number().int(),
-  }),
+  /**
+   * `nullable` là **một giá trị hợp lệ**, không phải sự khoan dung.
+   *
+   * Trường này hỏi số tham số model và mức lượng tử hoá. Một thử nghiệm lâm sàng hay một khảo
+   * sát người dùng **không có model nào**, nên bắt buộc trường này là buộc mô hình phải bịa —
+   * và vòng thử lại của `LlmService` còn nhét lỗi zod ngược lại cho nó, tức là ép nó bịa cho
+   * bằng được. Số bịa mà lọt schema thì bước 3 hiện một con số VRAM hư cấu như thể đã tính:
+   * hỏng **nguy hiểm hơn** hẳn so với không có số.
+   *
+   * Cho phép `null` là mở một đường ra trung thực. `prompts/generator_experiment.md` rule 8
+   * bắt kèm `estimator_note` giải thích nút thắt tài nguyên thật là gì.
+   *
+   * Dùng **chung** `estimatorInputSchema` chứ không chép lại: bản chép tay trước đây khai
+   * `z.number()` ở chỗ bản gốc khai `.positive()`, nên giá trị `0` lọt qua đây rồi chết ở
+   * tầng trong — sau khi kế hoạch đã lưu.
+   */
+  estimator_inputs: estimatorInputSchema.nullable(),
+  /** Một câu nói nút thắt tài nguyên thật là gì khi `estimator_inputs` là `null`. */
+  estimator_note: z.string().optional().default(''),
 });
 export type ExperimentOutput = z.infer<typeof experimentOutputSchema>;
 

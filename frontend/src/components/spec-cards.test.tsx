@@ -34,8 +34,8 @@ const mockCards: ApiCard[] = [
 ];
 
 describe('CardBoard Component', () => {
-  // Bộ lọc sống ở store toàn cục nên nó **không** tự reset giữa các test —
-  // quên dòng này là test sau ăn bộ lọc của test trước.
+  // The filter lives in a global store, so it does **not** reset between tests —
+  // forget this line and the next test inherits the previous one's filter.
   beforeEach(() => {
     useUiStore.setState({ cardFilter: 'ALL' });
   });
@@ -49,7 +49,7 @@ describe('CardBoard Component', () => {
   it('filters cards by UNSUPPORTED status and hides empty groups', () => {
     render(<CardBoard cards={mockCards} />);
 
-    const unsupportedBtn = screen.getByText('Không có nguồn (1)');
+    const unsupportedBtn = screen.getByText('Unsupported (1)');
     fireEvent.click(unsupportedBtn);
 
     // Only the group containing UNSUPPORTED cards should be visible
@@ -57,10 +57,10 @@ describe('CardBoard Component', () => {
     expect(screen.queryByText('Problem statement card')).toBeNull();
   });
 
-  // Lý do bộ lọc nằm ở store: đổi bước trên stepper làm `CardBoard` unmount.
-  it('giữ bộ lọc sau khi unmount rồi mount lại', () => {
+  // Why the filter lives in the store: changing step on the stepper unmounts `CardBoard`.
+  it('keeps the filter across an unmount and remount', () => {
     const first = render(<CardBoard cards={mockCards} />);
-    fireEvent.click(screen.getByText('Không có nguồn (1)'));
+    fireEvent.click(screen.getByText('Unsupported (1)'));
     expect(screen.queryByText('Problem statement card')).toBeNull();
 
     first.unmount();

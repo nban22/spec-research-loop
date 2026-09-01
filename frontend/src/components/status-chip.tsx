@@ -4,10 +4,11 @@ import { styleOr } from '@/lib/unknown-style';
 import type { CardStatus } from '@/lib/types';
 
 /**
- * `CardStatus` → **pill bo tròn hoàn toàn**, nền rất nhạt, icon họ vòng tròn (DESIGN_SYSTEM §3.2).
- * Đây là nơi **duy nhất** đọc ánh xạ của `CardStatus`.
+ * `CardStatus` → a **fully rounded pill**, very pale fill, circle icon family (DESIGN_SYSTEM §3.2).
+ * This is the **only** reader of the `CardStatus` map.
  *
- * Nhãn chữ **luôn** hiện, kể cả ở 375px — cấm rút gọn badge thành chấm không chữ (§3.6, §6.10).
+ * The text label is **always** shown, even at 375px — never shrink the badge to a wordless dot
+ * (§3.6, §6.10).
  */
 export function StatusChip({
   status,

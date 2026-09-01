@@ -30,7 +30,7 @@ export class SpecService {
       where: { id: specVersionId, project: { user_id: userId } },
       include: { project: true },
     });
-    if (!version) throw AppError.notFound('Không tìm thấy phiên bản spec.');
+    if (!version) throw AppError.notFound('Spec version not found.');
     return version;
   }
 
@@ -39,7 +39,8 @@ export class SpecService {
       where: { project_id: projectId },
       orderBy: { version_no: 'desc' },
     });
-    if (!version) throw AppError.notFound('Dự án chưa có phiên bản spec nào.');
+    if (!version)
+      throw AppError.notFound('This project has no spec version yet.');
     return version;
   }
 

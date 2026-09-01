@@ -8,36 +8,37 @@ import { Textarea } from '@/components/ui/textarea';
 import type { ApiOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-/** Phương án "Other" do **giao diện** luôn chèn, không phụ thuộc model có nhớ sinh ra hay không. */
+/** The "Other" option is always injected by the **UI**, never left to whether the model remembered it. */
 export const OTHER_OPTION: ApiOption = {
   key: 'OTHER',
-  label: 'Khác — tôi tự mô tả',
-  explain: 'Bạn mô tả cách xử lý của riêng mình; hệ thống ghi lại nguyên văn lý do.',
-  example: 'Ví dụ: giữ nguyên khẳng định nhưng ghi chú rằng bằng chứng còn yếu.',
+  label: 'Other — I will describe it myself',
+  explain: 'Describe your own way of handling this; the system records your reason verbatim.',
+  example: 'For example: keep the claim as it stands but note that the evidence is still weak.',
 };
 
-/** Dòng "Ví dụ: …" với icon bóng đèn, cỡ chú thích, màu `decide` (DESIGN_SYSTEM §5.3). */
+/** The "Example: …" line with a lightbulb icon, caption size, `decide` colour (DESIGN_SYSTEM §5.3). */
 function OptionHint({ example }: { example: string }) {
   if (!example) return null;
   return (
     <p className="text-decide-strong/80 mt-1 flex items-start gap-1 text-xs">
       <Lightbulb className="mt-0.5 size-3 shrink-0" aria-hidden />
-      <span>Ví dụ: {example}</span>
+      <span>Example: {example}</span>
     </p>
   );
 }
 
 /**
- * A/B/C/**Other** — chức năng 7 của đề.
+ * A/B/C/**Other** — feature 7 of the brief.
  *
- * **Tự chèn `Other` nếu API không trả về** — đây là NFR-G-3, không để phụ thuộc LLM.
- * Chọn `Other` thì **bắt buộc** nhập lý do.
+ * **`Other` is injected when the API omits it** — that is NFR-G-3, never left to the LLM.
+ * Choosing `Other` **requires** a reason.
  *
- * Hai biến thể chọn theo **độ dài nhãn**, không theo bước (§5.3):
- * - `compact` — lưới ô ngắn tự xuống dòng, nhãn 2–4 chữ
- * - `stacked` — mỗi option một hàng chiếm trọn bề rộng có dấu tích bên phải
+ * The two variants are chosen by **label length**, not by step (§5.3):
+ * - `compact` — a wrapping grid of short chips, labels of 2–4 words
+ * - `stacked` — one full-width row per option with a check mark on the right
  *
- * Option đang chọn dùng **viền dày gấp đôi** — độ dày là tín hiệu chọn, không phải màu (§4.4).
+ * The selected option uses a **doubled border width** — thickness is the selection signal, not
+ * colour (§4.4).
  */
 export function OptionList({
   question,
@@ -45,7 +46,7 @@ export function OptionList({
   variant = 'stacked',
   disabled,
   submitting,
-  submitLabel = 'Xác nhận lựa chọn',
+  submitLabel = 'Confirm choice',
   onSubmit,
 }: {
   question: string;
@@ -103,7 +104,7 @@ export function OptionList({
                   <span className="text-ink-1 font-medium">{o.label}</span>
                   {o.recommended && (
                     <span className="text-ok-strong bg-ok-soft ml-2 inline-flex whitespace-nowrap rounded px-1.5 py-0.5 text-2xs font-semibold">
-                      GỢI Ý
+                      SUGGESTED
                     </span>
                   )}
                   {variant === 'stacked' && o.explain && (
@@ -120,7 +121,7 @@ export function OptionList({
         })}
       </div>
 
-      {/* Nhãn ngắn ở biến thể gọn ⇒ giải thích của option đang chọn hiện bên dưới. */}
+      {/* Labels are short in the compact variant ⇒ the selected option's explanation appears below. */}
       {variant === 'compact' && chosen && (
         <div className="border-hairline bg-sunken rounded-md border px-3 py-2">
           <p className="text-ink-2 text-xs">
@@ -133,13 +134,13 @@ export function OptionList({
       {needsReason && (
         <div className="space-y-1.5">
           <Label htmlFor="other-reason" className="text-xs">
-            Lý do của bạn <span className="text-danger-ink">*</span>
+            Your reason <span className="text-danger-ink">*</span>
           </Label>
           <Textarea
             id="other-reason"
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
-            placeholder="Mô tả cách bạn muốn xử lý. Hệ thống lưu nguyên văn vào lịch sử quyết định."
+            placeholder="Describe how you want to handle this. It is stored verbatim in the decision log."
             rows={3}
           />
         </div>
@@ -151,7 +152,7 @@ export function OptionList({
         disabled={!canSubmit || submitting}
         onClick={() => chosen && onSubmit(chosen, needsReason ? customText.trim() : null)}
       >
-        {submitting ? 'Đang lưu…' : submitLabel}
+        {submitting ? 'Saving…' : submitLabel}
       </Button>
     </div>
   );

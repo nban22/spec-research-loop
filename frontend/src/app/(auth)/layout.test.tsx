@@ -3,8 +3,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// `vi.mock` được nâng lên đầu file, nên factory không đọc được `const` khai ở thân file.
-// `vi.hoisted` là chỗ duy nhất khai được biến mà factory nhìn thấy.
+// `vi.mock` is hoisted to the top of the file, so its factory cannot read a `const` declared in the
+// body. `vi.hoisted` is the only place to declare a variable the factory can see.
 const { get, replace } = vi.hoisted(() => ({ get: vi.fn(), replace: vi.fn() }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
@@ -17,9 +17,10 @@ vi.mock('@/lib/api', async (importOriginal) => {
 import AuthLayout from './layout';
 
 /**
- * Chiều **ra** của bảo vệ route (#25). Ba hành vi đáng test, và cả ba đều là thứ đã hỏng hoặc
- * suýt hỏng: đá người đã đăng nhập ra, giữ nguyên form cho người chưa đăng nhập, và **không
- * chớp form** trong lúc chờ — cái cuối là lý do layout này tồn tại thay vì một `useEffect` trần.
+ * The **outbound** direction of route protection (#25). Three behaviours worth testing, and all
+ * three have broken or nearly broken: bouncing a signed-in visitor out, leaving the form in place
+ * for a signed-out one, and **not flashing the form** while waiting — the last is why this layout
+ * exists instead of a bare `useEffect`.
  */
 function renderLayout() {
   const client = new QueryClient({
@@ -29,17 +30,17 @@ function renderLayout() {
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
   return render(<AuthLayout>
-    <form data-testid="auth-form">form đăng nhập</form>
+    <form data-testid="auth-form">sign-in form</form>
   </AuthLayout>, { wrapper });
 }
 
-describe('(auth)/layout — chặn người đã đăng nhập', () => {
+describe('(auth)/layout — blocking already signed-in visitors', () => {
   beforeEach(() => {
     replace.mockClear();
     get.mockReset();
   });
 
-  it('đã có phiên ⇒ chuyển về / và không render form', async () => {
+  it('with a session ⇒ redirects to / and never renders the form', async () => {
     get.mockResolvedValue({ user: { id: 'u1' } });
     renderLayout();
 
@@ -47,19 +48,19 @@ describe('(auth)/layout — chặn người đã đăng nhập', () => {
     expect(screen.queryByTestId('auth-form')).not.toBeInTheDocument();
   });
 
-  it('chưa đăng nhập ⇒ render form và KHÔNG chuyển hướng', async () => {
+  it('signed out ⇒ renders the form and does NOT redirect', async () => {
     get.mockRejectedValue(new Error('401'));
     renderLayout();
 
     await waitFor(() =>
       expect(screen.getByTestId('auth-form')).toBeInTheDocument(),
     );
-    // Không vòng lặp chuyển hướng — tiêu chí hoàn thành của #25.
+    // No redirect loop — the acceptance criterion of #25.
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('đang chờ /auth/me ⇒ không chớp form dù chỉ một khung hình', () => {
-    // Promise không bao giờ resolve: giữ component đứng yên ở trạng thái đang tải.
+  it('while /auth/me is pending ⇒ never flashes the form, not even for one frame', () => {
+    // A promise that never resolves: pins the component in its loading state.
     get.mockReturnValue(new Promise(() => {}));
     renderLayout();
 

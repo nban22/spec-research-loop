@@ -4,9 +4,10 @@ import { styleOr } from '@/lib/unknown-style';
 import type { Severity } from '@/lib/types';
 
 /**
- * `Severity` → **khối đặc, góc vuông nhất, CHỮ HOA**, icon họ đa giác (DESIGN_SYSTEM §3.3).
- * Cố ý nặng nhất trong ba nhóm badge: đây là thứ duy nhất người dùng **bắt buộc** phải xử lý
- * trước khi chốt spec. Đây là nơi **duy nhất** đọc ánh xạ của `Severity`.
+ * `Severity` → a **solid block, squarest corners, UPPERCASE**, polygon icon family
+ * (DESIGN_SYSTEM §3.3). Deliberately the heaviest of the three badge families: it is the one
+ * thing the user **must** deal with before finalising the spec. This is the **only** reader of
+ * the `Severity` map.
  */
 export function SeverityBadge({
   severity,

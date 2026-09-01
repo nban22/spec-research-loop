@@ -14,11 +14,12 @@ import { STEPS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 /**
- * Stepper 5 bước, **dính ngay dưới TopNav ở cả năm bước** — [QĐ] lệch mockup 1–4, theo mockup 5:
- * stepper là điều hướng, phải luôn nhìn thấy được. Trên mobile lý do còn mạnh hơn: đáy màn hình
- * đã thuộc về `DecisionSheet` (DESIGN_SYSTEM §6.11).
+ * The 5-step stepper, **pinned right under TopNav on all five steps** — [DECISION] diverges from
+ * mockups 1–4 and follows mockup 5: the stepper is navigation, so it must always be visible. On
+ * mobile the reason is even stronger: the bottom of the screen belongs to `DecisionSheet`
+ * (DESIGN_SYSTEM §6.11).
  *
- * Dải node ở đáy mockup 1–4 **không phải** stepper này — nó là `RoundTracker` (§8 #2).
+ * The node strip at the bottom of mockups 1–4 is **not** this stepper — that is `RoundTracker` (§8 #2).
  */
 export function Stepper({
   projectId,
@@ -39,7 +40,7 @@ export function Stepper({
 
   return (
     <div className="border-hairline bg-surface sticky top-12 z-20 border-b md:top-14">
-      {/* Desktop + tablet: 5 bước nằm ngang */}
+      {/* Desktop + tablet: the 5 steps laid out horizontally */}
       <ol className="mx-auto hidden max-w-[1400px] items-center gap-1 px-4 py-2 md:flex">
         {STEPS.map((s, i) => {
           const done = s.no < current;
@@ -87,7 +88,7 @@ export function Stepper({
         })}
       </ol>
 
-      {/* Mobile: chấm + "Bước 3/5" + tên bước; bấm mở StepPickerSheet (§6.6) */}
+      {/* Mobile: dots + "Step 3/5" + the step name; tapping opens StepPickerSheet (§6.6) */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <button
@@ -107,7 +108,7 @@ export function Stepper({
                 />
               ))}
             </span>
-            <span className="text-ink-3 text-xs">Bước {current}/5</span>
+            <span className="text-ink-3 text-xs">Step {current}/5</span>
             <span className="text-ink-1 min-w-0 flex-1 truncate text-sm font-medium">
               {STEPS[current - 1]?.short}
             </span>
@@ -116,7 +117,7 @@ export function Stepper({
         </SheetTrigger>
         <SheetContent side="bottom" className="pb-safe">
           <SheetHeader>
-            <SheetTitle>Các bước</SheetTitle>
+            <SheetTitle>Steps</SheetTitle>
           </SheetHeader>
           <ol className="space-y-1 px-3 pb-4">
             {STEPS.map((s) => {

@@ -8,7 +8,7 @@ import type { AnalysisMeta } from '../generator/generator.service';
 export const createProjectSchema = z.object({
   raw_idea: z
     .string()
-    .min(20, 'Ý tưởng cần ít nhất 20 ký tự để phân tích được')
+    .min(20, 'The idea needs at least 20 characters to be analysed')
     .max(4000),
 });
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
@@ -34,7 +34,7 @@ export class ProjectService {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, user_id: userId },
     });
-    if (!project) throw AppError.notFound('Không tìm thấy dự án.');
+    if (!project) throw AppError.notFound('Project not found.');
     return project;
   }
 
@@ -53,7 +53,7 @@ export class ProjectService {
         project_id: project.id,
         version_no: 1,
         status: 'DRAFT',
-        label: 'Bản nháp đầu tiên',
+        label: 'First draft',
       },
     });
     return this.prisma.project.update({

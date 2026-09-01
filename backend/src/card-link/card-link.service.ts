@@ -43,14 +43,14 @@ export class CardLinkService {
       where: { id: cardId, spec_version: { project: { user_id: userId } } },
       select: { id: true, spec_version: { select: { project_id: true } } },
     });
-    if (!card) throw AppError.notFound('Không tìm thấy thẻ.');
+    if (!card) throw AppError.notFound('Card not found.');
 
     const source = await this.prisma.source.findFirst({
       where: { id: input.source_id, project_id: card.spec_version.project_id },
       select: { id: true },
     });
     if (!source)
-      throw AppError.notFound('Không tìm thấy nguồn trong dự án này.');
+      throw AppError.notFound('That source was not found in this project.');
 
     /**
      * `upsert` chứ không `create`: `UNIQUE(card_id, source_id)` biến việc thả trùng một nguồn
@@ -100,7 +100,7 @@ export class CardLinkService {
       },
       select: { id: true },
     });
-    if (!link) throw AppError.notFound('Không tìm thấy liên kết.');
+    if (!link) throw AppError.notFound('Link not found.');
 
     await this.prisma.cardSource.delete({ where: { id: cardSourceId } });
     return { id: cardSourceId, deleted: true };
@@ -115,7 +115,7 @@ export class CardLinkService {
       where: { id: cardId, spec_version: { project: { user_id: userId } } },
       select: { id: true },
     });
-    if (!card) throw AppError.notFound('Không tìm thấy thẻ.');
+    if (!card) throw AppError.notFound('Card not found.');
 
     await this.prisma.card.delete({ where: { id: cardId } });
     return { id: cardId, deleted: true };

@@ -7,17 +7,17 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from '@/components/
 import { cn } from '@/lib/utils';
 
 /**
- * **[mobile]** Bottom sheet giữ toàn bộ cột quyết định (DESIGN_SYSTEM §6.3).
+ * **[mobile]** The bottom sheet that holds the entire decision column (DESIGN_SYSTEM §6.3).
  *
- * Luật khác thường, có lý do nghiệp vụ: sheet **không bao giờ đóng hẳn** — kéo xuống hết chỉ về
- * nấc "hé". Hệ thống này *không có bước nào tự chốt*, nên luôn tồn tại một việc chờ người dùng,
- * và chỗ chứa việc đó không được biến mất. Đóng rồi thì không còn dấu hiệu nào cho biết đang có
- * việc chờ quyết.
+ * An unusual rule with a product reason: the sheet **never closes completely** — dragging it all
+ * the way down only returns it to the "peek" notch. This system *never auto-confirms a step*, so
+ * there is always something waiting on the user, and the place that holds it must not disappear.
+ * Once closed, nothing on screen would signal that a decision is pending.
  *
- * Khi bước hiện tại hết việc để quyết, nấc hé đổi sang trạng thái xong (nền xanh lá) và nút
- * chính thành "Sang bước tiếp theo".
+ * When the current step has nothing left to decide, the peek notch switches to the done state
+ * (green fill) and the primary button becomes "Go to the next step".
  *
- * Vùng ngón cái phải thuộc về hành động chính — đây là lý do **không** làm bottom tab bar (§6.6).
+ * The thumb zone belongs to the primary action — which is why there is **no** bottom tab bar (§6.6).
  */
 export function DecisionSheet({
   summary,
@@ -52,20 +52,20 @@ export function DecisionSheet({
             )}
             <span className="line-clamp-1">
               {hasWork
-                ? (summary ?? `Cần bạn quyết: ${count}`)
-                : 'Đã đủ điều kiện sang bước sau'}
+                ? (summary ?? `Waiting on you: ${count}`)
+                : 'Ready to move to the next step'}
             </span>
           </span>
           <DrawerTrigger asChild>
             <Button size="sm" className="ml-auto shrink-0">
-              Xem &amp; chọn
+              Review &amp; choose
             </Button>
           </DrawerTrigger>
         </div>
 
         <DrawerContent className="max-h-[88svh]">
           <DrawerTitle className="px-4 pt-1 pb-2 text-sm font-semibold">
-            Việc cần bạn quyết
+            Decisions waiting on you
           </DrawerTitle>
           <div className="space-y-3 overflow-y-auto px-3 pb-6">{children}</div>
         </DrawerContent>

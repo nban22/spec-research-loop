@@ -3,27 +3,28 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Chốt chống LỆCH HỢP ĐỒNG giữa hai package.
+ * A guard against CONTRACT DRIFT between the two packages.
  *
- * `KappaReason` ở frontend là **bản chép tay** kiểu của backend — không có type dùng chung, nên
- * TypeScript không thể biết hai bên đã lệch. Loại lỗi này đã cắn **ba lần** trong cùng tính năng:
+ * `KappaReason` on the frontend is a **hand copy** of the backend type — there is no shared type,
+ * so TypeScript cannot tell when the two have drifted. This class of bug has bitten **three times**
+ * inside the same feature:
  *
- * 1. `degenerate` đổi tên ở backend, frontend vẫn so tên cũ ⇒ phần giải thích κ suy biến không bao
- *    giờ hiện trên sản phẩm.
- * 2. `MIN_UNION` khai lại bằng tay ở frontend, không gì bắt buộc hai số khớp nhau.
- * 3. `MALFORMED_COUNTS` bị bỏ sót ⇒ lỗi dữ liệu hiện thành "Chưa có thẻ nào để đo".
+ * 1. `degenerate` was renamed on the backend while the frontend still compared the old name ⇒ the
+ *    degenerate-κ explanation never appeared in the product.
+ * 2. `MIN_UNION` was re-declared by hand on the frontend, with nothing forcing the two to match.
+ * 3. `MALFORMED_COUNTS` was missing ⇒ a data error rendered as "No cards to measure yet".
  *
- * Test này đọc thẳng mã nguồn backend. Hơi thô, nhưng nó là thứ **rẻ nhất** phát hiện được lệch:
- * cách chữa gốc là gói type dùng chung, và việc đó nằm ngoài phạm vi #9.
+ * This test reads the backend source directly. Crude, but it is the **cheapest** thing that detects
+ * the drift: the real fix is a shared type package, and that is outside #9's scope.
  */
 function unionFrom(source: string, typeName: string): string[] {
   const m = new RegExp(`export type ${typeName} =([\\s\\S]*?);`).exec(source);
-  if (!m) throw new Error(`không tìm thấy type ${typeName}`);
+  if (!m) throw new Error(`type ${typeName} not found`);
   return [...m[1].matchAll(/'([A-Z_]+)'/g)].map((x) => x[1]).sort();
 }
 
-describe('hợp đồng KappaReason giữa backend và frontend', () => {
-  it('hai bên khai ĐÚNG cùng một tập lý do', () => {
+describe('the KappaReason contract between backend and frontend', () => {
+  it('both sides declare EXACTLY the same set of reasons', () => {
     const be = readFileSync(
       join(__dirname, '../../../backend/src/judge/agreement/agreement.ts'),
       'utf8',
@@ -34,7 +35,7 @@ describe('hợp đồng KappaReason giữa backend và frontend', () => {
     const frontend = unionFrom(fe, 'KappaReason');
 
     expect(backend.length).toBeGreaterThan(0);
-    // Thông báo lỗi nêu đích danh giá trị lệch, để lần sau sửa được ngay mà không phải dò.
-    expect(frontend, `backend có: ${backend.join(', ')}`).toEqual(backend);
+    // The failure message names the drifting values, so the next fix needs no hunting.
+    expect(frontend, `backend has: ${backend.join(', ')}`).toEqual(backend);
   });
 });

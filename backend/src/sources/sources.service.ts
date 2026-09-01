@@ -55,7 +55,7 @@ export class SourcesService {
     if (cleaned.length === 0) {
       throw AppError.badRequest(
         'VALIDATION_FAILED',
-        'Chưa có từ khoá nào để tìm.',
+        'No keywords to search with yet.',
       );
     }
 
@@ -67,7 +67,7 @@ export class SourcesService {
       await onProgress?.(
         i,
         cleaned.length,
-        `Đang tìm nguồn cho từ khoá "${cleaned[i]}"…`,
+        `Searching sources for the keyword "${cleaned[i]}"…`,
       );
       const outcome = await this.client.search([cleaned[i]], 8);
       collected.push(...outcome.sources);
@@ -77,13 +77,13 @@ export class SourcesService {
     await onProgress?.(
       cleaned.length,
       cleaned.length,
-      'Đang lưu nguồn đã tìm được…',
+      'Saving the sources found…',
     );
 
     if (collected.length === 0) {
       throw AppError.unavailable(
         'SOURCE_PROVIDER_UNAVAILABLE',
-        'Không lấy được nguồn nào từ Semantic Scholar lẫn OpenAlex. Bước nghiên cứu liên quan bị dừng ở đây — hệ thống không tự nghĩ ra paper.',
+        'No sources could be retrieved from Semantic Scholar or OpenAlex. The related-work step stops here — the system never invents papers.',
         errors.slice(0, 5),
       );
     }
@@ -163,7 +163,7 @@ export class SourcesService {
 
     if (errors.length > 0) {
       this.logger.warn(
-        `Provider có lỗi bộ phận: ${errors.slice(0, 3).join(' | ')}`,
+        `Partial provider failures: ${errors.slice(0, 3).join(' | ')}`,
       );
     }
 
@@ -174,7 +174,7 @@ export class SourcesService {
       await this.credibility.rescoreProject(projectId);
     } catch (err) {
       this.logger.warn(
-        `Không chấm được độ tin cậy nguồn: ${err instanceof Error ? err.message : String(err)}`,
+        `Could not score source credibility: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
 
@@ -206,7 +206,7 @@ export class SourcesService {
       where: { id: sourceId, project_id: projectId },
       select: { id: true },
     });
-    if (!found) throw AppError.notFound('Không tìm thấy nguồn.');
+    if (!found) throw AppError.notFound('Source not found.');
     await this.prisma.source.delete({ where: { id: sourceId } });
   }
 

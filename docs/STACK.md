@@ -11,7 +11,7 @@
 | Lớp | Chốt | Không dùng |
 |---|---|---|
 | Repo | **2 project độc lập** trong cùng 1 GitHub repo cho gọn: `frontend/` · `backend/`. Cài riêng, build riêng, **deploy riêng** | npm workspaces, package `shared/` dùng chung, import chéo giữa 2 thư mục |
-| Ngôn ngữ | **UI + câu hỏi cho user: tiếng Việt · nội dung spec 14 mục: tiếng Anh** — xem §10 | spec tiếng Việt (verifier phải so cross-lingual với abstract) |
+| Ngôn ngữ | **Toàn hệ tiếng Anh — UI, câu hỏi cho user và nội dung spec 14 mục** — xem §10 | spec tiếng Việt (verifier phải so cross-lingual với abstract) |
 | Frontend | Next.js 16.3.1 App Router · React 19 · TypeScript strict | Pages Router |
 | Styles | Tailwind CSS v4 (`@import "tailwindcss"`, **không có `tailwind.config.*`**) | CSS-in-JS, SCSS, styled-components |
 | UI kit | shadcn/ui (`npx shadcn init`) | MUI, Ant Design, Mantine, Chakra |
@@ -44,7 +44,7 @@
 4. **Không bước nào tự động chốt.** Mọi thay đổi spec phải qua `Decision` do user chọn. Mọi câu hỏi lựa chọn phải có option **"Other"**.
 5. **Mọi lời gọi LLM phải ghi `usage`** vào DB (`prompt_tokens`, `completion_tokens`, `prompt_cache_hit_tokens`, `prompt_cache_miss_tokens`, latency ms). Đây là dữ liệu cho báo cáo đánh giá §7.4.
 6. **Mọi turn sửa file** trong `backend/` `frontend/` `prompts/` `docs/` phải ghi `prompts/dev-log/NNN__...md` (xem rule).
-7. **Nội dung spec sinh ra bằng tiếng Anh**, UI và câu hỏi cho user bằng tiếng Việt. Không trộn (§10).
+7. **Toàn bộ chuỗi sinh ra và hiển thị đều bằng tiếng Anh** — nội dung spec, UI, câu hỏi cho user (§10).
 8. **Mọi truy vấn dữ liệu phải scope theo `user_id`** lấy từ access token, không nhận `owner_id` từ body/query của client. Sai chỗ này là lỗ hổng IDOR — user A đọc được project của user B (§11).
 
 ---
@@ -177,7 +177,7 @@ MVP chỉ có 1 nhà cung cấp nên không thể "đổi nhà cung cấp" như 
 │   ├── components/             stepper · card · judge-panel · issue-table · diff-view
 │   ├── lib/api.ts              fetch client + tự gọi /auth/refresh khi gặp 401
 │   ├── lib/types.ts            type khai lại thủ công theo backend/src/contracts/
-│   ├── lib/error-code.ts       map mã lỗi BE → thông báo tiếng Việt
+│   ├── lib/error-code.ts       map mã lỗi BE → thông báo tiếng Anh
 │   └── stores/                 Zustand (chỉ UI state)
 ├── prompts/                    ← deliverable #5, KHÔNG gitignore
 │   ├── generator.md  judge_gap.md  judge_contribution.md
@@ -201,7 +201,7 @@ luồng dữ liệu, thiết kế API → `docs/ARCHITECTURE.md`. Màu, typograp
 
 1. **Backend là nguồn sự thật.** `backend/src/contracts/` chứa zod schema; Prisma `enum` phải khớp 1-1 với zod enum ở đây. FE **không bao giờ** được coi là nơi định nghĩa.
 2. **FE khai lại bằng union string thuần**, không import zod. Ví dụ `export type CardStatus = 'CONFIRMED' | 'PROPOSED' | ...`. Mỗi khi sửa enum ở BE, sửa `frontend/src/lib/types.ts` **trong cùng commit** — coi như một phần của định nghĩa xong.
-3. **Mã lỗi đi qua enum, không đi qua chuỗi tự do.** BE trả `{ code: 'SOURCE_NOT_FOUND', message: '...' }`; FE map `code` → thông báo tiếng Việt trong `lib/error-code.ts`. Không parse `message` để phân nhánh logic.
+3. **Mã lỗi đi qua enum, không đi qua chuỗi tự do.** BE trả `{ code: 'SOURCE_NOT_FOUND', message: '...' }`; FE map `code` → thông báo tiếng Anh trong `lib/error-code.ts`. Không parse `message` để phân nhánh logic.
 
 Ba enum dễ lệch nhất, kiểm bằng mắt mỗi lần đụng tới: `CardStatus` (6), `Severity` (3), `SupportLabel` (3).
 
@@ -238,7 +238,7 @@ File này chỉ chốt cách *dùng* ORM:
   - Chi tiết bố cục 3 tầng, bảng → card list, bottom sheet, vùng chạm: `docs/DESIGN_SYSTEM.md` §6. Không quyết ở file này.
 - Thêm 2 component shadcn cho mobile: `sheet` và `drawer`. Không phải dependency mới, vẫn nằm trong shadcn.
 
-Không làm: i18n (chuỗi tiếng Việt viết thẳng, không dựng hệ thống dịch), dark mode. Đề §4 không yêu cầu — đừng tốn thời gian.
+Không làm: i18n (chuỗi tiếng Anh viết thẳng, không dựng hệ thống dịch), dark mode. Đề §4 không yêu cầu — đừng tốn thời gian.
 
 **Animation: đã đảo quyết định (2026-09-01).** Bản đầu ghi "không animation phức tạp". Giai đoạn
 demo đặt lại ưu tiên: phần lớn giá trị của làn C là **hình** — bản đồ khái niệm, bản đồ nguồn,
@@ -362,9 +362,9 @@ Ranh giới rạch ròi, không được nhập nhằng:
 
 | Phần | Ngôn ngữ | Ví dụ |
 |---|---|---|
-| UI, nhãn nút, nav, thông báo lỗi | **Tiếng Việt** | "Phân tích ý tưởng", "Xác nhận & xuất Spec cuối" |
-| Câu hỏi làm rõ + option A/B/C/Other + phần giải thích option | **Tiếng Việt** | "Tác vụ chính là gì?" |
-| Ý tưởng thô user nhập | Tiếng Việt (chấp nhận cả EN) | — |
+| UI, nhãn nút, nav, thông báo lỗi | **Tiếng Anh** | "Analyse idea", "Confirm & export the final spec" |
+| Câu hỏi làm rõ + option A/B/C/Other + phần giải thích option | **Tiếng Anh** | "Which task do you mainly want to improve?" |
+| Ý tưởng thô user nhập | Ngôn ngữ nào cũng nhận; mọi thứ sinh ra từ nó là tiếng Anh | — |
 | **Nội dung 14 mục của spec** — problem, gap, claim, contribution, experiment | **Tiếng Anh** | "LLM-based extraction produces unsupported claims when…" |
 | Nhận xét của 5 Judge (`Vấn đề`/`Lý do`/`Mức độ`/`Đề xuất`) | **Tiếng Anh** cho nội dung, nhãn severity giữ nguyên `CRITICAL`/`MAJOR`/`MINOR` | — |
 | Spec export PDF/Markdown | **Tiếng Anh** hoàn toàn | — |
@@ -372,11 +372,13 @@ Ranh giới rạch ròi, không được nhập nhằng:
 **Vì sao:** verifier so claim với abstract paper — abstract luôn tiếng Anh. Giữ cùng ngôn ngữ thì
 embedding `all-MiniLM-L6-v2` (model tiếng Anh) và entailment check chạy đúng thiết kế. Nếu claim là
 tiếng Việt, ta phải so cross-lingual → similarity nhiễu → **metric của deliverable #8 mất giá trị**.
+Đây cũng là lý do bản chuyển ngữ đẩy nốt phần UI sang tiếng Anh: một ngôn ngữ duy nhất từ đầu tới cuối.
 Đây là quyết định phục vụ báo cáo đánh giá, không phải sở thích trình bày.
 
 **Cách enforce:** mỗi prompt trong `prompts/` ghi rõ ngôn ngữ output ngay trong system prompt, và
-zod schema tương ứng đặt tên field bằng tiếng Anh. Generator sinh câu hỏi cho user thì output tiếng
-Việt — đó là prompt duy nhất trộn hai ngôn ngữ, phải ghi chú rõ trong file.
+zod schema tương ứng đặt tên field bằng tiếng Anh. Từ bản chuyển ngữ toàn phần, **không prompt nào
+còn trộn hai ngôn ngữ**: mọi thứ model sinh ra — nội dung spec lẫn câu hỏi cho người dùng — đều là
+tiếng Anh. `paraphrase_vi` chỉ còn là tên field giữ cho tương thích hợp đồng API.
 
 ---
 

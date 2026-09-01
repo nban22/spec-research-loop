@@ -116,7 +116,7 @@ export class ConflictService {
         // nó là `CardStatus` hợp lệ, mà đích đến là cột enum (backend/CLAUDE.md §3).
         const parsed = cardStatusSchema.safeParse(status);
         if (!parsed.success) {
-          this.logger.warn(`Bỏ qua previous_status lạ: ${status}`);
+          this.logger.warn(`Ignoring an unknown previous_status: ${status}`);
           continue;
         }
         await tx.card.updateMany({
@@ -303,7 +303,7 @@ export class ConflictService {
 
     if (greyZone.length > ranked.length) {
       this.logger.log(
-        `Vùng xám ${greyZone.length} cặp, chỉ hỏi ${ranked.length} theo trần chi phí.`,
+        `Grey zone holds ${greyZone.length} pairs; only ${ranked.length} are asked, under the cost cap.`,
       );
     }
 
@@ -342,7 +342,7 @@ export class ConflictService {
         // Fail-closed đúng tinh thần verifier: không kiểm được thì **không** khẳng định có mâu
         // thuẫn. Bỏ qua cặp này, ghi log, không gán cờ.
         this.logger.warn(
-          `Không hỏi được LLM cho một cặp vùng xám: ${err instanceof Error ? err.message : String(err)}`,
+          `Could not ask the LLM about a grey-zone pair: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }

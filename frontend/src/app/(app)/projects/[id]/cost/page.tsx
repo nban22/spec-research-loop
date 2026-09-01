@@ -12,10 +12,10 @@ import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 /**
- * **Bảng theo dõi token, thời gian và chi phí thật** — issue #17 (làn C).
+ * **The dashboard for real tokens, time and cost** — issue #17 (lane C).
  *
- * `LlmCall` đã ghi đủ cho **mọi** lời gọi từ ngày đầu mà chưa màn hình nào đọc. Trang này chỉ
- * đọc, không có một nút ghi nào.
+ * `LlmCall` has recorded everything for **every** call since day one, and no screen ever read it.
+ * This page is read-only; it has no write action at all.
  */
 
 type Bucket = {
@@ -56,7 +56,7 @@ type CostOverview = {
   } | null;
 };
 
-const n = (v: number) => v.toLocaleString('vi-VN');
+const n = (v: number) => v.toLocaleString('en-US');
 const usd = (v: number) => `$${v.toFixed(v < 1 ? 4 : 2)}`;
 const pct = (v: number | null) => (v === null ? '—' : `${(v * 100).toFixed(1)}%`);
 const secs = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
@@ -83,8 +83,8 @@ export default function CostPage({ params }: PageProps<'/projects/[id]/cost'>) {
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4">
         <EmptyState
           icon={Coins}
-          title="Chưa đọc được số liệu chi phí"
-          description="Hệ thống chưa lấy được dữ liệu của dự án này. Bạn vui lòng tải lại trang."
+          title="The cost figures could not be read"
+          description="The data for this project could not be fetched. Please reload the page."
         />
       </div>
     );
@@ -97,7 +97,7 @@ export default function CostPage({ params }: PageProps<'/projects/[id]/cost'>) {
     <div className="mx-auto w-full max-w-[1400px] space-y-3 px-3 py-4 md:px-4">
       <header className="space-y-1">
         <h1 className="text-ink-1 text-lg font-semibold md:text-xl">
-          Token, thời gian và chi phí thật
+          Real tokens, time and cost
         </h1>
         <p className="text-ink-3 line-clamp-1 text-xs md:text-sm">
           {data.project.title} ·{' '}
@@ -105,7 +105,7 @@ export default function CostPage({ params }: PageProps<'/projects/[id]/cost'>) {
             href={`/projects/${id}/step/1`}
             className="text-brand-strong underline underline-offset-2"
           >
-            quay lại dự án
+            back to the project
           </Link>
         </p>
       </header>
@@ -114,63 +114,64 @@ export default function CostPage({ params }: PageProps<'/projects/[id]/cost'>) {
         <EmptyState
           icon={Coins}
           tone="brand"
-          title="Dự án này chưa gọi mô hình lần nào"
-          description="Chạy bước 1 để phân tích ý tưởng, rồi quay lại đây. Mỗi lời gọi đều được ghi lại token, độ trễ và số lần thử."
+          title="This project has never called the model"
+          description="Run step 1 to analyse the idea, then come back here. Every call records its tokens, latency and retry count."
         />
       ) : (
         <>
-          <Panel accent="brand" icon={Gauge} title="Tổng quan">
+          <Panel accent="brand" icon={Gauge} title="Overview">
             <StatTileGrid
               items={[
-                { label: 'Chi phí thật', value: usd(t.cost_usd) },
-                { label: 'Tổng token', value: n(t.total_tokens) },
-                { label: 'Lời gọi', value: n(t.calls) },
-                { label: 'Tổng thời gian', value: secs(t.latency_ms) },
+                { label: 'Real cost', value: usd(t.cost_usd) },
+                { label: 'Total tokens', value: n(t.total_tokens) },
+                { label: 'Calls', value: n(t.calls) },
+                { label: 'Total time', value: secs(t.latency_ms) },
               ]}
             />
             <StatTileGrid
               items={[
-                { label: 'Ăn cache prefix', value: pct(data.cache.hit_ratio) },
-                { label: 'Phải thử lại', value: pct(data.reliability.retry_ratio) },
-                { label: 'Lời gọi hỏng', value: pct(data.reliability.failure_ratio) },
-                { label: 'Token vào / ra', value: `${n(t.prompt_tokens)} / ${n(t.completion_tokens)}` },
+                { label: 'Prefix cache hits', value: pct(data.cache.hit_ratio) },
+                { label: 'Needed a retry', value: pct(data.reliability.retry_ratio) },
+                { label: 'Failed calls', value: pct(data.reliability.failure_ratio) },
+                { label: 'Tokens in / out', value: `${n(t.prompt_tokens)} / ${n(t.completion_tokens)}` },
               ]}
             />
             <HintBox tone="info">
-              Tỉ lệ ăn cache prefix cho biết phần dùng chung của prompt có được đặt ở đầu hay
-              không — đặt đúng thì lần gọi sau chỉ trả tiền cho phần khác biệt. Tỉ lệ “phải thử
-              lại” cao ở một prompt nào đó nghĩa là prompt đó hay trả JSON sai khuôn.
+              The prefix cache hit ratio tells you whether the shared part of a prompt sits at the
+              front — placed correctly, later calls only pay for what differs. A high “needed a
+              retry” ratio on one prompt means that prompt often returns malformed JSON.
             </HintBox>
           </Panel>
 
           {ev && (
-            <Panel accent="decide" icon={Coins} title="Ước lượng so với thực tế">
+            <Panel accent="decide" icon={Coins} title="Estimate versus actual">
               <StatTileGrid
                 items={[
-                  { label: 'Dự toán thí nghiệm', value: usd(ev.estimated_usd) },
-                  { label: 'Đã tiêu dựng spec', value: usd(ev.actual_usd) },
-                  { label: 'Chênh lệch', value: usd(ev.diff_usd) },
-                  { label: 'Tỉ lệ chênh', value: pct(ev.diff_ratio) },
+                  { label: 'Experiment budget', value: usd(ev.estimated_usd) },
+                  { label: 'Spent building the spec', value: usd(ev.actual_usd) },
+                  { label: 'Difference', value: usd(ev.diff_usd) },
+                  { label: 'Relative difference', value: pct(ev.diff_ratio) },
                 ]}
               />
-              <HintBox tone="warn" title="Đọc con số này cho đúng">
-                Hai vế đo hai thứ khác nhau: dự toán là tiền cho <strong>thí nghiệm sắp chạy</strong>,
-                còn chi phí thật là tiền đã tiêu để <strong>dựng bản đặc tả</strong>. Vì vậy đây là
-                thước đo mức lạc quan của bộ ước lượng, không phải hiệu của hai đại lượng cùng loại.
-                Cả hai vế dùng chung một đơn giá nên chênh lệch không lẫn chênh giá.
+              <HintBox tone="warn" title="How to read this correctly">
+                The two sides measure different things: the budget is money for the{' '}
+                <strong>experiments still to run</strong>, while the real cost is money already
+                spent <strong>building the specification</strong>. So this gauges how optimistic the
+                estimator is, not the difference between two comparable quantities. Both sides use
+                the same unit prices, so no price drift is mixed in.
               </HintBox>
             </Panel>
           )}
 
-          <Panel accent="ok" icon={Layers} title="Theo bước">
-            <BucketTable rows={data.by_step} firstCol="Bước" />
+          <Panel accent="ok" icon={Layers} title="By step">
+            <BucketTable rows={data.by_step} firstCol="Step" />
           </Panel>
 
-          <Panel accent="neutral" icon={RefreshCw} title="Theo prompt">
+          <Panel accent="neutral" icon={RefreshCw} title="By prompt">
             <BucketTable rows={data.by_prompt} firstCol="Prompt" mono />
           </Panel>
 
-          <Panel accent="neutral" icon={Layers} title="Theo model">
+          <Panel accent="neutral" icon={Layers} title="By model">
             <BucketTable rows={data.by_model} firstCol="Model" mono />
           </Panel>
         </>
@@ -180,10 +181,10 @@ export default function CostPage({ params }: PageProps<'/projects/[id]/cost'>) {
 }
 
 /**
- * Một bảng dùng cho cả ba lát cắt — ba bảng khác nhau chỉ khác cột đầu, tách thành ba component
- * là chép ba lần cùng một thứ.
+ * One table for all three slices — the three tables differ only in their first column, so splitting
+ * them into three components would be copying the same thing three times.
  *
- * Dưới `md` đổi sang danh sách, không phải bảng bị bẻ (DESIGN_SYSTEM §6.5).
+ * Below `md` it switches to a list, not a broken-up table (DESIGN_SYSTEM §6.5).
  */
 function BucketTable({
   rows,
@@ -195,7 +196,7 @@ function BucketTable({
   mono?: boolean;
 }) {
   if (rows.length === 0) {
-    return <p className="text-ink-3 text-xs">Chưa có dữ liệu ở lát cắt này.</p>;
+    return <p className="text-ink-3 text-xs">No data for this slice yet.</p>;
   }
   const total = rows.reduce((a, b) => a + b.cost_usd, 0);
 
@@ -206,11 +207,11 @@ function BucketTable({
           <thead>
             <tr className="text-ink-3 border-hairline border-b text-left">
               <th className="py-1.5 pr-2 font-medium">{firstCol}</th>
-              <th className="py-1.5 pr-2 text-right font-medium">Lời gọi</th>
-              <th className="py-1.5 pr-2 text-right font-medium">Token</th>
-              <th className="py-1.5 pr-2 text-right font-medium">Thời gian</th>
-              <th className="py-1.5 pr-2 text-right font-medium">Thử lại</th>
-              <th className="py-1.5 text-right font-medium">Chi phí</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Calls</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Tokens</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Time</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Retries</th>
+              <th className="py-1.5 text-right font-medium">Cost</th>
             </tr>
           </thead>
           <tbody>
@@ -241,7 +242,7 @@ function BucketTable({
               </tr>
             ))}
             <tr>
-              <td className="text-ink-2 py-1.5 pr-2 font-medium">Tổng</td>
+              <td className="text-ink-2 py-1.5 pr-2 font-medium">Total</td>
               <td colSpan={4} />
               <td className="text-ink-1 py-1.5 text-right font-semibold tabular-nums">
                 {usd(total)}
@@ -257,19 +258,19 @@ function BucketTable({
             <p className={cn('text-ink-1 text-sm font-medium', mono && 'font-mono')}>{r.key}</p>
             <dl className="text-ink-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs tabular-nums">
               <div className="flex justify-between">
-                <dt className="text-ink-3">Lời gọi</dt>
+                <dt className="text-ink-3">Calls</dt>
                 <dd>{n(r.calls)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-ink-3">Token</dt>
+                <dt className="text-ink-3">Tokens</dt>
                 <dd>{n(r.total_tokens)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-ink-3">Thời gian</dt>
+                <dt className="text-ink-3">Time</dt>
                 <dd>{secs(r.latency_ms)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-ink-3">Chi phí</dt>
+                <dt className="text-ink-3">Cost</dt>
                 <dd className="text-ink-1 font-medium">{usd(r.cost_usd)}</dd>
               </div>
             </dl>

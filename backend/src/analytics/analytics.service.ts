@@ -19,28 +19,28 @@ import type { LlmPurpose } from '../generated/prisma/enums';
  * không hỏi "service nào gọi".
  */
 const PURPOSE_STEP: Record<LlmPurpose, string> = {
-  PARAPHRASE: 'B1 · Diễn giải & phân rã',
-  DECOMPOSE: 'B1 · Diễn giải & phân rã',
-  RELATED_WORK: 'B2 · Nghiên cứu liên quan & gap',
-  GAP: 'B2 · Nghiên cứu liên quan & gap',
-  CLAIM: 'B3 · Contribution & thí nghiệm',
-  EXPERIMENT: 'B3 · Contribution & thí nghiệm',
-  JUDGE: 'B4 · Judge & sửa spec',
-  OPTIONS: 'B4 · Judge & sửa spec',
-  ENTAILMENT: 'B5 · Kiểm chứng cứ',
-  // Hai cái này chỉ xuất hiện khi chạy `eval/`, không nằm trong luồng người dùng.
-  AUDITOR: 'Ngoài quy trình · eval',
-  B1_SINGLE_SHOT: 'Ngoài quy trình · eval',
+  PARAPHRASE: 'S1 · Paraphrase & decompose',
+  DECOMPOSE: 'S1 · Paraphrase & decompose',
+  RELATED_WORK: 'S2 · Related work & gap',
+  GAP: 'S2 · Related work & gap',
+  CLAIM: 'S3 · Contribution & experiments',
+  EXPERIMENT: 'S3 · Contribution & experiments',
+  JUDGE: 'S4 · Judges & spec fixes',
+  OPTIONS: 'S4 · Judges & spec fixes',
+  ENTAILMENT: 'S5 · Evidence verification',
+  // These two only appear when running `eval/`; they are not part of the user flow.
+  AUDITOR: 'Outside the flow · eval',
+  B1_SINGLE_SHOT: 'Outside the flow · eval',
 };
 
-/** Thứ tự hiển thị cố định — sắp theo tiền thì bảng nhảy lung tung giữa hai lần xem. */
+/** A fixed display order — sorting by cost makes the table jump between two visits. */
 const STEP_ORDER = [
-  'B1 · Diễn giải & phân rã',
-  'B2 · Nghiên cứu liên quan & gap',
-  'B3 · Contribution & thí nghiệm',
-  'B4 · Judge & sửa spec',
-  'B5 · Kiểm chứng cứ',
-  'Ngoài quy trình · eval',
+  'S1 · Paraphrase & decompose',
+  'S2 · Related work & gap',
+  'S3 · Contribution & experiments',
+  'S4 · Judges & spec fixes',
+  'S5 · Evidence verification',
+  'Outside the flow · eval',
 ];
 
 /**
@@ -133,7 +133,7 @@ export class AnalyticsService {
       where: { id: projectId, user_id: userId },
       select: { id: true, title: true, current_spec_version_id: true },
     });
-    if (!project) throw AppError.notFound('Không tìm thấy dự án.');
+    if (!project) throw AppError.notFound('Project not found.');
 
     const rows = (await this.prisma.llmCall.findMany({
       where: { project_id: projectId },

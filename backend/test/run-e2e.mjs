@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 const testDbUrl = process.env.DATABASE_URL_TEST;
 
 if (!testDbUrl) {
-  console.error('DATABASE_URL_TEST bắt buộc cho test:e2e; không dùng DATABASE_URL để tránh chạm nhầm dữ liệu.');
+  console.error('DATABASE_URL_TEST is required for test:e2e; DATABASE_URL is not used, to avoid touching real data.');
   process.exit(1);
 }
 

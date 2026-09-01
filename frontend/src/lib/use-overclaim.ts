@@ -2,10 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, qk } from '@/lib/api';
 
 /**
- * Làn B · #7 — hook riêng cho cờ phóng đại.
+ * Lane B · #7 — a dedicated hook for overclaim flags.
  *
- * Để ở file riêng chứ không nhét vào `use-project.ts`: ba làn cùng sửa file đó là chỗ dễ đụng
- * nhau nhất, mà nội dung ở đây không dùng chung với ai.
+ * It lives in its own file rather than inside `use-project.ts`: that file is where three lanes
+ * collide most often, and nothing here is shared with anybody else.
  */
 
 export type OverclaimExit = 'NARROW_CLAIM' | 'EXPAND_EXPERIMENT' | 'TO_RESEARCH_QUESTION';

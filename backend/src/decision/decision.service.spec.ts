@@ -76,7 +76,7 @@ describe('DecisionService', () => {
         chosenKey: 'OTHER',
         customText: '   ',
       }),
-    ).rejects.toThrow('Chọn "Khác" thì bắt buộc nhập lý do.');
+    ).rejects.toThrow('Choosing "Other" requires a reason.');
   });
 
   it('records decision and returns preview for issue group', async () => {

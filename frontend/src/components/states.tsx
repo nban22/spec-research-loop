@@ -7,14 +7,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 /**
- * Trạng thái rỗng và lỗi dùng chung (DESIGN_SYSTEM §5.5).
- * **Luật 6: `ErrorState` luôn có một hành động** — chạy lại, sửa đầu vào, hoặc quay về bước trước.
- * Thông báo lấy từ `lib/error-code.ts`, không in mã lỗi thô ra màn hình.
+ * Shared empty and error states (DESIGN_SYSTEM §5.5).
+ * **Rule 6: `ErrorState` always offers an action** — run again, fix the input, or go back a step.
+ * Messages come from `lib/error-code.ts`; raw error codes are never printed on screen.
  */
 
 export type EmptyTone = 'neutral' | 'brand' | 'ok' | 'decide';
 
-/** Ô icon đổi màu theo vai của khối đang rỗng — cùng bảng accent với `Panel`. */
+/** The icon tile takes its colour from the role of the empty block — same accent table as `Panel`. */
 const TONE: Record<EmptyTone, string> = {
   neutral: 'bg-sunken text-ink-4',
   brand: 'bg-brand-soft text-brand-ink',
@@ -23,11 +23,11 @@ const TONE: Record<EmptyTone, string> = {
 };
 
 /**
- * Ô rỗng **dạy đúng một hành động tiếp theo**, không mô tả sự vắng mặt.
+ * An empty slot **teaches exactly one next action**; it never merely describes an absence.
  *
- * `icon` và `tone` là tham số chứ không cố định: mỗi chỗ rỗng trong app là một tình huống khác
- * nhau (chưa có dự án · chưa tìm nguồn · chưa rút gap · judge chưa chạy), và dùng chung một
- * icon `Inbox` cho cả bốn làm người dùng không phân biệt được mình đang thiếu gì.
+ * `icon` and `tone` are parameters rather than constants: every empty place in the app is a
+ * different situation (no projects yet · no sources searched · no gap extracted · judges not run),
+ * and using one `Inbox` icon for all four leaves the user unable to tell what is missing.
  */
 export function EmptyState({
   title,
@@ -57,7 +57,7 @@ export function EmptyState({
 export function ErrorState({
   message,
   onRetry,
-  retryLabel = 'Thử lại',
+  retryLabel = 'Try again',
 }: {
   message: string;
   onRetry?: () => void;
@@ -80,9 +80,9 @@ export function ErrorState({
 }
 
 /**
- * Skeleton phải đúng hình khối của nội dung thật — sai hình thì trang nhảy khi dữ liệu về.
- * Đó là lý do có **bốn** hình chứ không phải một: bảng, lưới ô số và hàng judge có khung hoàn
- * toàn khác card.
+ * A skeleton has to match the real content's shape — the wrong shape makes the page jump when the
+ * data lands. That is why there are **four** shapes and not one: tables, stat-tile grids and the
+ * judge row have frames that look nothing like a card.
  */
 export function CardSkeleton({ rows = 3 }: { rows?: number }) {
   return (
@@ -98,7 +98,7 @@ export function CardSkeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 
-/** Khớp `IssueTable` và `RelatedWorkTable`: một hàng tiêu đề rồi N hàng nhiều cột. */
+/** Matches `IssueTable` and `RelatedWorkTable`: one header row, then N multi-column rows. */
 export function TableSkeleton({ rows = 4, cols = 4 }: { rows?: number; cols?: number }) {
   return (
     <div className="border-hairline divide-hairline divide-y overflow-hidden rounded-lg border">
@@ -118,7 +118,7 @@ export function TableSkeleton({ rows = 4, cols = 4 }: { rows?: number; cols?: nu
   );
 }
 
-/** Khớp `StatTileGrid`: hai cột ở hẹp, bốn cột ở rộng. */
+/** Matches `StatTileGrid`: two columns when narrow, four when wide. */
 export function StatTileSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="@container">
@@ -134,7 +134,7 @@ export function StatTileSkeleton({ count = 4 }: { count?: number }) {
   );
 }
 
-/** Khớp `JudgePanel`: năm thẻ ngang, cuộn ở mobile, lưới ở desktop. */
+/** Matches `JudgePanel`: five cards in a row, scrolling on mobile, a grid on desktop. */
 export function JudgePanelSkeleton() {
   return (
     <ul className="flex gap-2 overflow-hidden md:grid md:grid-cols-3 xl:grid-cols-5">

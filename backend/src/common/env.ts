@@ -13,8 +13,8 @@ export const envSchema = z.object({
     .default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
 
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL bắt buộc'),
-  DEEPSEEK_API_KEY: z.string().min(1, 'DEEPSEEK_API_KEY bắt buộc'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DEEPSEEK_API_KEY: z.string().min(1, 'DEEPSEEK_API_KEY is required'),
   DEEPSEEK_BASE_URL: z.string().default('https://api.deepseek.com'),
 
   SEMANTIC_SCHOLAR_API_KEY: z
@@ -23,10 +23,17 @@ export const envSchema = z.object({
     .optional(),
   OPENALEX_MAILTO: z
     .string()
-    .min(1, 'OPENALEX_MAILTO bắt buộc — để vào polite pool'),
+    .min(
+      1,
+      'OPENALEX_MAILTO is required — it is what gets us into the polite pool',
+    ),
 
-  JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET phải ≥ 32 ký tự'),
-  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET phải ≥ 32 ký tự'),
+  JWT_ACCESS_SECRET: z
+    .string()
+    .min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
+  JWT_REFRESH_SECRET: z
+    .string()
+    .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('7d'),
 
@@ -79,11 +86,11 @@ export function validateEnv(raw: Record<string, unknown>): Env {
     const lines = parsed.error.issues.map(
       (i) => `  - ${i.path.join('.')}: ${i.message}`,
     );
-    throw new Error(`Cấu hình môi trường không hợp lệ:\n${lines.join('\n')}`);
+    throw new Error(`Invalid environment configuration:\n${lines.join('\n')}`);
   }
   if (parsed.data.JWT_ACCESS_SECRET === parsed.data.JWT_REFRESH_SECRET) {
     throw new Error(
-      'JWT_ACCESS_SECRET và JWT_REFRESH_SECRET phải khác nhau (STACK §6).',
+      'JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must differ (STACK §6).',
     );
   }
   return parsed.data;

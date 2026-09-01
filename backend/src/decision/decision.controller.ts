@@ -34,7 +34,7 @@ const decisionSchema = z
       v.decision_id || (v.spec_version_id && v.step && v.question && v.options),
     {
       message:
-        'Cần `decision_id`, hoặc đủ `spec_version_id` + `step` + `question` + `options`.',
+        'Either `decision_id`, or all of `spec_version_id` + `step` + `question` + `options`, is required.',
     },
   );
 type DecisionInput = z.infer<typeof decisionSchema>;
@@ -67,7 +67,7 @@ export class DecisionController {
       where: { id, spec_version: { project: { user_id: userId } } },
       select: { id: true },
     });
-    if (!owned) throw AppError.notFound('Không tìm thấy nhóm vấn đề.');
+    if (!owned) throw AppError.notFound('Issue group not found.');
     return this.decisions.optionsForIssueGroup(id);
   }
 
@@ -84,9 +84,9 @@ export class DecisionController {
         source: { select: { title: true } },
       },
     });
-    if (!pair) throw AppError.notFound('Không tìm thấy cặp khẳng định–nguồn.');
+    if (!pair) throw AppError.notFound('The claim-source pair was not found.');
     return {
-      question: `Khẳng định “${pair.card.title}” đang trích “${pair.source.title}”, nhưng nguồn đó không chống lưng được nội dung khẳng định. Bạn muốn xử lý thế nào?`,
+      question: `The claim “${pair.card.title}” cites “${pair.source.title}”, but that source does not support what the claim says. How do you want to handle it?`,
       options: GATE_OPTIONS,
     };
   }
@@ -103,7 +103,7 @@ export class DecisionController {
         card: { select: { spec_version: { select: { project_id: true } } } },
       },
     });
-    if (!pair) throw AppError.notFound('Không tìm thấy cặp khẳng định–nguồn.');
+    if (!pair) throw AppError.notFound('The claim-source pair was not found.');
 
     return this.decisions.gateDecision(pair.card.spec_version.project_id, {
       cardSourceId: id,
@@ -122,7 +122,7 @@ export class DecisionController {
       where: { id: body.project_id, user_id: userId },
       select: { id: true },
     });
-    if (!project) throw AppError.notFound('Không tìm thấy dự án.');
+    if (!project) throw AppError.notFound('Project not found.');
 
     return this.decisions.record(project.id, {
       decisionId: body.decision_id,
@@ -150,7 +150,7 @@ export class DecisionController {
       where: { id, project: { user_id: userId } },
       select: { project_id: true },
     });
-    if (!decision) throw AppError.notFound('Không tìm thấy quyết định.');
+    if (!decision) throw AppError.notFound('The decision was not found.');
 
     const { version, revalidateCardIds } = await this.decisions.apply(
       decision.project_id,
@@ -185,7 +185,7 @@ export class DecisionController {
         projectId,
         specVersionId,
         total: Math.max(1, cardIds.length),
-        message: 'Đang kiểm lại chứng cứ của phần vừa sửa…',
+        message: 'Re-checking the evidence in the part you just changed…',
       });
       this.jobs.runInBackground(jobId, async () => {
         await this.verifier.verifySpecVersion(specVersionId, {

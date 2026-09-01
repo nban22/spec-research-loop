@@ -8,18 +8,19 @@ import { styleOr } from '@/lib/unknown-style';
 import type { SupportLabel, VerifierFlag } from '@/lib/types';
 
 /**
- * `SupportLabel` → **tag rỗng ruột**, viền dày hơn, CHỮ HOA, icon họ khiên (DESIGN_SYSTEM §3.4).
- * Rỗng ruột là cố ý: tag này luôn nằm cạnh tên nguồn trong danh sách; tô nền đặc thì mỗi dòng
- * nguồn thành một vệt màu và bảng related-work sẽ loạn.
- * Đây là nơi **duy nhất** đọc ánh xạ của `SupportLabel`.
+ * `SupportLabel` → a **hollow tag**, thicker border, UPPERCASE, shield icon family
+ * (DESIGN_SYSTEM §3.4). Hollow is deliberate: this tag always sits next to a source title in a
+ * list, and a solid fill would turn every source row into a colour streak, wrecking the
+ * related-work table. This is the **only** reader of the `SupportLabel` map.
  *
- * `verified={false}` **đè lên `label`** và hiện `CHƯA KIỂM`. Lý do phải có: `support_label` có
- * giá trị mặc định `WEAK` ngay từ lúc generator tạo `CardSource`, nên một thẻ vừa sinh xong đã
- * đeo sẵn nhãn WEAK trong khi verifier chưa đọc nó lần nào. Không tách hai thứ này ra thì bảng
- * thẻ ở bước 3 hiện WEAK toàn bộ và người xem kết luận verifier không chống lưng được gì.
+ * `verified={false}` **overrides `label`** and renders `UNVERIFIED`. It has to exist because
+ * `support_label` defaults to `WEAK` the moment the generator creates a `CardSource`, so a
+ * freshly generated card already wears a WEAK label while the verifier has never read it. Without
+ * separating the two, the card board at step 3 shows WEAK everywhere and the reader concludes the
+ * verifier could back nothing at all.
  *
- * Bỏ trống `verified` ⇒ coi như đã kiểm — giữ nguyên hành vi cho những chỗ gọi vốn chỉ nhận
- * dữ liệu đã qua verifier (ví dụ tổng hợp theo nhãn ở bước 5).
+ * Omitting `verified` ⇒ treated as verified — preserving behaviour for call sites that only ever
+ * receive post-verifier data (the label roll-up at step 5, for example).
  */
 export function SupportTag({
   label,
@@ -48,7 +49,7 @@ export function SupportTag({
         <Icon className="size-3" aria-hidden />
         {style.label}
       </span>
-      {/* Lý do hiện bằng CHỮ, không phải tooltip — cảm ứng không có hover (§6.7 luật 1). */}
+      {/* The reason is shown as TEXT, not a tooltip — touch has no hover (§6.7 rule 1). */}
       {reasons.length > 0 && (
         <span className="text-ink-3 text-xs">{reasons.join(' · ')}</span>
       )}
@@ -57,12 +58,12 @@ export function SupportTag({
 }
 
 /**
- * Cùng hình dạng với `SupportTag` (rỗng ruột, viền dày, CHỮ HOA, icon khiên) nhưng viền **đứt
- * nét** — cùng tín hiệu "chỗ trống" mà `CardStatus.MISSING` đang dùng. Giữ chung hình dạng là
- * cố ý: nó chiếm đúng vị trí của một nhãn, nên phải đọc được như một nhãn.
+ * The same shape as `SupportTag` (hollow, thick border, UPPERCASE, shield icon) but with a
+ * **dashed** border — the same "empty slot" signal `CardStatus.MISSING` already uses. Sharing the
+ * shape is deliberate: it occupies exactly a label's position, so it must read like a label.
  *
- * Kèm luôn một câu giải thích bằng chữ, vì đây là chỗ người xem dễ hiểu nhầm nhất trong cả
- * luồng: không nói ra thì "CHƯA KIỂM" trông y như một phán quyết tiêu cực thứ tư.
+ * It always carries a written explanation, because this is the single easiest thing to
+ * misread in the whole flow: unsaid, "UNVERIFIED" looks like a fourth negative verdict.
  */
 function UnverifiedTag({ className }: { className?: string }) {
   const Icon = UNVERIFIED_STYLE.icon;
@@ -77,7 +78,7 @@ function UnverifiedTag({ className }: { className?: string }) {
         <Icon className="size-3" aria-hidden />
         {UNVERIFIED_STYLE.label}
       </span>
-      <span className="text-ink-3 text-xs">chưa chạy kiểm chứng cứ cho cặp này</span>
+      <span className="text-ink-3 text-xs">evidence verification has not run for this pair</span>
     </span>
   );
 }

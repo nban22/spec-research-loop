@@ -133,8 +133,8 @@ export function detectAmbiguity(card: AmbiguityInput): AmbiguityFinding[] {
         terms: vagueTermsIn(value),
         reason:
           field === 'baseline'
-            ? `Trường \`baseline\` ghi "${value}" — không nêu tên phương pháp cụ thể nào để so sánh, nên không thí nghiệm nào kiểm được khẳng định này.`
-            : `Trường \`metric\` ghi "${value}" — không phải một đại lượng đo được, nên không có cách nào nói khẳng định đúng hay sai.`,
+            ? `The \`baseline\` field says "${value}" — it names no specific method to compare against, so no experiment can test this claim.`
+            : `The \`metric\` field says "${value}" — it is not a measurable quantity, so there is no way to say whether the claim is true or false.`,
       });
     }
   }
@@ -151,7 +151,7 @@ export function detectAmbiguity(card: AmbiguityInput): AmbiguityFinding[] {
           field,
           excerpt: value,
           terms: vagueTermsIn(value),
-          reason: `Trường \`testable_experiment\` ghi "${value}" — chưa mô tả một phép so sánh chạy được. "Sẽ đánh giá" không phải là thí nghiệm.`,
+          reason: `The \`testable_experiment\` field says "${value}" — it does not describe a comparison that can be run. "Will be evaluated" is not an experiment.`,
         });
         continue;
       }
@@ -163,7 +163,7 @@ export function detectAmbiguity(card: AmbiguityInput): AmbiguityFinding[] {
         field,
         excerpt: value,
         terms,
-        reason: `Trường \`${field}\` chỉ có từ định tính (${terms.join(', ')}) mà không kèm đại lượng nào đo được.`,
+        reason: `The \`${field}\` field only holds qualitative wording (${terms.join(', ')}) with no measurable quantity attached.`,
       });
     }
   }
@@ -178,7 +178,7 @@ export function detectAmbiguity(card: AmbiguityInput): AmbiguityFinding[] {
       excerpt: body.slice(0, 120),
       terms: [],
       reason:
-        'Câu mở đầu bằng đại từ nhưng không có tiền ngữ — đọc riêng thẻ này thì không biết "nó" là cái gì.',
+        'The sentence opens with a pronoun that has no antecedent — read on its own, this card never says what "it" is.',
     });
   }
 
@@ -191,7 +191,7 @@ export function detectAmbiguity(card: AmbiguityInput): AmbiguityFinding[] {
       field: null,
       excerpt: s,
       terms,
-      reason: `Câu này dùng từ định tính (${terms.join(', ')}) mà không kèm con số hay metric nào để neo lại.`,
+      reason: `This sentence uses qualitative wording (${terms.join(', ')}) with no number or metric to anchor it.`,
     });
     break; // một cờ `VAGUE_TERM` mỗi thẻ là đủ — cờ thứ hai không thêm việc gì cho người dùng
   }

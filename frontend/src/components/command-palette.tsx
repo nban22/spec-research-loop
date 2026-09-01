@@ -25,13 +25,14 @@ import { cn } from '@/lib/utils';
 import type { ProjectSummary } from './project-card';
 
 /**
- * Bảng lệnh ⌘K / Ctrl+K.
+ * The ⌘K / Ctrl+K command palette.
  *
- * Dựng trên `Dialog` + lọc bằng React thuần, **không thêm dependency** — `cmdk` chỉ để đổi lấy
- * fuzzy-match và một ít quản lý focus, mà `Dialog` của Radix đã lo focus trap rồi.
+ * Built on `Dialog` + plain React filtering, **with no new dependency** — `cmdk` would only buy
+ * fuzzy matching and some focus management, and the Radix `Dialog` already handles the focus trap.
  *
- * Vì sao cần: app có 5 bước × N dự án, và đường duy nhất để nhảy bước đang nằm trong `Stepper`
- * — tức là phải mở đúng dự án rồi mới thấy. Bảng lệnh cho phép đi thẳng từ bất kỳ đâu.
+ * Why it exists: the app has 5 steps × N projects, and the only way to jump between steps lives
+ * inside `Stepper` — which means opening the right project first. The palette goes straight there
+ * from anywhere.
  */
 
 type Cmd = {
@@ -43,13 +44,13 @@ type Cmd = {
   run: () => void;
 };
 
-/** Bỏ dấu để gõ "du an" vẫn ra "Dự án" — người Việt gõ không dấu là chuyện thường. */
+/** Strip diacritics so an unaccented query still matches an accented title — paper titles carry plenty. */
 function fold(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd');
+    .replace(/\u0111/g, 'd');
 }
 
 export function CommandPalette() {
@@ -58,8 +59,8 @@ export function CommandPalette() {
   const [q, setQ] = useState('');
   const [cursor, setCursor] = useState(0);
 
-  /* Reset ở handler chứ không ở `useEffect([open])`: gọi setState trong effect là một vòng
-     render thừa, và ESLint chặn đúng lý do đó (react-hooks/set-state-in-effect). */
+  /* Reset in the handler, not in `useEffect([open])`: setState from an effect costs an extra
+     render pass, and ESLint blocks it for exactly that reason (react-hooks/set-state-in-effect). */
   const reset = () => {
     setQ('');
     setCursor(0);
@@ -89,107 +90,107 @@ export function CommandPalette() {
       router.push(href);
     };
     const nav: Cmd[] = [
-      { id: 'n-home', label: 'Trang chủ', group: 'Điều hướng', icon: Home, run: go('/') },
-      { id: 'n-proj', label: 'Dự án', group: 'Điều hướng', icon: FolderOpen, run: go('/projects') },
+      { id: 'n-home', label: 'Home', group: 'Navigation', icon: Home, run: go('/') },
+      { id: 'n-proj', label: 'Projects', group: 'Navigation', icon: FolderOpen, run: go('/projects') },
       {
         id: 'n-ver',
-        label: 'Lịch sử phiên bản',
-        group: 'Điều hướng',
+        label: 'Version history',
+        group: 'Navigation',
         icon: Workflow,
         run: go('/versions'),
       },
-      { id: 'n-help', label: 'Trợ giúp', group: 'Điều hướng', icon: LifeBuoy, run: go('/help') },
+      { id: 'n-help', label: 'Help', group: 'Navigation', icon: LifeBuoy, run: go('/help') },
     ];
 
     const projects = data?.projects ?? [];
     const openProject: Cmd[] = projects.map((p) => ({
       id: `p-${p.id}`,
       label: p.title,
-      hint: `Bước ${STEPS.find((s) => s.step === p.step)?.no ?? 1}/5`,
-      group: 'Mở dự án',
+      hint: `Step ${STEPS.find((s) => s.step === p.step)?.no ?? 1}/5`,
+      group: 'Open project',
       icon: FolderOpen,
       run: go(`/projects/${p.id}/step/${STEPS.find((s) => s.step === p.step)?.no ?? 1}`),
     }));
 
-    /* Hai màn của làn C không có mục nav riêng: `top-nav.tsx` nằm ngoài phạm vi sở hữu của
-       làn này. Bảng lệnh là đường vào hợp lệ và cũng là chỗ người dùng tìm chúng tự nhiên nhất. */
+    /* The two lane-C screens have no nav entry of their own: `top-nav.tsx` is outside this lane's
+       ownership. The palette is a legitimate entry point and where users look for them anyway. */
     const cost: Cmd[] = projects.map((p) => ({
       id: `cost-${p.id}`,
-      label: `Chi phí · ${p.title}`,
-      hint: 'token · thời gian · tiền',
-      group: 'Chi phí',
+      label: `Cost · ${p.title}`,
+      hint: 'tokens · time · money',
+      group: 'Cost',
       icon: Coins,
       run: go(`/projects/${p.id}/cost`),
     }));
 
     const errors: Cmd[] = projects.map((p) => ({
       id: `err-${p.id}`,
-      label: `Phân tích lỗi · ${p.title}`,
-      hint: 'cờ · nhãn · ngưỡng',
-      group: 'Phân tích',
+      label: `Error analysis · ${p.title}`,
+      hint: 'flags · labels · thresholds',
+      group: 'Analysis',
       icon: ShieldAlert,
       run: go(`/projects/${p.id}/errors`),
     }));
 
-    /* Bản đồ nguồn (#16) — cùng lý do với màn hình chi phí: `top-nav.tsx` nằm ngoài phạm vi
-       sở hữu của làn C, nên bảng lệnh là đường vào hợp lệ. */
+    /* The source map (#16) — same reason as the cost screen: `top-nav.tsx` is outside lane C's
+       ownership, so the palette is a legitimate entry point. */
     const map: Cmd[] = projects.map((p) => ({
       id: `map-${p.id}`,
-      label: `Bản đồ nguồn · ${p.title}`,
-      hint: 'timeline · chủ đề',
-      group: 'Bản đồ nguồn',
+      label: `Source map · ${p.title}`,
+      hint: 'timeline · topics',
+      group: 'Source map',
       icon: Map,
       run: go(`/projects/${p.id}/map`),
     }));
 
-    // Mô phỏng chi phí (#18) — cùng lý do với hai màn hình trên.
+    // Cost simulation (#18) — same reason as the two screens above.
     const sim: Cmd[] = projects.map((p) => ({
       id: `sim-${p.id}`,
-      label: `Mô phỏng chi phí · ${p.title}`,
+      label: `Cost simulation · ${p.title}`,
       hint: 'VRAM · Pareto',
-      group: 'Mô phỏng chi phí',
+      group: 'Cost simulation',
       icon: SlidersHorizontal,
       run: go(`/projects/${p.id}/simulate`),
     }));
 
-    /* Hai màn hình của làn A (#5, #4) — cùng lý do với các màn của làn C: `top-nav.tsx` chỉ
-       chứa link toàn cục, không mang được `projectId`, nên bảng lệnh là đường vào hợp lệ. */
+    /* The two lane-A screens (#5, #4) — same reason as the lane-C ones: `top-nav.tsx` only holds
+       global links and cannot carry a `projectId`, so the palette is a legitimate entry point. */
     const evidence: Cmd[] = projects.map((p) => ({
       id: `ev-${p.id}`,
-      label: `Vì sao nhãn này · ${p.title}`,
-      hint: 'tầng · ngưỡng · câu trích',
-      group: 'Bằng chứng',
+      label: `Why this label · ${p.title}`,
+      hint: 'layers · thresholds · quotes',
+      group: 'Evidence',
       icon: ShieldQuestion,
       run: go(`/projects/${p.id}/evidence`),
     }));
 
     const label: Cmd[] = projects.map((p) => ({
       id: `lb-${p.id}`,
-      label: `Gán nhãn chứng cứ · ${p.title}`,
-      hint: 'chấm mù · hiệu chỉnh ngưỡng',
-      group: 'Bằng chứng',
+      label: `Label evidence · ${p.title}`,
+      hint: 'blind labelling · threshold calibration',
+      group: 'Evidence',
       icon: ClipboardCheck,
       run: go(`/projects/${p.id}/label`),
     }));
 
-    // Bản đồ claim–evidence (#15) — cùng lý do với ba màn hình trên.
+    // The claim-evidence map (#15) — same reason as the three screens above.
     const claimMap: Cmd[] = projects.map((p) => ({
       id: `claim-${p.id}`,
-      label: `Bản đồ claim–evidence · ${p.title}`,
-      hint: 'kéo thả nguồn',
-      group: 'Bản đồ claim–evidence',
+      label: `Claim-evidence map · ${p.title}`,
+      hint: 'drag and drop sources',
+      group: 'Claim-evidence map',
       icon: Network,
       run: go(`/projects/${p.id}/claim-map`),
     }));
 
-    // Nhảy bước chỉ có nghĩa khi đã có dự án — lấy dự án sửa gần nhất làm đích.
+    // Jumping to a step only makes sense once a project exists — the most recently edited one wins.
     const latest = projects[0];
     const jump: Cmd[] = latest
       ? STEPS.map((s) => ({
           id: `s-${s.step}`,
-          label: `Bước ${s.no} · ${s.title}`,
+          label: `Step ${s.no} · ${s.title}`,
           hint: latest.title,
-          group: 'Nhảy bước',
+          group: 'Jump to step',
           icon: Workflow,
           run: go(`/projects/${latest.id}/step/${s.no}`),
         }))
@@ -241,7 +242,7 @@ export function CommandPalette() {
       }}
     >
       <DialogContent className="top-24 max-w-lg translate-y-0 gap-0 p-0" showCloseButton={false}>
-        <DialogTitle className="sr-only">Bảng lệnh</DialogTitle>
+        <DialogTitle className="sr-only">Command palette</DialogTitle>
 
         <div className="border-hairline flex items-center gap-2 border-b px-3">
           <Search className="text-ink-4 size-4 shrink-0" aria-hidden />
@@ -253,8 +254,8 @@ export function CommandPalette() {
               setCursor(0);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Tìm dự án, nhảy bước, mở trang…"
-            aria-label="Tìm lệnh"
+            placeholder="Find a project, jump to a step, open a page…"
+            aria-label="Search commands"
             className="text-ink-1 placeholder:text-ink-4 h-11 w-full bg-transparent text-sm outline-none"
           />
           <kbd className="border-hairline text-ink-4 text-2xs shrink-0 rounded border px-1.5 py-0.5">
@@ -265,7 +266,7 @@ export function CommandPalette() {
         <ul className="max-h-80 overflow-y-auto p-1.5">
           {results.length === 0 && (
             <li className="text-ink-3 px-3 py-6 text-center text-xs">
-              Không có lệnh nào khớp “{q}”.
+              No command matches “{q}”.
             </li>
           )}
           {results.map((c, i) => {
@@ -303,7 +304,7 @@ export function CommandPalette() {
   );
 }
 
-/** Nút mở bảng lệnh cho người dùng chuột — phím tắt một mình thì không ai biết nó tồn tại. */
+/** The button that opens the palette for mouse users — a shortcut alone is a feature nobody discovers. */
 export function CommandPaletteTrigger() {
   const openPalette = () => {
     window.dispatchEvent(
@@ -314,14 +315,14 @@ export function CommandPaletteTrigger() {
     <button
       type="button"
       onClick={openPalette}
-      aria-label="Mở bảng lệnh"
+      aria-label="Open the command palette"
       className={cn(
         'border-hairline text-ink-3 hidden items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs md:flex',
         'ease-out-quart hover:border-brand-line hover:text-brand-strong transition-colors duration-150',
       )}
     >
       <Search className="size-3.5" aria-hidden />
-      <span>Tìm nhanh</span>
+      <span>Quick find</span>
       <kbd className="border-hairline text-2xs rounded border px-1 py-px">Ctrl K</kbd>
     </button>
   );

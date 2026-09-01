@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// `vi.mock` bị nâng lên đầu file nên factory không thấy `const` khai ở thân file.
+// `vi.mock` is hoisted to the top of the file, so its factory cannot see a `const` declared below.
 const { get, post, success, error } = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
@@ -17,8 +17,8 @@ vi.mock('./api', async (importOriginal) => {
   return { ...actual, api: { ...actual.api, get, post } };
 });
 
-// `EventSource` không tồn tại trong jsdom. `useJob` mở một cái ở effect, và SSE chỉ là đường
-// tăng tốc — nguồn sự thật là poll `GET /jobs/:id`. Thay bằng bản rỗng để effect chạy được.
+// `EventSource` does not exist in jsdom. `useJob` opens one in an effect, and SSE is only an
+// accelerator — the source of truth is polling `GET /jobs/:id`. A no-op stub lets the effect run.
 class FakeEventSource {
   addEventListener() {}
   close() {}
@@ -30,8 +30,9 @@ vi.stubGlobal('EventSource', FakeEventSource);
 import { useJobAction } from './use-project';
 
 /**
- * #28 — job xong phải **tự báo**, vì `JobProgress` nằm trên cùng cột giữa còn thứ vừa đổi
- * (ba cột nhận xét của bảng nghiên cứu liên quan) nằm dưới màn hình.
+ * #28 — a finished job must **announce itself**, because `JobProgress` sits at the top of the
+ * middle column while what just changed (the three comment columns of the related-work table) is
+ * further down the screen.
  */
 function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({
@@ -54,7 +55,7 @@ function job(over: Record<string, unknown>) {
   };
 }
 
-describe('useJobAction — báo kết quả khi job về đích (#28)', () => {
+describe('useJobAction — announcing the result when a job finishes (#28)', () => {
   beforeEach(() => {
     get.mockReset();
     post.mockReset();
@@ -62,10 +63,10 @@ describe('useJobAction — báo kết quả khi job về đích (#28)', () => {
     error.mockReset();
   });
 
-  it('backend xong ⇒ toast thành công đúng câu backend trả về', async () => {
+  it('backend done ⇒ a success toast with the exact sentence the backend returned', async () => {
     post.mockResolvedValue({ jobId: 'j-1' });
     get.mockResolvedValue(
-      job({ status: 'DONE', message: 'Đã dựng 12 dòng nghiên cứu liên quan.' }),
+      job({ status: 'DONE', message: 'Built 12 related-work rows.' }),
     );
 
     const { result } = renderHook(() => useJobAction('p-1'), { wrapper });
@@ -73,13 +74,13 @@ describe('useJobAction — báo kết quả khi job về đích (#28)', () => {
 
     await waitFor(() =>
       expect(success).toHaveBeenCalledWith(
-        'Đã dựng 12 dòng nghiên cứu liên quan.',
+        'Built 12 related-work rows.',
       ),
     );
     expect(error).not.toHaveBeenCalled();
   });
 
-  it('backend hỏng ⇒ toast lỗi tiếng Việt ánh xạ từ error_code', async () => {
+  it('backend failed ⇒ an error toast mapped from error_code', async () => {
     post.mockResolvedValue({ jobId: 'j-1' });
     get.mockResolvedValue(
       job({ status: 'FAILED', error_code: 'NO_SOURCES_YET', message: null }),
@@ -89,14 +90,14 @@ describe('useJobAction — báo kết quả khi job về đích (#28)', () => {
     result.current.run('/projects/p-1/related-work');
 
     await waitFor(() => expect(error).toHaveBeenCalled());
-    // Ánh xạ qua `error-code.ts`, không phải chép `message` của backend.
+    // Mapped through `error-code.ts`, not copied from the backend `message`.
     expect(String(error.mock.calls[0][0])).not.toBe('');
     expect(success).not.toHaveBeenCalled();
   });
 
-  it('job chưa xong thì chưa báo gì', async () => {
+  it('announces nothing while the job is still running', async () => {
     post.mockResolvedValue({ jobId: 'j-1' });
-    get.mockResolvedValue(job({ status: 'RUNNING', message: 'Đang chạy…' }));
+    get.mockResolvedValue(job({ status: 'RUNNING', message: 'Running…' }));
 
     const { result } = renderHook(() => useJobAction('p-1'), { wrapper });
     result.current.run('/projects/p-1/related-work');
@@ -106,9 +107,9 @@ describe('useJobAction — báo kết quả khi job về đích (#28)', () => {
     expect(error).not.toHaveBeenCalled();
   });
 
-  it('một job chỉ báo đúng một lần dù render lại nhiều lần', async () => {
+  it('announces a job exactly once no matter how often it re-renders', async () => {
     post.mockResolvedValue({ jobId: 'j-1' });
-    get.mockResolvedValue(job({ status: 'DONE', message: 'Đã xong việc.' }));
+    get.mockResolvedValue(job({ status: 'DONE', message: 'All done.' }));
 
     const { result, rerender } = renderHook(() => useJobAction('p-1'), {
       wrapper,

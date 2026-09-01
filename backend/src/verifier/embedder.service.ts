@@ -44,7 +44,7 @@ export class EmbedderService implements OnModuleInit {
     this.loading = (async () => {
       const t0 = Date.now();
       this.logger.log(
-        `Đang nạp model embedding ${MODEL_ID}… (lần đầu tải ~90MB)`,
+        `Loading the embedding model ${MODEL_ID}… (the first download is ~90MB)`,
       );
       const mod = await dynamicImport<TransformersModule>(
         '@xenova/transformers',
@@ -63,12 +63,12 @@ export class EmbedderService implements OnModuleInit {
           process.env.TRANSFORMERS_CACHE ?? '.cache/transformers';
       }
       this.extractor = await mod.pipeline('feature-extraction', MODEL_ID);
-      this.logger.log(`Model embedding sẵn sàng sau ${Date.now() - t0}ms.`);
+      this.logger.log(`Embedding model ready after ${Date.now() - t0}ms.`);
     })().catch((err: unknown) => {
       this.failed = true;
       this.loading = null;
       this.logger.error(
-        `Không nạp được model embedding: ${err instanceof Error ? err.message : String(err)}`,
+        `Could not load the embedding model: ${err instanceof Error ? err.message : String(err)}`,
       );
       throw err;
     });
@@ -84,7 +84,7 @@ export class EmbedderService implements OnModuleInit {
   async embed(texts: string[]): Promise<Float32Array[]> {
     if (texts.length === 0) return [];
     await this.ensureLoaded();
-    if (!this.extractor) throw new Error('Embedder chưa sẵn sàng');
+    if (!this.extractor) throw new Error('The embedder is not ready');
 
     const out: Float32Array[] = [];
     for (let i = 0; i < texts.length; i += BATCH_SIZE) {

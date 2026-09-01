@@ -71,11 +71,11 @@ export class DeepseekProvider implements LlmProvider {
       // Phân loại ngay tại đây vì đây là chỗ duy nhất còn giữ lỗi gốc của SDK; bọc thành
       // `AppError` là mất `status`, `name` và `cause`.
       if (isTransientLlmError(err)) {
-        throw new LlmTransportError(`Không gọi được DeepSeek: ${detail}`);
+        throw new LlmTransportError(`Could not reach DeepSeek: ${detail}`);
       }
       throw AppError.unavailable(
         'LLM_UNAVAILABLE',
-        `Không gọi được DeepSeek: ${detail}`,
+        `Could not reach DeepSeek: ${detail}`,
       );
     }
   }

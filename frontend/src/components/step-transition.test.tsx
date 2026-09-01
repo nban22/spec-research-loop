@@ -3,63 +3,63 @@ import { describe, expect, it } from 'vitest';
 import { StepTransition } from './step-transition';
 
 /**
- * Hai thứ đáng khoá lại — đều là **hợp đồng**, không phải chi tiết hoạt cảnh:
+ * Two things worth locking down — both **contracts**, not animation details:
  *
- * 1. Nội dung bước phải **luôn** ra được màn hình. Hoạt cảnh hỏng thì cùng lắm là xấu, nhưng
- *    nuốt mất nội dung thì là trang trắng.
- * 2. Vùng này phải là `aria-live` — trình đọc màn hình cần biết nội dung vừa được **thay**,
- *    không phải người dùng vừa sang trang mới.
+ * 1. The step content must **always** reach the screen. A broken animation is at worst ugly;
+ *    swallowing the content is a blank page.
+ * 2. This region must be `aria-live` — a screen reader needs to know the content was **replaced**,
+ *    not that the user navigated to a new page.
  *
- * Cố ý **không** test giá trị `x`, thời lượng hay kiểu lò xo: đó là thứ sẽ chỉnh đi chỉnh lại,
- * khoá chúng lại chỉ tạo ra test phải sửa mỗi lần đổi cảm giác chuyển động.
+ * Deliberately **not** testing the `x` value, the duration or the spring type: those will be tuned
+ * repeatedly, and locking them down only creates tests that break whenever the motion feel changes.
  */
 describe('StepTransition', () => {
-  it('hiện nội dung của bước đang xem', () => {
+  it('renders the content of the current step', () => {
     render(
       <StepTransition step={1}>
-        <p>Nội dung bước 1</p>
+        <p>Step 1 content</p>
       </StepTransition>,
     );
-    expect(screen.getByText('Nội dung bước 1')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 content')).toBeInTheDocument();
   });
 
-  it('đổi bước thì nội dung mới ra được màn hình', async () => {
+  it('reaches the screen with the new content after a step change', async () => {
     const { rerender } = render(
       <StepTransition step={1}>
-        <p>Nội dung bước 1</p>
+        <p>Step 1 content</p>
       </StepTransition>,
     );
     rerender(
       <StepTransition step={2}>
-        <p>Nội dung bước 2</p>
+        <p>Step 2 content</p>
       </StepTransition>,
     );
-    // `findBy` chứ không `getBy`: `mode="wait"` giữ bước cũ lại cho tới khi nó chạy xong hoạt
-    // cảnh ra — chính chỗ đó là thứ khử được khoảng trắng nháy giữa hai bước.
-    expect(await screen.findByText('Nội dung bước 2')).toBeInTheDocument();
+    // `findBy`, not `getBy`: `mode="wait"` keeps the old step alive until its exit animation
+    // finishes — which is exactly what removes the white flash between steps.
+    expect(await screen.findByText('Step 2 content')).toBeInTheDocument();
   });
 
-  it('quay lại bước trước cũng hiện được nội dung', async () => {
+  it('renders the content when going back a step too', async () => {
     const { rerender } = render(
       <StepTransition step={3}>
-        <p>Nội dung bước 3</p>
+        <p>Step 3 content</p>
       </StepTransition>,
     );
     rerender(
       <StepTransition step={2}>
-        <p>Nội dung bước 2</p>
+        <p>Step 2 content</p>
       </StepTransition>,
     );
-    expect(await screen.findByText('Nội dung bước 2')).toBeInTheDocument();
+    expect(await screen.findByText('Step 2 content')).toBeInTheDocument();
   });
 
-  it('vùng nội dung là aria-live để trình đọc màn hình biết nó vừa được thay', () => {
+  it('marks the content region aria-live so screen readers know it was replaced', () => {
     render(
       <StepTransition step={1}>
-        <p>Nội dung bước 1</p>
+        <p>Step 1 content</p>
       </StepTransition>,
     );
-    expect(screen.getByText('Nội dung bước 1').parentElement).toHaveAttribute(
+    expect(screen.getByText('Step 1 content').parentElement).toHaveAttribute(
       'aria-live',
       'polite',
     );

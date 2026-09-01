@@ -17,31 +17,31 @@ import {
 } from '@/lib/use-project';
 
 /**
- * **Gán nhãn tay cho cặp khẳng định–nguồn** — issue #4 (làn A).
+ * **Hand-labelling claim-source pairs** — issue #4 (lane A).
  *
- * `thresholds.ts` tự thú rằng 0,35 / 0,72 / 0,7 *"là ước đoán, không phải số đo"*. Trang này là
- * đầu vào để biến chúng thành số đo: người chấm đọc khẳng định và tóm tắt nguồn rồi tự quyết,
- * sau đó `eval/calibrate.ts` quét lưới ngưỡng trên tập nhãn đó.
+ * `thresholds.ts` admits that 0.35 / 0.72 / 0.7 *"are guesses, not measurements"*. This page is the
+ * input that turns them into measurements: a rater reads the claim and the source abstract and
+ * decides, then `eval/calibrate.ts` sweeps a threshold grid over that label set.
  *
- * **Chấm mù là cả điểm của trang.** Màn hình này cố ý không hiện nhãn máy, độ tương đồng, hay bất
- * kỳ cờ chẩn đoán nào — backend cũng không trả chúng về. Thấy nhãn máy trước khi chọn thì phép đo
- * chỉ còn là "người có đồng ý với chính mình không".
+ * **Blind labelling is the whole point.** This screen deliberately shows no machine label, no
+ * similarity score and no diagnostic flag — the backend does not return them either. Seeing the
+ * machine label before choosing would reduce the measurement to "does the human agree with itself".
  */
 const CHOICES: { label: SupportLabel; text: string; hint: string }[] = [
   {
     label: 'SUPPORTED',
-    text: 'Có hỗ trợ',
-    hint: 'Tóm tắt nói đúng điều khẳng định nói.',
+    text: 'Supported',
+    hint: 'The abstract says what the claim says.',
   },
   {
     label: 'WEAK',
-    text: 'Yếu',
-    hint: 'Có liên quan nhưng không đủ để kết luận.',
+    text: 'Weak',
+    hint: 'Related, but not enough to conclude.',
   },
   {
     label: 'UNSUPPORTED',
-    text: 'Không hỗ trợ',
-    hint: 'Không nói về điều đó, hoặc nói ngược lại.',
+    text: 'Unsupported',
+    hint: 'It does not address this, or says the opposite.',
   },
 ];
 
@@ -66,8 +66,8 @@ export default function LabelPage({ params }: PageProps<'/projects/[id]/label'>)
       <div className="mx-auto w-full max-w-[900px] px-3 py-4 md:px-4">
         <EmptyState
           icon={ClipboardCheck}
-          title="Chưa có cặp nào để gán nhãn"
-          description="Dự án này chưa có phiên bản spec nào được kiểm chứng cứ. Chạy kiểm chứng cứ ở bước 5 trước đã."
+          title="No pairs to label yet"
+          description="This project has no verified spec version. Run evidence verification at step 5 first."
         />
       </div>
     );
@@ -81,36 +81,36 @@ export default function LabelPage({ params }: PageProps<'/projects/[id]/label'>)
     <div className="mx-auto w-full max-w-[900px] space-y-3 px-3 py-4 md:px-4">
       <header className="space-y-1">
         <h1 className="text-ink-1 text-lg font-semibold md:text-xl">
-          Gán nhãn cho cặp khẳng định–nguồn
+          Label claim-source pairs
         </h1>
         <p className="text-ink-3 text-xs md:text-sm">
-          Dùng để hiệu chỉnh ngưỡng của bộ kiểm chứng cứ ·{' '}
+          Used to calibrate the evidence verifier’s thresholds ·{' '}
           <Link
             href={`/projects/${id}/evidence`}
             className="text-brand-strong underline underline-offset-2"
           >
-            xem trang giải trình nhãn
+            see the label explainability page
           </Link>
         </p>
       </header>
 
-      <Panel accent="brand" icon={ClipboardCheck} title="Tiến độ">
+      <Panel accent="brand" icon={ClipboardCheck} title="Progress">
         <div className="space-y-2">
           <Progress value={pct} />
           <p className="text-ink-3 text-xs">
-            Đã gán {labelled_total}/{target} cặp trên toàn hệ thống ({labelled} cặp
-            thuộc dự án này). Còn {data.progress.remaining} cặp chưa gán ở phiên bản
-            hiện tại.
+            {labelled_total}/{target} pairs labelled system-wide ({labelled} of them in this
+            project). {data.progress.remaining} pairs remain unlabelled in the current version.
           </p>
         </div>
-        <HintBox tone="info" title="Chấm mù — đọc kỹ chỗ này">
+        <HintBox tone="info" title="Blind labelling — read this carefully">
           <p>
-            Màn hình này <strong>cố ý không hiện nhãn máy</strong>. Bạn tự đọc khẳng định và tóm
-            tắt rồi quyết định; hệ thống chỉ so hai bên với nhau ở phía server. Nếu bạn nhìn thấy
-            nhãn máy trước khi chọn thì con số đo được sau đó không còn nghĩa gì.
+            This screen <strong>deliberately hides the machine label</strong>. You read the claim
+            and the abstract and decide; the two are only compared server-side. If you saw the
+            machine label before choosing, the resulting measurement would mean nothing.
           </p>
           <p className="mt-1">
-            Cố gắng gán đủ {target} cặp và trải đều cả ba nhãn — đừng chỉ chọn những cặp dễ.
+            Try to label all {target} pairs and to spread them across all three labels — do not
+            only pick the easy ones.
           </p>
         </HintBox>
       </Panel>
@@ -118,19 +118,19 @@ export default function LabelPage({ params }: PageProps<'/projects/[id]/label'>)
       {!current ? (
         <EmptyState
           icon={ClipboardCheck}
-          title="Đã gán hết các cặp của phiên bản này"
+          title="Every pair in this version is labelled"
           description={
             labelled_total >= target
-              ? `Đủ ${labelled_total} cặp. Chạy "npx tsx eval/calibrate.ts" để xem bảng so sánh các bộ ngưỡng.`
-              : `Mới có ${labelled_total}/${target} cặp. Mở thêm một dự án khác để gán tiếp cho đủ cỡ mẫu.`
+              ? `${labelled_total} pairs is enough. Run "npx tsx eval/calibrate.ts" to compare threshold sets.`
+              : `Only ${labelled_total}/${target} pairs so far. Open another project and keep labelling to reach the sample size.`
           }
         />
       ) : (
-        <Panel accent="decide" icon={ClipboardCheck} title="Cặp đang xét">
+        <Panel accent="decide" icon={ClipboardCheck} title="The pair under review">
           <div className="space-y-3">
             <section>
               <p className="text-ink-4 text-2xs tracking-wide uppercase">
-                Khẳng định
+                Claim
               </p>
               <p className="text-ink-1 mt-1 text-sm font-medium">
                 {current.claim_title}
@@ -140,7 +140,7 @@ export default function LabelPage({ params }: PageProps<'/projects/[id]/label'>)
 
             <section>
               <p className="text-ink-4 text-2xs tracking-wide uppercase">
-                Nguồn được trích
+                Cited source
               </p>
               <p className="text-ink-2 mt-1 text-sm font-medium">
                 {current.source_title}
@@ -148,14 +148,14 @@ export default function LabelPage({ params }: PageProps<'/projects/[id]/label'>)
               </p>
               <ScrollArea className="border-hairline bg-sunken mt-1 max-h-56 rounded-md border p-2">
                 <p className="text-ink-2 text-sm leading-relaxed">
-                  {current.source_abstract || 'Nguồn này không có tóm tắt.'}
+                  {current.source_abstract || 'This source has no abstract.'}
                 </p>
               </ScrollArea>
             </section>
 
             <fieldset className="space-y-2">
               <legend className="text-ink-1 text-sm font-medium">
-                Tóm tắt này có hỗ trợ khẳng định trên không?
+                Does this abstract support the claim above?
               </legend>
               <div className="grid gap-2 md:grid-cols-3">
                 {CHOICES.map((c) => (
@@ -173,8 +173,8 @@ export default function LabelPage({ params }: PageProps<'/projects/[id]/label'>)
                         },
                         {
                           onSuccess: () => {
-                            // Cố ý **không** báo "khớp / không khớp với máy": nói ra là hỏng
-                            // tính mù cho những cặp còn lại của cùng người chấm.
+                            // Deliberately **no** "matched / did not match the machine" feedback:
+                            // saying so would break blindness for this rater's remaining pairs.
                             setJustSaved(true);
                             window.setTimeout(() => setJustSaved(false), 1200);
                           },
@@ -190,7 +190,7 @@ export default function LabelPage({ params }: PageProps<'/projects/[id]/label'>)
                 ))}
               </div>
               {justSaved && (
-                <p className="text-ok-strong text-xs">Đã ghi nhãn của bạn.</p>
+                <p className="text-ok-strong text-xs">Your label has been recorded.</p>
               )}
             </fieldset>
           </div>

@@ -13,9 +13,9 @@ import { JudgeAgreementPanel } from './judge-agreement-panel';
 import type { ApiAgreement } from '@/lib/use-judge-agreement';
 
 /**
- * #9 — số đo bất đồng. Ba hành vi đáng ghim, và cả ba đều là chỗ dễ hiểu sai:
- * κ suy biến phải giải thích thay vì in số, ô Jaccard cỡ mẫu nhỏ phải bị loại khỏi kết luận,
- * và số phải hiện trong ô chứ không chỉ trong `title`.
+ * #9 — the disagreement metrics. Three behaviours worth pinning down, all easy to misread:
+ * a degenerate κ must be explained rather than printed, small-sample Jaccard cells must be excluded
+ * from any conclusion, and the number must appear in the cell rather than only in `title`.
  */
 function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({
@@ -62,44 +62,44 @@ function mount(agreement: ApiAgreement | null) {
 describe('JudgeAgreementPanel', () => {
   beforeEach(() => get.mockReset());
 
-  it('chưa chạy judge ⇒ trạng thái rỗng, không in số nào', async () => {
+  it('no judge round yet ⇒ the empty state, with no number printed', async () => {
     mount(null);
     await waitFor(() =>
-      expect(screen.getByText('Chưa có số đo')).toBeInTheDocument(),
+      expect(screen.getByText('No metrics yet')).toBeInTheDocument(),
     );
   });
 
-  it('in κ kèm số judge và số thẻ — κ không so được nếu thiếu hai con số đó', async () => {
+  it('prints κ with the judge and card counts — κ is not comparable without them', async () => {
     mount({ ...base, matrix: { J1: { J2: cell(0.5, 8) }, J2: { J1: cell(0.5, 8) } } });
     await waitFor(() => expect(screen.getByText('0.420')).toBeInTheDocument());
-    expect(screen.getByText(/5 judge · 11 thẻ/)).toBeInTheDocument();
+    expect(screen.getByText(/5 judges · 11 cards/)).toBeInTheDocument();
   });
 
-  it('κ null vì NO_VARIANCE ⇒ giải thích là đồng thuận tuyệt đối, KHÔNG in 1.0', async () => {
+  it('κ null from NO_VARIANCE ⇒ explains it as perfect agreement, NOT a printed 1.0', async () => {
     mount({
       ...base,
       kappa: { ...base.kappa, kappa: null, reason: 'NO_VARIANCE', unanimous: true },
     });
     await waitFor(() =>
-      expect(screen.getByText(/đồng thuận tuyệt đối/)).toBeInTheDocument(),
+      expect(screen.getByText(/perfect agreement/)).toBeInTheDocument(),
     );
     expect(screen.queryByText('1.000')).not.toBeInTheDocument();
   });
 
-  it('IDENTICAL_ROWS ⇒ nói rõ không có cấu trúc nào, kèm hằng số −1/(R−1)', async () => {
+  it('IDENTICAL_ROWS ⇒ says there is no structure, alongside the −1/(R−1) constant', async () => {
     mount({
       ...base,
       kappa: { ...base.kappa, kappa: -0.25, degenerate: 'IDENTICAL_ROWS' },
     });
     await waitFor(() =>
-      expect(screen.getByText(/không có cấu trúc chồng lấn nào/)).toBeInTheDocument(),
+      expect(screen.getByText(/there is no overlap structure/)).toBeInTheDocument(),
     );
     expect(screen.getByText('-0.25')).toBeInTheDocument();
   });
 
-  it('ô cỡ mẫu nhỏ KHÔNG được chọn làm "cặp trùng nhau nhất"', async () => {
-    // Đây là chốt chặn quan trọng nhất của panel: J1-J2 trùng 100% nhưng chỉ 2 mẫu, còn cặp
-    // đáng tin là 60% với 9 mẫu. Không có chốt này thì bảng luôn đề cử cặp ngẫu nhiên.
+  it('never picks a small-sample cell as the "most overlapping pair"', async () => {
+    // The panel's most important guard: J1-J2 overlap 100% on only 2 samples, while the
+    // trustworthy pair is 60% on 9. Without this guard the table always nominates noise.
     mount({
       ...base,
       raters: ['J1', 'J2', 'J3'],
@@ -115,18 +115,19 @@ describe('JudgeAgreementPanel', () => {
     expect(screen.queryByText(/J1 \+ J2/)).not.toBeInTheDocument();
   });
 
-  it('số hiện TRONG ô, không chỉ trong title (DESIGN_SYSTEM §6.7)', async () => {
+  it('puts the number IN the cell, not only in the title (DESIGN_SYSTEM §6.7)', async () => {
     mount({ ...base, matrix: { J1: { J2: cell(0.5, 8) }, J2: { J1: cell(0.5, 8) } } });
     await waitFor(() => expect(screen.getAllByText('0.50').length).toBeGreaterThan(0));
     expect(screen.getAllByText('n=8').length).toBeGreaterThan(0);
   });
 
-  it('ô cỡ mẫu nhỏ bị LÀM MỜ, ô đủ mẫu và trùng cao thì tô đậm', async () => {
-    // Màu ở đây là kênh truyền tin, không phải trang trí: đậm = trùng cao và đủ mẫu, mờ = đừng
-    // tin. `status-chip.test.tsx` cũng assert class vì cùng lý do.
-    // Hai ô có **cùng giá trị 1.00**, chỉ khác cỡ hợp — nên chênh lệch màu chỉ có thể do cỡ mẫu.
-    // Bản trước lấy ô đường chéo làm ô "đủ mẫu", mà đường chéo là judge so với chính nó: nó luôn
-    // 1.00 nên không tách được hiệu ứng nào.
+  it('DIMS a small-sample cell and darkens a well-sampled, high-overlap one', async () => {
+    // Colour is an information channel here, not decoration: dark = high overlap with enough
+    // samples, dim = do not trust it. `status-chip.test.tsx` asserts classes for the same reason.
+    // Both cells carry the **same 1.00 value** and differ only in union size — so any colour
+    // difference can only come from the sample size. An earlier version used a diagonal cell as
+    // the "well-sampled" one, but the diagonal is a judge against itself: always 1.00, so it
+    // isolates no effect at all.
     mount({
       ...base,
       raters: ['J1', 'J2', 'J3'],
@@ -144,11 +145,12 @@ describe('JudgeAgreementPanel', () => {
     expect(big).toHaveClass('bg-brand-ink');
   });
 
-  it('đường chéo là ô TRUNG TÍNH — không số, không màu nhiệt, không n', async () => {
-    // Judge so với chính mình luôn bằng 1.00 theo định nghĩa. Tô nó bậc đậm nhất là làm nhiễu đúng
-    // kênh màu đang dùng để truyền tin: khi J1 và J2 trùng thật, màn hình hiện khối 2×2 đậm và
-    // người đọc không biết ô nào có nghĩa. Tệ hơn, đường chéo của judge nêu ít nhóm lại bị LÀM MỜ,
-    // nên cùng một ô-vô-nghĩa được vẽ hai màu khác nhau tuỳ dữ liệu.
+  it('keeps the diagonal NEUTRAL — no number, no heat colour, no n', async () => {
+    // A judge against itself is 1.00 by definition. Painting it the darkest step adds noise to the
+    // very channel carrying the information: when J1 and J2 genuinely overlap, the screen shows a
+    // dark 2×2 block and the reader cannot tell which cell means anything. Worse, the diagonal of a
+    // judge who raised few groups gets DIMMED, so the same meaningless cell is drawn in two
+    // different colours depending on the data.
     mount({
       ...base,
       raters: ['J1', 'J2'],
@@ -159,7 +161,7 @@ describe('JudgeAgreementPanel', () => {
     });
     await waitFor(() => expect(screen.getAllByText('0.90').length).toBe(2));
 
-    // Chỉ hai ô ngoài đường chéo có số và có n; hai ô chéo hiện '—' và không có n.
+    // Only the two off-diagonal cells carry a number and an n; the diagonals show '—' and no n.
     expect(screen.getAllByText('n=9').length).toBe(2);
     expect(screen.queryByText('n=3')).not.toBeInTheDocument();
     expect(screen.queryByText('1.00')).not.toBeInTheDocument();
@@ -169,42 +171,43 @@ describe('JudgeAgreementPanel', () => {
     expect(diag[0].parentElement).not.toHaveClass('bg-brand-ink');
   });
 
-  it('MALFORMED_COUNTS ⇒ nói rõ là LỖI DỮ LIỆU, không nói "chưa có thẻ nào"', async () => {
-    // Backend sinh ra lý do này, zod của service cho đi qua, nhưng kiểu ở frontend từng BỎ SÓT nó
-    // và panel dùng chuỗi `? :` kết thúc bằng `else` trần — nên nó hiện "Chưa có thẻ nào để đo".
-    // Câu đó sai sự thật và che đúng vấn đề toàn vẹn dữ liệu mà chốt này sinh ra để phát hiện.
+  it('MALFORMED_COUNTS ⇒ says it is a DATA ERROR, never "no cards yet"', async () => {
+    // The backend emits this reason and the service zod lets it through, but the frontend type
+    // once MISSED it and the panel used a `? :` chain ending in a bare `else` — so it rendered
+    // "No cards to measure yet". That statement is false and hides exactly the data-integrity
+    // problem this guard exists to surface.
     mount({
       ...base,
       kappa: { ...base.kappa, kappa: null, reason: 'MALFORMED_COUNTS' },
     });
     await waitFor(() =>
-      expect(screen.getByText(/lệch hình nên phép đo bị dừng/)).toBeInTheDocument(),
+      expect(screen.getByText(/malformed, so the measurement stopped/)).toBeInTheDocument(),
     );
-    expect(screen.queryByText(/Chưa có thẻ nào để đo/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/No cards to measure yet/)).not.toBeInTheDocument();
   });
 
-  it('NO_ITEMS vẫn nói đúng câu của nó', async () => {
-    // Trước đây câu này là nhánh `else`, nên nó xanh kể cả khi reason là thứ khác hoàn toàn.
+  it('NO_ITEMS still gets its own sentence', async () => {
+    // This used to be the `else` branch, so it passed even when the reason was something else.
     mount({ ...base, kappa: { ...base.kappa, kappa: null, reason: 'NO_ITEMS' } });
     await waitFor(() =>
-      expect(screen.getByText('Chưa có thẻ nào để đo.')).toBeInTheDocument(),
+      expect(screen.getByText('No cards to measure yet.')).toBeInTheDocument(),
     );
   });
 
-  it('gọi ĐÚNG endpoint — mock trước đây bỏ qua đối số nên sai đường dẫn vẫn xanh', async () => {
+  it('calls the RIGHT endpoint — the old mock ignored its argument, so a wrong path still passed', async () => {
     mount(base);
     await waitFor(() => expect(get).toHaveBeenCalled());
     expect(get).toHaveBeenCalledWith('/spec-versions/v-1/judge-agreement');
   });
 
-  it('ba dòng mẫu hình hiện dữ liệu thật, không phải chuỗi dự phòng', async () => {
-    // Trước đây `solo`/`bias`/`leaveOneOut` là `[]` trong MỌI test, nên cả ba dòng chỉ từng
-    // render chuỗi "không có". Chính ba con số PR đưa ra làm bằng chứng thì không có test nào.
+  it('renders real data in the three pattern rows, not the fallback strings', async () => {
+    // `solo`/`bias`/`leaveOneOut` used to be `[]` in EVERY test, so all three rows only ever
+    // rendered the "none" string. The very three numbers the PR offered as evidence had no test.
     mount({
       ...base,
       raters: ['J1', 'J5'],
-      // Judge thứ hai phải có rate DƯƠNG nhưng thấp hơn: nếu nó là 0 thì chốt `> 0` tự loại
-      // và việc lấy phần tử đầu hay cuối cho cùng kết quả — mutation sẽ sống sót.
+      // The second judge must have a POSITIVE but lower rate: at 0 the `> 0` guard filters it out
+      // and picking the first or last element gives the same answer — a mutation would survive.
       solo: [
         { judgeKey: 'J5', solo: 3, raised: 4, rate: 0.75 },
         { judgeKey: 'J3', solo: 1, raised: 4, rate: 0.25 },
@@ -226,16 +229,16 @@ describe('JudgeAgreementPanel', () => {
     });
 
     await waitFor(() => expect(screen.getByText(/J5 — 75%/)).toBeInTheDocument());
-    expect(screen.getByText(/J4 — \+1.50 bậc \(p = 0.004\)/)).toBeInTheDocument();
+    expect(screen.getByText(/J4 — \+1.50 severity steps \(p = 0.004\)/)).toBeInTheDocument();
     expect(
-      screen.getByText(/J5 — bỏ ra thì κ tăng 0.139 \(p = 0.012\)/),
+      screen.getByText(/J5 — removing them raises κ by 0.139 \(p = 0.012\)/),
     ).toBeInTheDocument();
   });
 
-  it('Δκ dương nhưng p KHÔNG đáng kể ⇒ không nêu tên ai, in p ra', async () => {
-    // Chốt chặn quan trọng nhất mới thêm. Đo thật dưới null năm judge giống nhau: dòng
-    // "gây nhiễu nhất" bắn 100% lượt, "chấm nặng tay nhất" 98.2%. Không có chốt này thì panel
-    // luôn chỉ ra một kẻ có tội, và #8 dồn tài nguyên đắt vào đó.
+  it('positive Δκ but a NON-significant p ⇒ names nobody and prints p', async () => {
+    // The most important guard added here. Measured under a null where the five judges are
+    // identical: the "most disruptive" row fired on 100% of draws, "harshest scorer" on 98.2%.
+    // Without this guard the panel always names a culprit, and #8 pours resources at them.
     mount({
       ...base,
       bias: [{ judgeKey: 'J4', bias: 0.9, n: 3 }],
@@ -249,43 +252,44 @@ describe('JudgeAgreementPanel', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByText('không đáng kể (p = 0.868)')).toBeInTheDocument(),
+      expect(screen.getByText('not significant (p = 0.868)')).toBeInTheDocument(),
     );
-    expect(screen.getByText('không đáng kể (p = 0.412)')).toBeInTheDocument();
-    // Tên judge KHÔNG được xuất hiện ở hai dòng đó.
-    expect(screen.queryByText(/J2 — bỏ ra thì/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/J4 — \+0.90 bậc/)).not.toBeInTheDocument();
+    expect(screen.getByText('not significant (p = 0.412)')).toBeInTheDocument();
+    // The judge name must NOT appear on either row.
+    expect(screen.queryByText(/J2 — removing them/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/J4 — \+0.90 severity/)).not.toBeInTheDocument();
   });
 
-  it('bản ghi CŨ chưa kiểm định ⇒ nói "chưa kiểm định", khác "không đáng kể"', async () => {
+  it('an OLD record with no null test ⇒ says "not tested", distinct from "not significant"', async () => {
     mount({
       ...base,
       leaveOneOut: [{ judgeKey: 'J2', delta: 0.5, kappaWithout: 0.9 }],
       nullTest: { draws: 0, seed: 0, disruptive: null, harsh: null },
     });
     await waitFor(() =>
-      expect(screen.getAllByText('chưa kiểm định').length).toBe(2),
+      expect(screen.getAllByText('not tested').length).toBe(2),
     );
-    // Δκ = 0.5 rất lớn, nhưng chưa kiểm định thì vẫn KHÔNG được nêu tên.
-    // Matcher phải hẹp: `/J2/` trần khớp cả nhãn trục của ma trận.
-    expect(screen.queryByText(/J2 — bỏ ra thì/)).not.toBeInTheDocument();
+    // Δκ = 0.5 is very large, but with no null test the name still must NOT appear.
+    // The matcher has to be narrow: a bare `/J2/` also matches the matrix axis labels.
+    expect(screen.queryByText(/J2 — removing them/)).not.toBeInTheDocument();
   });
 
-  it('judge NHẸ tay không bị gọi là "chấm nặng tay nhất"', async () => {
-    // Chốt dấu nay ở **backend** (`permutationNull` chỉ xét ứng viên `bias > 0`), nên panel chỉ
-    // cần không tự bịa ra ứng viên từ `a.bias`. Ca này: `a.bias` có người, `nullTest` không —
-    // panel phải im. Đảo lại thì panel đọc `a.bias` và dán nhãn nặng tay cho một judge nhẹ tay.
+  it('never calls a LENIENT judge the "harshest scorer"', async () => {
+    // The sign guard now lives in the **backend** (`permutationNull` only considers `bias > 0`
+    // candidates), so the panel merely has to avoid inventing a candidate from `a.bias`. Here
+    // `a.bias` has someone and `nullTest` does not — the panel must stay silent. Reversed, the
+    // panel would read `a.bias` and label a lenient judge as harsh.
     mount({
       ...base,
       bias: [{ judgeKey: 'J2', bias: -0.8, n: 4 }],
       leaveOneOut: [{ judgeKey: 'J2', delta: -0.1, kappaWithout: 0.1 }],
       nullTest: { draws: 1000, seed: 1, disruptive: null, harsh: null },
     });
-    await waitFor(() => expect(screen.getAllByText('không có').length).toBe(3));
+    await waitFor(() => expect(screen.getAllByText('none').length).toBe(3));
     expect(screen.queryByText(/J2 — /)).not.toBeInTheDocument();
   });
 
-  it('thang nhiệt phân biệt đủ các bậc, không chỉ hai đầu', async () => {
+  it('distinguishes every heat step, not just the two extremes', async () => {
     mount({
       ...base,
       raters: ['J1', 'J2', 'J3', 'J4'],
@@ -302,10 +306,10 @@ describe('JudgeAgreementPanel', () => {
     expect(screen.getAllByText('0.30')[0].parentElement).toHaveClass('bg-brand-soft');
   });
 
-  it('coverage dưới 100% ⇒ nói rõ phần nằm ngoài phép đo', async () => {
+  it('coverage below 100% ⇒ states what falls outside the measurement', async () => {
     mount({ ...base, coverage: 0.7 });
     await waitFor(() =>
-      expect(screen.getByText(/70% issue có gắn thẻ/)).toBeInTheDocument(),
+      expect(screen.getByText(/70% of issues are attached to a card/)).toBeInTheDocument(),
     );
   });
 });

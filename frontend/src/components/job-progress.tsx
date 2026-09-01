@@ -7,14 +7,15 @@ import { JOB_LABEL, LONG_WAIT_HINT, SSE_LOST_HINT, messageOf } from '@/lib/error
 import type { JobView } from '@/lib/use-job';
 
 /**
- * Bốn kiểu chờ ở DESIGN_SYSTEM §5.5. Component này phủ hai kiểu job nền:
+ * The four waiting patterns of DESIGN_SYSTEM §5.5. This component covers the two background-job
+ * ones:
  *
- * - **có tiến độ** (biết tổng số việc: 5 judge, N unit verify) → thanh tiến độ + "3/5 …"
- * - **không tiến độ** (một lời gọi không chia nhỏ được) → thanh chạy vô định, **không** phần trăm giả
+ * - **determinate** (the total is known: 5 judges, N verify units) → a progress bar + "3/5 …"
+ * - **indeterminate** (one call that cannot be split) → an infinite bar, **never** a fake percentage
  *
- * Và sáu luật: chờ nằm tại chỗ của nội dung (không overlay toàn trang) · luôn nói đang làm gì
- * bằng chữ tiếng Việt · quá 10s hiện thời gian đã trôi, quá 60s thêm dòng trấn an ·
- * mất SSE không được trông giống job chết · lỗi bộ phận hiện ra · lỗi luôn có một hành động.
+ * And six rules: the wait happens where the content is (no full-page overlay) · always say what is
+ * happening in words · past 10s show the elapsed time, past 60s add a reassurance line · a lost SSE
+ * must never look like a dead job · partial failures are surfaced · an error always offers an action.
  */
 export function JobProgress({
   view,
@@ -40,7 +41,7 @@ export function JobProgress({
         {onReload && (
           <Button size="sm" variant="outline" onClick={onReload}>
             <RefreshCw className="size-3.5" aria-hidden />
-            Chạy lại
+            Run again
           </Button>
         )}
       </div>
@@ -54,13 +55,13 @@ export function JobProgress({
       className={className}
       role="status"
       aria-live="polite"
-      aria-label={job.message ?? JOB_LABEL[job.kind] ?? 'Đang xử lý'}
+      aria-label={job.message ?? JOB_LABEL[job.kind] ?? 'Working'}
     >
       <div className="border-brand-line bg-brand-soft animate-rise space-y-2 rounded-lg border px-3 py-3">
         <p className="text-brand-strong flex items-center gap-2 text-sm font-medium">
           <Loader2 className="size-4 animate-spin" aria-hidden />
           <span className="min-w-0 flex-1">
-            {job.message ?? JOB_LABEL[job.kind] ?? 'Đang xử lý…'}
+            {job.message ?? JOB_LABEL[job.kind] ?? 'Working…'}
           </span>
           {determinate && (
             <span className="shrink-0 text-xs tabular-nums">
@@ -77,13 +78,13 @@ export function JobProgress({
           </div>
         )}
 
-        {/* Quá ~10 giây thì hiện thời gian đã trôi (§5.5 luật 3). */}
+        {/* Past roughly 10 seconds, show the elapsed time (§5.5 rule 3). */}
         {seconds >= 10 && (
-          <p className="text-brand-strong/80 text-xs tabular-nums">Đã chạy {seconds} giây</p>
+          <p className="text-brand-strong/80 text-xs tabular-nums">Running for {seconds}s</p>
         )}
         {seconds >= 60 && <p className="text-ink-3 text-xs">{LONG_WAIT_HINT}</p>}
 
-        {/* Mất SSE **không được** trông giống job chết (§5.5 luật 4). */}
+        {/* A lost SSE connection must **never** look like a dead job (§5.5 rule 4). */}
         {connectionLost && (
           <p className="text-warn-strong flex items-center gap-1.5 text-xs">
             <PlugZap className="size-3.5" aria-hidden />
@@ -94,7 +95,7 @@ export function JobProgress({
                 onClick={onReload}
                 className="cursor-pointer underline underline-offset-2"
               >
-                Tải lại trạng thái
+                Reload status
               </button>
             )}
           </p>

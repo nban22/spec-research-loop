@@ -83,7 +83,7 @@ describe('EvidenceService.trace — cặp chưa qua verifier', () => {
 
     expect(pair.verified).toBe(false);
     expect(pair.layer).toBeNull();
-    expect(pair.layer_why).toMatch(/mặc định của cơ sở dữ liệu/);
+    expect(pair.layer_why).toMatch(/the database default/);
   });
 
   it('cặp đã kiểm vẫn suy ra tầng như cũ', async () => {

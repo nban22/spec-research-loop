@@ -7,8 +7,8 @@ import { CardSkeleton, EmptyState } from '@/components/states';
 import { api, qk } from '@/lib/api';
 
 /**
- * Mục "Lịch sử phiên bản" của nav là toàn cục, nhưng version thì thuộc về **một** dự án.
- * Trang này là bước chọn dự án; lịch sử thật nằm ở `/projects/:id/versions`.
+ * The nav's "Version history" entry is global, but versions belong to **one** project.
+ * This page is the project picker; the real history lives at `/projects/:id/versions`.
  */
 export default function VersionsIndexPage() {
   const { data, isLoading } = useQuery({
@@ -20,16 +20,16 @@ export default function VersionsIndexPage() {
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-3 px-3 py-4 md:px-4">
       <div>
-        <h1 className="text-ink-1 text-xl font-semibold">Lịch sử phiên bản</h1>
-        <p className="text-ink-3 text-sm">Chọn dự án để xem các phiên bản và so sánh chúng.</p>
+        <h1 className="text-ink-1 text-xl font-semibold">Version history</h1>
+        <p className="text-ink-3 text-sm">Pick a project to see its versions and compare them.</p>
       </div>
 
       {isLoading ? (
         <CardSkeleton rows={2} />
       ) : projects.length === 0 ? (
         <EmptyState
-          title="Chưa có dự án nào"
-          description="Lịch sử phiên bản xuất hiện sau khi bạn tạo dự án và áp dụng quyết định đầu tiên."
+          title="No projects yet"
+          description="Version history appears once you create a project and apply your first decision."
         />
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -54,7 +54,7 @@ function ProjectCardWithVersionLink({ project }: { project: ProjectSummary }) {
         href={`/projects/${project.id}/versions`}
         className="text-brand-strong mt-3 block px-3 text-xs underline underline-offset-2"
       >
-        Xem lịch sử phiên bản →
+        View version history →
       </Link>
     </div>
   );
