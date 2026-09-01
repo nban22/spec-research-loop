@@ -125,6 +125,11 @@ export type ApiSource = {
 export type ApiCardSource = {
   id: string;
   support_label: SupportLabel;
+  /**
+   * `null` ⇒ cặp chưa đi qua verifier lần nào, và `support_label` chỉ là mặc định `WEAK` của
+   * schema. Phải đọc field này trước khi hiện nhãn, xem `SupportTag`.
+   */
+  verifier_run_id: string | null;
   similarity: number | null;
   evidence_sentence: string | null;
   flags: VerifierFlag[] | null;

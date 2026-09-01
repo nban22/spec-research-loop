@@ -705,8 +705,15 @@ export class VerifierService {
       },
     });
 
+    // `verifier_run_id === null` ⇒ cặp chưa từng đi qua verifier: `support_label` vẫn là mặc
+    // định `WEAK` của schema. Đếm nó vào ô WEAK là báo sai — nó biến "chưa đo" thành "đo rồi,
+    // yếu", đúng loại đánh bóng mà cả đồ án này lấy làm phản đề.
     const summary = { SUPPORTED: 0, WEAK: 0, UNSUPPORTED: 0 };
-    for (const p of pairs) summary[p.support_label]++;
+    let unverified = 0;
+    for (const p of pairs) {
+      if (p.verifier_run_id === null) unverified++;
+      else summary[p.support_label]++;
+    }
 
     return {
       pairs: pairs.map((p) => ({
@@ -714,6 +721,7 @@ export class VerifierService {
         card: p.card,
         source: p.source,
         support_label: p.support_label,
+        verified: p.verifier_run_id !== null,
         similarity: p.similarity,
         entailment: p.entailment,
         confidence: p.confidence,
@@ -721,6 +729,7 @@ export class VerifierService {
         flags: (p.flags as VerifierFlag[] | null) ?? [],
       })),
       summary,
+      unverified,
     };
   }
 }

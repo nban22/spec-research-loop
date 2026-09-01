@@ -25,6 +25,7 @@ const pair = (over: Partial<ApiEvidencePair> = {}): ApiEvidencePair => ({
     venue: 'SIGIR',
   },
   support_label: 'SUPPORTED',
+  verified: true,
   similarity: 0.812,
   entailment: null,
   confidence: null,
@@ -49,9 +50,23 @@ const data = (over: Partial<ApiEvidenceTrace> = {}): ApiEvidenceTrace => ({
   },
   run: { id: 'vr-1', created_at: '2026-08-31T00:00:00Z', units_total: 4, units_l4: 1 },
   summary: { SUPPORTED: 1, WEAK: 0, UNSUPPORTED: 0 },
+  unverified: 0,
   pairs: [pair()],
   ...over,
 });
+
+/** Cặp generator vừa sinh: nhãn `WEAK` là mặc định của schema, verifier chưa hề chạm vào. */
+const unverifiedPair = () =>
+  pair({
+    card_source_id: 'cs-2',
+    card: { id: 'c-2', title: 'Chưa kiểm bao giờ', type: 'CLAIM', status: 'PROPOSED' },
+    support_label: 'WEAK',
+    verified: false,
+    similarity: null,
+    layer: null,
+    layer_why:
+      'Cặp này chưa đi qua bước kiểm chứng cứ lần nào, nên chưa có nhãn. Nhãn WEAK đang hiện là giá trị mặc định của cơ sở dữ liệu, không phải kết luận của verifier.',
+  });
 
 describe('trang vì sao nhãn này', () => {
   it('hiện ngưỡng của chính lần chạy đó, không phải hằng số hiện hành', () => {
@@ -120,6 +135,37 @@ describe('trang vì sao nhãn này', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Hybrid retrieval helps/ }));
     expect(screen.getByText(/đoạn chứa câu trích/)).toBeInTheDocument();
+  });
+
+  /**
+   * Ba tính chất của cặp **chưa kiểm chứng** — thứ làm cả bảng thẻ ở bước 3 trông như thể
+   * verifier đã chấm và chấm hỏng, trong khi nó chưa chạy lần nào.
+   */
+  it('cặp chưa kiểm hiện CHƯA KIỂM chứ không phải WEAK', () => {
+    render(<EvidenceTraceView data={data({ pairs: [unverifiedPair()], unverified: 1 })} />);
+    expect(screen.getByText('CHƯA KIỂM')).toBeInTheDocument();
+    expect(screen.queryByText('WEAK')).toBeNull();
+  });
+
+  it('cặp chưa kiểm không vẽ thanh tầng — không tầng nào từng chạm vào nó', () => {
+    render(<EvidenceTraceView data={data({ pairs: [unverifiedPair()], unverified: 1 })} />);
+    fireEvent.click(screen.getByRole('button', { name: /Chưa kiểm bao giờ/ }));
+    expect(screen.queryByRole('list', { name: 'Đường đi qua các tầng' })).toBeNull();
+    expect(screen.getByText(/chưa đi qua bước kiểm chứng cứ lần nào/)).toBeInTheDocument();
+  });
+
+  it('bộ lọc "Yếu" không nuốt cặp chưa kiểm, bộ lọc "Chưa kiểm" thì bắt đúng nó', () => {
+    render(
+      <EvidenceTraceView
+        data={data({ pairs: [pair(), unverifiedPair()], unverified: 1 })}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Yếu' }));
+    expect(screen.getByText(/Không có cặp nào khớp bộ lọc/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chưa kiểm' }));
+    expect(screen.getByText('Chưa kiểm bao giờ')).toBeInTheDocument();
+    expect(screen.queryByText('Hybrid retrieval helps')).toBeNull();
   });
 
   it('lọc theo nhãn thu hẹp danh sách và không vỡ khi rỗng', () => {

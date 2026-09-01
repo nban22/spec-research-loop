@@ -23,15 +23,23 @@ import type { ApiEvidencePair, ApiEvidenceTrace } from '@/lib/use-project';
  * Tách khỏi `page.tsx` để test được mà không cần mạng, đúng khuôn bốn màn hình đọc của làn C.
  */
 
-const LABEL_FILTERS: { key: SupportLabel | 'ALL'; label: string }[] = [
+/**
+ * `UNVERIFIED` **không** phải một `SupportLabel` — nó là "verifier chưa nhìn tới cặp này".
+ * Phải có mặt ở đây vì cặp chưa kiểm mang sẵn `support_label = 'WEAK'` (mặc định của schema):
+ * thiếu nó thì bộ lọc "Yếu" gộp luôn cả những cặp chưa hề được chấm.
+ */
+type PairFilter = SupportLabel | 'ALL' | 'UNVERIFIED';
+
+const LABEL_FILTERS: { key: PairFilter; label: string }[] = [
   { key: 'ALL', label: 'Tất cả' },
   { key: 'SUPPORTED', label: 'Có nguồn hỗ trợ' },
   { key: 'WEAK', label: 'Yếu' },
   { key: 'UNSUPPORTED', label: 'Không hỗ trợ' },
+  { key: 'UNVERIFIED', label: 'Chưa kiểm' },
 ];
 
 export function EvidenceTraceView({ data }: { data: ApiEvidenceTrace }) {
-  const [label, setLabel] = useState<SupportLabel | 'ALL'>('ALL');
+  const [label, setLabel] = useState<PairFilter>('ALL');
   const [flag, setFlag] = useState<string | 'ALL'>('ALL');
   const [open, setOpen] = useState<string | null>(null);
 
@@ -42,7 +50,11 @@ export function EvidenceTraceView({ data }: { data: ApiEvidenceTrace }) {
   }, [data.pairs]);
 
   const pairs = data.pairs.filter((p) => {
-    if (label !== 'ALL' && p.support_label !== label) return false;
+    if (label === 'UNVERIFIED' && p.verified) return false;
+    // Cặp chưa kiểm không được lọt vào bất kỳ bộ lọc nhãn nào: nhãn của nó chưa tồn tại.
+    if (label !== 'ALL' && label !== 'UNVERIFIED') {
+      if (!p.verified || p.support_label !== label) return false;
+    }
     if (flag !== 'ALL' && !p.flags.includes(flag as never)) return false;
     return true;
   });
@@ -150,7 +162,7 @@ function PairRow({
         className="hover:bg-sunken flex w-full cursor-pointer flex-col gap-1.5 rounded-md p-3 text-left"
       >
         <span className="flex flex-wrap items-center gap-2">
-          <SupportTag label={pair.support_label} />
+          <SupportTag label={pair.support_label} verified={pair.verified} />
           <span className="text-ink-1 text-sm font-medium">
             {pair.card.title}
           </span>
@@ -240,8 +252,15 @@ function PairRow({
   );
 }
 
-/** Thanh các tầng, tô đậm tầng đã quyết định. SVG không cần thiết ở đây — div là đủ và rẻ hơn. */
-function LayerBar({ layer }: { layer: string }) {
+/**
+ * Thanh các tầng, tô đậm tầng đã quyết định. SVG không cần thiết ở đây — div là đủ và rẻ hơn.
+ *
+ * `layer === null` ⇒ **không vẽ gì**. Cặp chưa kiểm chứng thì không tầng nào từng chạm vào nó;
+ * vẽ thanh với toàn bộ tầng mờ vẫn ngụ ý "đã đi qua đường này mà không tầng nào chốt được",
+ * trong khi sự thật là đường đi chưa bắt đầu. `layer_why` ngay dưới đã nói đúng câu đó.
+ */
+function LayerBar({ layer }: { layer: string | null }) {
+  if (layer === null) return null;
   return (
     <div className="overflow-x-auto">
       <ol className="flex min-w-[520px] gap-1" aria-label="Đường đi qua các tầng">
