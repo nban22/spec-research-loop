@@ -4,7 +4,16 @@ import { JudgeService } from './judge.service';
 describe('JudgeService', () => {
   const prisma = {
     specVersion: { findUniqueOrThrow: jest.fn(), update: jest.fn() },
-    judgeRun: { count: jest.fn(), create: jest.fn(), findMany: jest.fn() },
+    judgeRun: {
+      count: jest.fn(),
+      // Tham số hoá kiểu: `jest.fn()` trần trả `any`, và đọc thành viên trên `any` bị
+      // `no-unsafe-member-access` chặn. Bài học từ review PR #32.
+      create: jest.fn<
+        Promise<unknown>,
+        [{ data: { shuffle_seed: string | null; input_digest: string } }]
+      >(),
+      findMany: jest.fn(),
+    },
     issueGroup: { create: jest.fn(), findMany: jest.fn() },
     issue: {
       create: jest.fn(),
@@ -17,7 +26,12 @@ describe('JudgeService', () => {
     project: { update: jest.fn() },
   };
 
-  const llm = { completeJson: jest.fn() };
+  const llm = {
+    completeJson: jest.fn<
+      Promise<unknown>,
+      [{ variables: { spec_json: unknown } }]
+    >(),
+  };
   const spec = { buildSpecJson: jest.fn() };
   const sources = { sourcesForPrompt: jest.fn() };
 
@@ -200,5 +214,129 @@ describe('JudgeService', () => {
     const runs = await service.listJudgeRuns('v-1');
     expect(runs).toHaveLength(1);
     expect(runs[0].judge_key).toBe('gap_finder');
+  });
+
+  /* ---------------------------------------------- #43 · khử lệch vị trí ở tầng service */
+
+  /** Dựng đủ mock cho một vòng judge chạy trót lọt. `debias` là cờ `Project.judge_debias`. */
+  function arrangeRound(debias: boolean) {
+    prisma.specVersion.findUniqueOrThrow.mockResolvedValue({
+      id: 'v-1',
+      project_id: 'p-1',
+      project: {
+        judge_round: 0,
+        judge_rounds_total: 0,
+        judge_debias: debias,
+      },
+    });
+    prisma.judgeRun.count.mockResolvedValue(0);
+    // Nhiều thẻ: một thẻ thì xáo là hàm đồng nhất và test không phân biệt được gì.
+    // Thứ tự thẻ ở đây **cố ý lệch** thứ tự chuẩn hoá (D, B, F, A, E, C thay vì A→F). Bản trước
+    // của fixture này xếp A→D, tức tình cờ đã chuẩn hoá — nên `canonicalDigest` và `legacyDigest`
+    // ra cùng một số và test "hai chế độ khác nhau" đỏ. Fixture đã chuẩn hoá sẵn thì không đo
+    // được việc chuẩn hoá.
+    spec.buildSpecJson.mockResolvedValue({
+      title: 'Spec',
+      cards: [
+        { title: 'D', type: 'EVIDENCE', body: 'd' },
+        { title: 'B', type: 'GAP', body: 'b' },
+        { title: 'F', type: 'OPEN_QUESTION', body: 'f' },
+        { title: 'A', type: 'CLAIM', body: 'a' },
+        { title: 'E', type: 'CONSTRAINT', body: 'e' },
+        { title: 'C', type: 'CONTRIBUTION', body: 'c' },
+      ],
+    });
+    sources.sourcesForPrompt.mockResolvedValue([]);
+    prisma.card.findMany.mockResolvedValue([]);
+    prisma.issue.findMany.mockResolvedValue([]);
+    prisma.issue.createMany.mockResolvedValue({ count: 0 });
+    llm.completeJson.mockResolvedValue({
+      promptHash: 'phash',
+      attempts: 1,
+      data: { issues: [] },
+    });
+    prisma.judgeRun.create.mockResolvedValue({ id: 'jr-1' });
+  }
+
+  /** Đối số `data` của 5 lệnh `judgeRun.create`. */
+  const createdRuns = () =>
+    prisma.judgeRun.create.mock.calls.map((c) => c[0].data);
+
+  /** `spec_json` mà từng judge thật sự nhận. */
+  const specsSeen = () =>
+    llm.completeJson.mock.calls.map((c) =>
+      JSON.stringify(c[0].variables.spec_json),
+    );
+
+  it('#43 cờ TẮT ⇒ 5 judge nhận CÙNG spec_json và shuffle_seed là null', async () => {
+    arrangeRound(false);
+    await service.runRound('v-1');
+
+    expect(new Set(specsSeen()).size).toBe(1);
+    for (const run of createdRuns()) expect(run.shuffle_seed).toBeNull();
+  });
+
+  it('#43 cờ BẬT ⇒ 5 spec_json KHÁC nhau, 5 seed khác nhau, digest GIỐNG nhau', async () => {
+    // Ba khẳng định của #43 trong một lượt chạy thật của `runRound`, không phải hàm thuần.
+    arrangeRound(true);
+    await service.runRound('v-1');
+
+    const runs = createdRuns();
+    // **5 seed khác nhau là tính chất được bảo đảm** — chúng suy từ `judge_key` nên không thể trùng.
+    expect(new Set(runs.map((r) => r.shuffle_seed)).size).toBe(5);
+    // Nhưng **"5 thứ tự đều khác nhau" thì KHÔNG được bảo đảm**: với n thẻ chỉ có n! hoán vị, và
+    // 5 lần rút có thể trùng. Với 4 thẻ (fixture cũ) thực tế chỉ ra 4 thứ tự. Khẳng định đúng là
+    // "có xáo thật", không phải "không judge nào trùng judge nào" — muốn thế phải thêm rejection
+    // sampling, mà với 11 thẻ thật thì 11! đủ lớn để chuyện đó không đáng đánh đổi độ phức tạp.
+    expect(new Set(specsSeen()).size).toBeGreaterThan(1);
+    expect(new Set(runs.map((r) => r.input_digest)).size).toBe(1);
+    for (const run of runs) expect(run.shuffle_seed).toMatch(/^[0-9a-f]{16}$/);
+  });
+
+  it('#43 cờ BẬT ⇒ mọi judge vẫn thấy ĐỦ tập thẻ, không mất thẻ nào', async () => {
+    // Xáo thứ tự không được làm rơi thẻ — nếu rơi thì judge chấm thiếu mà không ai biết.
+    arrangeRound(true);
+    await service.runRound('v-1');
+
+    for (const call of llm.completeJson.mock.calls) {
+      const spec = call[0].variables.spec_json as {
+        cards: { title: string }[];
+      };
+      expect([...spec.cards.map((c) => c.title)].sort()).toEqual([
+        'A',
+        'B',
+        'C',
+        'D',
+        'E',
+        'F',
+      ]);
+    }
+  });
+
+  it('#43 hai chế độ cho digest KHÁC nhau — không được lẫn bản ghi', async () => {
+    arrangeRound(false);
+    await service.runRound('v-1');
+    const off = createdRuns()[0].input_digest;
+
+    jest.clearAllMocks();
+    arrangeRound(true);
+    await service.runRound('v-1');
+    const on = createdRuns()[0].input_digest;
+
+    // `cards` trong mock cố ý KHÔNG ở thứ tự chuẩn hoá theo chuỗi JSON, nên hai digest phải khác.
+    expect(off).not.toBe(on);
+  });
+
+  it('#43 số lời gọi LLM KHÔNG đổi khi bật cờ — cơ chế này 0 token', async () => {
+    arrangeRound(false);
+    await service.runRound('v-1');
+    const callsOff = llm.completeJson.mock.calls.length;
+
+    jest.clearAllMocks();
+    arrangeRound(true);
+    await service.runRound('v-1');
+
+    expect(llm.completeJson.mock.calls.length).toBe(callsOff);
+    expect(callsOff).toBe(JUDGE_DEFS.length);
   });
 });

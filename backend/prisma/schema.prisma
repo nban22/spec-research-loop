@@ -209,6 +209,10 @@ model Project {
   overclaim_detector      Boolean       @default(false)
   // Cờ của làn B · #12. Mặc định **tắt** theo luật chung 1.
   ambiguity_detector      Boolean       @default(false)
+  // Cờ của làn B · #8 — gác **cả ba** cơ chế khử lệch (#43 xáo thứ tự · #44 chuẩn hoá thang
+  // điểm · #45 tự nhất quán). Một cờ chung theo đúng yêu cầu của #8, không tách ba cờ.
+  // Tắt ⇒ `input_digest` không đổi **một byte** so với mọi vòng judge đã chạy trước đây.
+  judge_debias            Boolean       @default(false)
   // Cờ của làn A · #1. Bật thì danh sách nguồn ở bước 2 có mức tin cậy và cảnh báo thẻ chỉ
   // dựa vào nguồn yếu. Mặc định **tắt** theo luật chung 1; cũng là cần gạt cho ablation ở #6.
   source_credibility      Boolean       @default(false)
@@ -372,6 +376,11 @@ model JudgeRun {
   prompt_id       String
   prompt_hash     String
   input_digest    String
+  /// Làn B · #43. Seed của phép xáo thứ tự thẻ mà **judge này** đã thấy. `null` khi cờ
+  /// `judge_debias` tắt (không xáo). Seed **suy ra được** từ `(input_digest, judge_key, round)`
+  /// nên người kiểm chứng tự tính lại và đối chiếu được — nó là bằng chứng, không phải một con số
+  /// tuỳ ý. Cùng với `input_digest` thì dựng lại được từng byte đầu vào của judge này.
+  shuffle_seed    String?
   raw_output      Json
   parse_attempts  Int            @default(1)
   status          JudgeRunStatus @default(OK)

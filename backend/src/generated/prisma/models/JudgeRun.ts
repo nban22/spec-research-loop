@@ -45,6 +45,7 @@ export type JudgeRunMinAggregateOutputType = {
   prompt_id: string | null
   prompt_hash: string | null
   input_digest: string | null
+  shuffle_seed: string | null
   parse_attempts: number | null
   status: $Enums.JudgeRunStatus | null
   error_code: string | null
@@ -63,6 +64,7 @@ export type JudgeRunMaxAggregateOutputType = {
   prompt_id: string | null
   prompt_hash: string | null
   input_digest: string | null
+  shuffle_seed: string | null
   parse_attempts: number | null
   status: $Enums.JudgeRunStatus | null
   error_code: string | null
@@ -81,6 +83,7 @@ export type JudgeRunCountAggregateOutputType = {
   prompt_id: number
   prompt_hash: number
   input_digest: number
+  shuffle_seed: number
   raw_output: number
   parse_attempts: number
   status: number
@@ -112,6 +115,7 @@ export type JudgeRunMinAggregateInputType = {
   prompt_id?: true
   prompt_hash?: true
   input_digest?: true
+  shuffle_seed?: true
   parse_attempts?: true
   status?: true
   error_code?: true
@@ -130,6 +134,7 @@ export type JudgeRunMaxAggregateInputType = {
   prompt_id?: true
   prompt_hash?: true
   input_digest?: true
+  shuffle_seed?: true
   parse_attempts?: true
   status?: true
   error_code?: true
@@ -148,6 +153,7 @@ export type JudgeRunCountAggregateInputType = {
   prompt_id?: true
   prompt_hash?: true
   input_digest?: true
+  shuffle_seed?: true
   raw_output?: true
   parse_attempts?: true
   status?: true
@@ -254,6 +260,7 @@ export type JudgeRunGroupByOutputType = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed: string | null
   raw_output: runtime.JsonValue
   parse_attempts: number
   status: $Enums.JudgeRunStatus
@@ -296,6 +303,7 @@ export type JudgeRunWhereInput = {
   prompt_id?: Prisma.StringFilter<"JudgeRun"> | string
   prompt_hash?: Prisma.StringFilter<"JudgeRun"> | string
   input_digest?: Prisma.StringFilter<"JudgeRun"> | string
+  shuffle_seed?: Prisma.StringNullableFilter<"JudgeRun"> | string | null
   raw_output?: Prisma.JsonFilter<"JudgeRun">
   parse_attempts?: Prisma.IntFilter<"JudgeRun"> | number
   status?: Prisma.EnumJudgeRunStatusFilter<"JudgeRun"> | $Enums.JudgeRunStatus
@@ -319,6 +327,7 @@ export type JudgeRunOrderByWithRelationInput = {
   prompt_id?: Prisma.SortOrder
   prompt_hash?: Prisma.SortOrder
   input_digest?: Prisma.SortOrder
+  shuffle_seed?: Prisma.SortOrderInput | Prisma.SortOrder
   raw_output?: Prisma.SortOrder
   parse_attempts?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -346,6 +355,7 @@ export type JudgeRunWhereUniqueInput = Prisma.AtLeast<{
   prompt_id?: Prisma.StringFilter<"JudgeRun"> | string
   prompt_hash?: Prisma.StringFilter<"JudgeRun"> | string
   input_digest?: Prisma.StringFilter<"JudgeRun"> | string
+  shuffle_seed?: Prisma.StringNullableFilter<"JudgeRun"> | string | null
   raw_output?: Prisma.JsonFilter<"JudgeRun">
   parse_attempts?: Prisma.IntFilter<"JudgeRun"> | number
   status?: Prisma.EnumJudgeRunStatusFilter<"JudgeRun"> | $Enums.JudgeRunStatus
@@ -369,6 +379,7 @@ export type JudgeRunOrderByWithAggregationInput = {
   prompt_id?: Prisma.SortOrder
   prompt_hash?: Prisma.SortOrder
   input_digest?: Prisma.SortOrder
+  shuffle_seed?: Prisma.SortOrderInput | Prisma.SortOrder
   raw_output?: Prisma.SortOrder
   parse_attempts?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -396,6 +407,7 @@ export type JudgeRunScalarWhereWithAggregatesInput = {
   prompt_id?: Prisma.StringWithAggregatesFilter<"JudgeRun"> | string
   prompt_hash?: Prisma.StringWithAggregatesFilter<"JudgeRun"> | string
   input_digest?: Prisma.StringWithAggregatesFilter<"JudgeRun"> | string
+  shuffle_seed?: Prisma.StringNullableWithAggregatesFilter<"JudgeRun"> | string | null
   raw_output?: Prisma.JsonWithAggregatesFilter<"JudgeRun">
   parse_attempts?: Prisma.IntWithAggregatesFilter<"JudgeRun"> | number
   status?: Prisma.EnumJudgeRunStatusWithAggregatesFilter<"JudgeRun"> | $Enums.JudgeRunStatus
@@ -414,6 +426,7 @@ export type JudgeRunCreateInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -436,6 +449,7 @@ export type JudgeRunUncheckedCreateInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -456,6 +470,7 @@ export type JudgeRunUpdateInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -478,6 +493,7 @@ export type JudgeRunUncheckedUpdateInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -499,6 +515,7 @@ export type JudgeRunCreateManyInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -517,6 +534,7 @@ export type JudgeRunUpdateManyMutationInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -535,6 +553,7 @@ export type JudgeRunUncheckedUpdateManyInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -570,6 +589,7 @@ export type JudgeRunCountOrderByAggregateInput = {
   prompt_id?: Prisma.SortOrder
   prompt_hash?: Prisma.SortOrder
   input_digest?: Prisma.SortOrder
+  shuffle_seed?: Prisma.SortOrder
   raw_output?: Prisma.SortOrder
   parse_attempts?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -594,6 +614,7 @@ export type JudgeRunMaxOrderByAggregateInput = {
   prompt_id?: Prisma.SortOrder
   prompt_hash?: Prisma.SortOrder
   input_digest?: Prisma.SortOrder
+  shuffle_seed?: Prisma.SortOrder
   parse_attempts?: Prisma.SortOrder
   status?: Prisma.SortOrder
   error_code?: Prisma.SortOrder
@@ -612,6 +633,7 @@ export type JudgeRunMinOrderByAggregateInput = {
   prompt_id?: Prisma.SortOrder
   prompt_hash?: Prisma.SortOrder
   input_digest?: Prisma.SortOrder
+  shuffle_seed?: Prisma.SortOrder
   parse_attempts?: Prisma.SortOrder
   status?: Prisma.SortOrder
   error_code?: Prisma.SortOrder
@@ -766,6 +788,7 @@ export type JudgeRunCreateWithoutSpec_versionInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -786,6 +809,7 @@ export type JudgeRunUncheckedCreateWithoutSpec_versionInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -836,6 +860,7 @@ export type JudgeRunScalarWhereInput = {
   prompt_id?: Prisma.StringFilter<"JudgeRun"> | string
   prompt_hash?: Prisma.StringFilter<"JudgeRun"> | string
   input_digest?: Prisma.StringFilter<"JudgeRun"> | string
+  shuffle_seed?: Prisma.StringNullableFilter<"JudgeRun"> | string | null
   raw_output?: Prisma.JsonFilter<"JudgeRun">
   parse_attempts?: Prisma.IntFilter<"JudgeRun"> | number
   status?: Prisma.EnumJudgeRunStatusFilter<"JudgeRun"> | $Enums.JudgeRunStatus
@@ -854,6 +879,7 @@ export type JudgeRunCreateWithoutIssuesInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -875,6 +901,7 @@ export type JudgeRunUncheckedCreateWithoutIssuesInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -910,6 +937,7 @@ export type JudgeRunUpdateWithoutIssuesInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -931,6 +959,7 @@ export type JudgeRunUncheckedUpdateWithoutIssuesInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -950,6 +979,7 @@ export type JudgeRunCreateWithoutJobInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -971,6 +1001,7 @@ export type JudgeRunUncheckedCreateWithoutJobInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -1016,6 +1047,7 @@ export type JudgeRunCreateWithoutLlm_callsInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -1037,6 +1069,7 @@ export type JudgeRunUncheckedCreateWithoutLlm_callsInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -1072,6 +1105,7 @@ export type JudgeRunUpdateWithoutLlm_callsInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -1093,6 +1127,7 @@ export type JudgeRunUncheckedUpdateWithoutLlm_callsInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -1112,6 +1147,7 @@ export type JudgeRunCreateManySpec_versionInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -1130,6 +1166,7 @@ export type JudgeRunUpdateWithoutSpec_versionInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -1150,6 +1187,7 @@ export type JudgeRunUncheckedUpdateWithoutSpec_versionInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -1170,6 +1208,7 @@ export type JudgeRunUncheckedUpdateManyWithoutSpec_versionInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -1189,6 +1228,7 @@ export type JudgeRunCreateManyJobInput = {
   prompt_id: string
   prompt_hash: string
   input_digest: string
+  shuffle_seed?: string | null
   raw_output: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: number
   status?: $Enums.JudgeRunStatus
@@ -1206,6 +1246,7 @@ export type JudgeRunUpdateWithoutJobInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -1227,6 +1268,7 @@ export type JudgeRunUncheckedUpdateWithoutJobInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -1247,6 +1289,7 @@ export type JudgeRunUncheckedUpdateManyWithoutJobInput = {
   prompt_id?: Prisma.StringFieldUpdateOperationsInput | string
   prompt_hash?: Prisma.StringFieldUpdateOperationsInput | string
   input_digest?: Prisma.StringFieldUpdateOperationsInput | string
+  shuffle_seed?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   raw_output?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   parse_attempts?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumJudgeRunStatusFieldUpdateOperationsInput | $Enums.JudgeRunStatus
@@ -1305,6 +1348,7 @@ export type JudgeRunSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   prompt_id?: boolean
   prompt_hash?: boolean
   input_digest?: boolean
+  shuffle_seed?: boolean
   raw_output?: boolean
   parse_attempts?: boolean
   status?: boolean
@@ -1329,6 +1373,7 @@ export type JudgeRunSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   prompt_id?: boolean
   prompt_hash?: boolean
   input_digest?: boolean
+  shuffle_seed?: boolean
   raw_output?: boolean
   parse_attempts?: boolean
   status?: boolean
@@ -1350,6 +1395,7 @@ export type JudgeRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   prompt_id?: boolean
   prompt_hash?: boolean
   input_digest?: boolean
+  shuffle_seed?: boolean
   raw_output?: boolean
   parse_attempts?: boolean
   status?: boolean
@@ -1371,6 +1417,7 @@ export type JudgeRunSelectScalar = {
   prompt_id?: boolean
   prompt_hash?: boolean
   input_digest?: boolean
+  shuffle_seed?: boolean
   raw_output?: boolean
   parse_attempts?: boolean
   status?: boolean
@@ -1381,7 +1428,7 @@ export type JudgeRunSelectScalar = {
   created_at?: boolean
 }
 
-export type JudgeRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "spec_version_id" | "judge_key" | "round" | "model" | "prompt_id" | "prompt_hash" | "input_digest" | "raw_output" | "parse_attempts" | "status" | "error_code" | "job_id" | "started_at" | "finished_at" | "created_at", ExtArgs["result"]["judgeRun"]>
+export type JudgeRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "spec_version_id" | "judge_key" | "round" | "model" | "prompt_id" | "prompt_hash" | "input_digest" | "shuffle_seed" | "raw_output" | "parse_attempts" | "status" | "error_code" | "job_id" | "started_at" | "finished_at" | "created_at", ExtArgs["result"]["judgeRun"]>
 export type JudgeRunInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   spec_version?: boolean | Prisma.SpecVersionDefaultArgs<ExtArgs>
   job?: boolean | Prisma.JudgeRun$jobArgs<ExtArgs>
@@ -1415,6 +1462,13 @@ export type $JudgeRunPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     prompt_id: string
     prompt_hash: string
     input_digest: string
+    /**
+     * Làn B · #43. Seed của phép xáo thứ tự thẻ mà **judge này** đã thấy. `null` khi cờ
+     * `judge_debias` tắt (không xáo). Seed **suy ra được** từ `(input_digest, judge_key, round)`
+     * nên người kiểm chứng tự tính lại và đối chiếu được — nó là bằng chứng, không phải một con số
+     * tuỳ ý. Cùng với `input_digest` thì dựng lại được từng byte đầu vào của judge này.
+     */
+    shuffle_seed: string | null
     raw_output: runtime.JsonValue
     parse_attempts: number
     status: $Enums.JudgeRunStatus
@@ -1858,6 +1912,7 @@ export interface JudgeRunFieldRefs {
   readonly prompt_id: Prisma.FieldRef<"JudgeRun", 'String'>
   readonly prompt_hash: Prisma.FieldRef<"JudgeRun", 'String'>
   readonly input_digest: Prisma.FieldRef<"JudgeRun", 'String'>
+  readonly shuffle_seed: Prisma.FieldRef<"JudgeRun", 'String'>
   readonly raw_output: Prisma.FieldRef<"JudgeRun", 'Json'>
   readonly parse_attempts: Prisma.FieldRef<"JudgeRun", 'Int'>
   readonly status: Prisma.FieldRef<"JudgeRun", 'JudgeRunStatus'>

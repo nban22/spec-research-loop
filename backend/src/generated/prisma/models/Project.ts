@@ -51,6 +51,7 @@ export type ProjectMinAggregateOutputType = {
   judge_rounds_total: number | null
   overclaim_detector: boolean | null
   ambiguity_detector: boolean | null
+  judge_debias: boolean | null
   source_credibility: boolean | null
   evidence_fulltext: boolean | null
   conflict_detector: boolean | null
@@ -73,6 +74,7 @@ export type ProjectMaxAggregateOutputType = {
   judge_rounds_total: number | null
   overclaim_detector: boolean | null
   ambiguity_detector: boolean | null
+  judge_debias: boolean | null
   source_credibility: boolean | null
   evidence_fulltext: boolean | null
   conflict_detector: boolean | null
@@ -95,6 +97,7 @@ export type ProjectCountAggregateOutputType = {
   judge_rounds_total: number
   overclaim_detector: number
   ambiguity_detector: number
+  judge_debias: number
   source_credibility: number
   evidence_fulltext: number
   conflict_detector: number
@@ -129,6 +132,7 @@ export type ProjectMinAggregateInputType = {
   judge_rounds_total?: true
   overclaim_detector?: true
   ambiguity_detector?: true
+  judge_debias?: true
   source_credibility?: true
   evidence_fulltext?: true
   conflict_detector?: true
@@ -151,6 +155,7 @@ export type ProjectMaxAggregateInputType = {
   judge_rounds_total?: true
   overclaim_detector?: true
   ambiguity_detector?: true
+  judge_debias?: true
   source_credibility?: true
   evidence_fulltext?: true
   conflict_detector?: true
@@ -173,6 +178,7 @@ export type ProjectCountAggregateInputType = {
   judge_rounds_total?: true
   overclaim_detector?: true
   ambiguity_detector?: true
+  judge_debias?: true
   source_credibility?: true
   evidence_fulltext?: true
   conflict_detector?: true
@@ -282,6 +288,7 @@ export type ProjectGroupByOutputType = {
   judge_rounds_total: number
   overclaim_detector: boolean
   ambiguity_detector: boolean
+  judge_debias: boolean
   source_credibility: boolean
   evidence_fulltext: boolean
   conflict_detector: boolean
@@ -327,6 +334,7 @@ export type ProjectWhereInput = {
   judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   overclaim_detector?: Prisma.BoolFilter<"Project"> | boolean
   ambiguity_detector?: Prisma.BoolFilter<"Project"> | boolean
+  judge_debias?: Prisma.BoolFilter<"Project"> | boolean
   source_credibility?: Prisma.BoolFilter<"Project"> | boolean
   evidence_fulltext?: Prisma.BoolFilter<"Project"> | boolean
   conflict_detector?: Prisma.BoolFilter<"Project"> | boolean
@@ -356,6 +364,7 @@ export type ProjectOrderByWithRelationInput = {
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
   ambiguity_detector?: Prisma.SortOrder
+  judge_debias?: Prisma.SortOrder
   source_credibility?: Prisma.SortOrder
   evidence_fulltext?: Prisma.SortOrder
   conflict_detector?: Prisma.SortOrder
@@ -388,6 +397,7 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   overclaim_detector?: Prisma.BoolFilter<"Project"> | boolean
   ambiguity_detector?: Prisma.BoolFilter<"Project"> | boolean
+  judge_debias?: Prisma.BoolFilter<"Project"> | boolean
   source_credibility?: Prisma.BoolFilter<"Project"> | boolean
   evidence_fulltext?: Prisma.BoolFilter<"Project"> | boolean
   conflict_detector?: Prisma.BoolFilter<"Project"> | boolean
@@ -417,6 +427,7 @@ export type ProjectOrderByWithAggregationInput = {
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
   ambiguity_detector?: Prisma.SortOrder
+  judge_debias?: Prisma.SortOrder
   source_credibility?: Prisma.SortOrder
   evidence_fulltext?: Prisma.SortOrder
   conflict_detector?: Prisma.SortOrder
@@ -447,6 +458,7 @@ export type ProjectScalarWhereWithAggregatesInput = {
   judge_rounds_total?: Prisma.IntWithAggregatesFilter<"Project"> | number
   overclaim_detector?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
   ambiguity_detector?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
+  judge_debias?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
   source_credibility?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
   evidence_fulltext?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
   conflict_detector?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
@@ -468,6 +480,7 @@ export type ProjectCreateInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -497,6 +510,7 @@ export type ProjectUncheckedCreateInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -524,6 +538,7 @@ export type ProjectUpdateInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -553,6 +568,7 @@ export type ProjectUncheckedUpdateInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -581,6 +597,7 @@ export type ProjectCreateManyInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -602,6 +619,7 @@ export type ProjectUpdateManyMutationInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -624,6 +642,7 @@ export type ProjectUncheckedUpdateManyInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -656,6 +675,7 @@ export type ProjectCountOrderByAggregateInput = {
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
   ambiguity_detector?: Prisma.SortOrder
+  judge_debias?: Prisma.SortOrder
   source_credibility?: Prisma.SortOrder
   evidence_fulltext?: Prisma.SortOrder
   conflict_detector?: Prisma.SortOrder
@@ -683,6 +703,7 @@ export type ProjectMaxOrderByAggregateInput = {
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
   ambiguity_detector?: Prisma.SortOrder
+  judge_debias?: Prisma.SortOrder
   source_credibility?: Prisma.SortOrder
   evidence_fulltext?: Prisma.SortOrder
   conflict_detector?: Prisma.SortOrder
@@ -705,6 +726,7 @@ export type ProjectMinOrderByAggregateInput = {
   judge_rounds_total?: Prisma.SortOrder
   overclaim_detector?: Prisma.SortOrder
   ambiguity_detector?: Prisma.SortOrder
+  judge_debias?: Prisma.SortOrder
   source_credibility?: Prisma.SortOrder
   evidence_fulltext?: Prisma.SortOrder
   conflict_detector?: Prisma.SortOrder
@@ -899,6 +921,7 @@ export type ProjectCreateWithoutUserInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -926,6 +949,7 @@ export type ProjectUncheckedCreateWithoutUserInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -983,6 +1007,7 @@ export type ProjectScalarWhereInput = {
   judge_rounds_total?: Prisma.IntFilter<"Project"> | number
   overclaim_detector?: Prisma.BoolFilter<"Project"> | boolean
   ambiguity_detector?: Prisma.BoolFilter<"Project"> | boolean
+  judge_debias?: Prisma.BoolFilter<"Project"> | boolean
   source_credibility?: Prisma.BoolFilter<"Project"> | boolean
   evidence_fulltext?: Prisma.BoolFilter<"Project"> | boolean
   conflict_detector?: Prisma.BoolFilter<"Project"> | boolean
@@ -1004,6 +1029,7 @@ export type ProjectCreateWithoutSpec_versionsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1032,6 +1058,7 @@ export type ProjectUncheckedCreateWithoutSpec_versionsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1074,6 +1101,7 @@ export type ProjectUpdateWithoutSpec_versionsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1102,6 +1130,7 @@ export type ProjectUncheckedUpdateWithoutSpec_versionsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1128,6 +1157,7 @@ export type ProjectCreateWithoutSourcesInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1156,6 +1186,7 @@ export type ProjectUncheckedCreateWithoutSourcesInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1198,6 +1229,7 @@ export type ProjectUpdateWithoutSourcesInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1226,6 +1258,7 @@ export type ProjectUncheckedUpdateWithoutSourcesInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1252,6 +1285,7 @@ export type ProjectCreateWithoutDecisionsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1280,6 +1314,7 @@ export type ProjectUncheckedCreateWithoutDecisionsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1322,6 +1357,7 @@ export type ProjectUpdateWithoutDecisionsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1350,6 +1386,7 @@ export type ProjectUncheckedUpdateWithoutDecisionsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1376,6 +1413,7 @@ export type ProjectCreateWithoutJob_runsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1404,6 +1442,7 @@ export type ProjectUncheckedCreateWithoutJob_runsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1446,6 +1485,7 @@ export type ProjectUpdateWithoutJob_runsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1474,6 +1514,7 @@ export type ProjectUncheckedUpdateWithoutJob_runsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1500,6 +1541,7 @@ export type ProjectCreateWithoutLlm_callsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1528,6 +1570,7 @@ export type ProjectUncheckedCreateWithoutLlm_callsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1570,6 +1613,7 @@ export type ProjectUpdateWithoutLlm_callsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1598,6 +1642,7 @@ export type ProjectUncheckedUpdateWithoutLlm_callsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1624,6 +1669,7 @@ export type ProjectCreateWithoutEval_runsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1652,6 +1698,7 @@ export type ProjectUncheckedCreateWithoutEval_runsInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1694,6 +1741,7 @@ export type ProjectUpdateWithoutEval_runsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1722,6 +1770,7 @@ export type ProjectUncheckedUpdateWithoutEval_runsInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1748,6 +1797,7 @@ export type ProjectCreateManyUserInput = {
   judge_rounds_total?: number
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1769,6 +1819,7 @@ export type ProjectUpdateWithoutUserInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1796,6 +1847,7 @@ export type ProjectUncheckedUpdateWithoutUserInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1823,6 +1875,7 @@ export type ProjectUncheckedUpdateManyWithoutUserInput = {
   judge_rounds_total?: Prisma.IntFieldUpdateOperationsInput | number
   overclaim_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ambiguity_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  judge_debias?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source_credibility?: Prisma.BoolFieldUpdateOperationsInput | boolean
   evidence_fulltext?: Prisma.BoolFieldUpdateOperationsInput | boolean
   conflict_detector?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1921,6 +1974,7 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   judge_rounds_total?: boolean
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1951,6 +2005,7 @@ export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   judge_rounds_total?: boolean
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1974,6 +2029,7 @@ export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   judge_rounds_total?: boolean
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -1997,6 +2053,7 @@ export type ProjectSelectScalar = {
   judge_rounds_total?: boolean
   overclaim_detector?: boolean
   ambiguity_detector?: boolean
+  judge_debias?: boolean
   source_credibility?: boolean
   evidence_fulltext?: boolean
   conflict_detector?: boolean
@@ -2004,7 +2061,7 @@ export type ProjectSelectScalar = {
   updated_at?: boolean
 }
 
-export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "raw_idea" | "domain" | "step" | "status" | "current_spec_version_id" | "arm" | "verifier_gate" | "judge_round" | "judge_rounds_total" | "overclaim_detector" | "ambiguity_detector" | "source_credibility" | "evidence_fulltext" | "conflict_detector" | "created_at" | "updated_at", ExtArgs["result"]["project"]>
+export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "raw_idea" | "domain" | "step" | "status" | "current_spec_version_id" | "arm" | "verifier_gate" | "judge_round" | "judge_rounds_total" | "overclaim_detector" | "ambiguity_detector" | "judge_debias" | "source_credibility" | "evidence_fulltext" | "conflict_detector" | "created_at" | "updated_at", ExtArgs["result"]["project"]>
 export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   spec_versions?: boolean | Prisma.Project$spec_versionsArgs<ExtArgs>
@@ -2048,6 +2105,7 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     judge_rounds_total: number
     overclaim_detector: boolean
     ambiguity_detector: boolean
+    judge_debias: boolean
     source_credibility: boolean
     evidence_fulltext: boolean
     conflict_detector: boolean
@@ -2497,6 +2555,7 @@ export interface ProjectFieldRefs {
   readonly judge_rounds_total: Prisma.FieldRef<"Project", 'Int'>
   readonly overclaim_detector: Prisma.FieldRef<"Project", 'Boolean'>
   readonly ambiguity_detector: Prisma.FieldRef<"Project", 'Boolean'>
+  readonly judge_debias: Prisma.FieldRef<"Project", 'Boolean'>
   readonly source_credibility: Prisma.FieldRef<"Project", 'Boolean'>
   readonly evidence_fulltext: Prisma.FieldRef<"Project", 'Boolean'>
   readonly conflict_detector: Prisma.FieldRef<"Project", 'Boolean'>
