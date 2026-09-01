@@ -121,12 +121,12 @@ export class ExportService implements OnModuleDestroy {
       if (gate.reason === 'NOT_VERIFIED') {
         throw AppError.conflict(
           'EXPORT_BLOCKED_NOT_VERIFIED',
-          'Chưa chạy kiểm chứng cứ cho phiên bản này nên chưa được xuất bản. Chạy kiểm chứng cứ trước.',
+          'Evidence verification has not run on this version, so it cannot be published yet. Run it first.',
         );
       }
       throw AppError.conflict(
         'EXPORT_BLOCKED_UNSUPPORTED_CITATION',
-        `Còn ${gate.offenders.length} trích dẫn không được nguồn hỗ trợ. Xử lý chúng trước khi xuất bản.`,
+        `${gate.offenders.length} citations are still unsupported by their sources. Resolve them before publishing.`,
         gate.offenders,
       );
     }
@@ -216,11 +216,11 @@ export class ExportService implements OnModuleDestroy {
       browser = await this.getBrowser();
     } catch (err) {
       this.logger.error(
-        `Không khởi động được Chromium: ${err instanceof Error ? err.message : String(err)}`,
+        `Could not launch Chromium: ${err instanceof Error ? err.message : String(err)}`,
       );
       throw AppError.unavailable(
         'PDF_ENGINE_UNAVAILABLE',
-        'Không khởi động được trình kết xuất PDF trên máy chủ. Bản Markdown vẫn xuất được bình thường.',
+        'The PDF renderer could not start on the server. The Markdown export still works normally.',
       );
     }
 

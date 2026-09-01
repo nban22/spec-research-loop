@@ -22,7 +22,7 @@ Chỉ nói *viết code thế nào*. Token màu/chữ, component inventory, bố
 - Named export cho component; `export default` **chỉ** cho `page.tsx` / `layout.tsx` / `route.ts` (Next bắt buộc).
 - Prop type `type JudgePanelProps = { … }`, khai ngay trên component. Không `React.FC`.
 - Không dựng file `index.ts` re-export gom cả folder — import thẳng đường dẫn thật.
-- Chuỗi UI viết thẳng tiếng Việt trong component, không hệ i18n (STACK §5).
+- Chuỗi UI viết thẳng **tiếng Anh** trong component, không hệ i18n (STACK §5).
 
 ## 2. Server / Client Component
 
@@ -60,9 +60,11 @@ lệnh add mà không xung đột. Cần khác đi thì bọc một component c�
 
 ## 6. Ngôn ngữ hiển thị
 
-- Nhãn UI, nút, nav, thông báo lỗi, câu hỏi làm rõ: **tiếng Việt**.
-- Nội dung 14 mục spec + nhận xét judge: render **nguyên văn tiếng Anh** backend trả về. FE không dịch,
-  không viết hoa lại (STACK §10 — dịch ở FE làm lệch cái verifier đã chấm).
+- **Toàn bộ giao diện là tiếng Anh**: nhãn UI, nút, nav, thông báo lỗi, câu hỏi làm rõ, `aria-label`,
+  placeholder. Không còn chuỗi tiếng Việt nào trong `frontend/src` (STACK §10).
+- Nội dung 14 mục spec + nhận xét judge: render **nguyên văn** thứ backend trả về. FE không dịch,
+  không viết hoa lại (dịch ở FE làm lệch cái verifier đã chấm).
+- `<html lang="en">`, và mọi `toLocaleString` dùng `'en-US'`.
 
 ## 7. Chất lượng UI
 

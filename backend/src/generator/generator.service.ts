@@ -55,7 +55,7 @@ export class GeneratorService {
     const project = await this.prisma.project.findUniqueOrThrow({
       where: { id: projectId },
     });
-    await onProgress?.(0, 1, 'Đang đọc và diễn giải lại ý tưởng…');
+    await onProgress?.(0, 1, 'Reading and paraphrasing your idea…');
 
     const out = await this.llm.completeJson({
       promptId: 'generator',
@@ -128,7 +128,7 @@ export class GeneratorService {
       }
     });
 
-    await onProgress?.(1, 1, 'Đã phân rã ý tưởng thành thẻ.');
+    await onProgress?.(1, 1, 'Decomposed the idea into cards.');
   }
 
   // ── B2 · bảng related work ────────────────────────────────────────────────
@@ -139,13 +139,13 @@ export class GeneratorService {
     if (sources.length === 0) {
       throw AppError.badRequest(
         'NO_SOURCES_YET',
-        'Chưa có nguồn nào. Chạy tìm nguồn trước khi dựng bảng nghiên cứu liên quan.',
+        'No sources yet. Run the source search before building the related-work table.',
       );
     }
     await onProgress?.(
       0,
       1,
-      'Đang đọc abstract và dựng bảng nghiên cứu liên quan…',
+      'Reading abstracts and building the related-work table…',
     );
 
     const specJson = await this.spec.buildSpecJson(version.id);
@@ -167,7 +167,7 @@ export class GeneratorService {
     const hallucinated = out.data.rows.length - valid.length;
     if (hallucinated > 0) {
       this.logger.warn(
-        `hallucinated_source_ref=${hallucinated} ở bảng related work của project ${projectId}`,
+        `hallucinated_source_ref=${hallucinated} in the related-work table of project ${projectId}`,
       );
     }
 
@@ -187,11 +187,7 @@ export class GeneratorService {
       });
     });
 
-    await onProgress?.(
-      1,
-      1,
-      `Đã dựng ${valid.length} dòng nghiên cứu liên quan.`,
-    );
+    await onProgress?.(1, 1, `Built ${valid.length} related-work rows.`);
   }
 
   // ── B2 · research gap ─────────────────────────────────────────────────────
@@ -202,10 +198,14 @@ export class GeneratorService {
     if (sources.length === 0) {
       throw AppError.badRequest(
         'NO_SOURCES_YET',
-        'Chưa có nguồn nào để rút ra research gap.',
+        'No sources yet to extract a research gap from.',
       );
     }
-    await onProgress?.(0, 1, 'Đang rút research gap từ tài liệu đã tìm…');
+    await onProgress?.(
+      0,
+      1,
+      'Extracting the research gap from the retrieved literature…',
+    );
 
     const [specJson, relatedRows] = await Promise.all([
       this.spec.buildSpecJson(version.id),
@@ -278,7 +278,7 @@ export class GeneratorService {
           project_id: projectId,
           spec_version_id: version.id,
           step: 'S2',
-          question: 'Bạn muốn tập trung vào hướng nghiên cứu nào?',
+          question: 'Which research direction do you want to focus on?',
           options: json(out.data.direction_options),
           chosen_key: '',
           actor: 'USER',
@@ -286,7 +286,11 @@ export class GeneratorService {
       });
     });
 
-    await onProgress?.(1, 1, `Đã sinh ${out.data.gaps.length} research gap.`);
+    await onProgress?.(
+      1,
+      1,
+      `Generated ${out.data.gaps.length} research gaps.`,
+    );
   }
 
   // ── B3 · contribution + claim–evidence ────────────────────────────────────
@@ -294,7 +298,11 @@ export class GeneratorService {
   async contributions(projectId: string, onProgress?: Progress): Promise<void> {
     const version = await this.spec.currentVersionOf(projectId);
     const sources = await this.sources.sourcesForPrompt(projectId);
-    await onProgress?.(0, 1, 'Đang sinh contribution và Claim–Evidence Card…');
+    await onProgress?.(
+      0,
+      1,
+      'Generating contributions and claim-evidence cards…',
+    );
 
     const specJson = await this.spec.buildSpecJson(version.id);
     const out = await this.llm.completeJson({
@@ -376,7 +384,7 @@ export class GeneratorService {
       }
     });
 
-    await onProgress?.(1, 1, 'Đã sinh contribution và claim.');
+    await onProgress?.(1, 1, 'Generated the contributions and claims.');
   }
 
   // ── B3 · kế hoạch thí nghiệm + ước lượng tài nguyên ───────────────────────
@@ -386,7 +394,7 @@ export class GeneratorService {
     onProgress?: Progress,
   ): Promise<void> {
     const version = await this.spec.currentVersionOf(projectId);
-    await onProgress?.(0, 2, 'Đang lập kế hoạch thí nghiệm…');
+    await onProgress?.(0, 2, 'Building the experiment plan…');
 
     const specJson = await this.spec.buildSpecJson(version.id);
     const out = await this.llm.completeJson({
@@ -418,14 +426,14 @@ export class GeneratorService {
       update: { plan: json(blob) },
     });
 
-    await onProgress?.(1, 2, 'Đang ước lượng tài nguyên…');
+    await onProgress?.(1, 2, 'Estimating resources…');
     // Ước lượng là **công thức thuần, 0 LLM** — model chỉ cung cấp tham số (S4).
     const inputs = estimatorInputSchema.parse(out.data.estimator_inputs);
     await this.saveEstimate(version.id, inputs);
     await onProgress?.(
       2,
       2,
-      'Đã có kế hoạch thí nghiệm và ước lượng tài nguyên.',
+      'The experiment plan and resource estimate are ready.',
     );
   }
 
@@ -474,7 +482,7 @@ export class GeneratorService {
         project_id: projectId,
         version_no: 1,
         status: 'DRAFT',
-        label: 'Bản nháp đầu tiên',
+        label: 'First draft',
       },
     });
     await this.prisma.project.update({

@@ -4,11 +4,12 @@ version: 1
 model: deepseek-v4-pro
 inputs: [spec_json, sources_json, related_work_json]
 output: JSON schema — xem cuối file
-updated: 2026-08-16
+updated: 2026-09-02
 ---
 
 Sinh research gap **trả lời đủ bốn câu hỏi bắt buộc** của đề (kim-chỉ-nam §3 bước 4), cộng một bộ
-phương án tiếng Việt để người dùng chọn hướng tập trung.
+phương án cho người dùng chọn hướng tập trung. Giao diện đã chuyển sang tiếng Anh toàn phần, nên
+phương án cũng sinh bằng tiếng Anh.
 
 Đề cấm tường minh kiểu gap lười: *"tôi chưa thấy paper giống hệt nên đây là gap"*. Chỗ thực thi
 ràng buộc đó là file này và tầng kiểm của Research Gap Judge.
@@ -19,8 +20,8 @@ You derive research gaps from retrieved literature.
 
 Reply with **one json object and nothing else**.
 
-Language: gap content in **English**; `direction_options` (`label`, `explain`, `example`) in
-**Vietnamese**, because the user reads them.
+Language: **English for everything** — the gap content and `direction_options` alike. The user reads
+`direction_options` directly, and the interface is English-only.
 
 Every gap must answer four questions, one per field, and each answer must be traceable to the
 sources provided:
@@ -61,9 +62,9 @@ Hard constraints:
   "direction_options": [
     {
       "key": "A",
-      "label": "Tập trung vào truy hồi có tham chiếu chéo",
-      "explain": "Giữ nguyên mô hình sinh, chỉ cải thiện bước tìm điều luật liên quan.",
-      "example": "Thêm bước mở rộng truy vấn theo tham chiếu trong văn bản luật.",
+      "label": "Focus on cross-reference-aware retrieval",
+      "explain": "Keep the generator as it is and improve only the step that finds the relevant statute.",
+      "example": "Add a query-expansion step that follows references inside legal text.",
       "recommended": true
     }
   ]

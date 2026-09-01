@@ -72,7 +72,8 @@ nhưng **trỏ chúng về token của mình**, để chỉ có một nguồn s�
 
 **Font — [QĐ]:** `Be Vietnam Pro`, nạp qua `next/font` (có sẵn trong Next.js, **không phải dependency
 mới**, không vi phạm STACK §8). Lý do: mockup dùng một sans hình học bụng chữ tròn, và font này có
-dấu tiếng Việt vẽ riêng chứ không ghép — UI toàn tiếng Việt (STACK §10) nên đây là tiêu chí quyết
+dấu tiếng Việt vẽ riêng chứ không ghép — tiêu đề paper vẫn render nguyên văn nên vẫn cần, dù UI đã
+chuyển hẳn sang tiếng Anh (STACK §10). Đây là tiêu chí quyết
 định. Font mono dùng font hệ thống, chỉ xuất hiện ở `DiffView` và ô hiển thị DOI.
 
 ---
@@ -177,7 +178,7 @@ nguồn.
 **Quyết định: không tạo component badge thứ tư.** Ba vật thể ở §3.1 đã dùng hết ba hình dạng phân biệt
 được khi in trắng đen; thêm cái thứ tư là bắt người đọc học thêm một từ vựng nữa cho một giá trị chỉ
 xuất hiện đúng một chỗ. Thay vào đó `ConfidenceLevel` render thành **một dòng trong `HintBox`**: nhãn
-"Mức chắc chắn" + giá trị bằng chữ tiếng Việt, sắc thái của hộp lấy theo bảng dưới.
+"Confidence" + giá trị bằng chữ (tiếng Anh), sắc thái của hộp lấy theo bảng dưới.
 
 | Giá trị | Chữ hiển thị | Sắc thái `HintBox` | Vì sao |
 |---|---|---|---|
@@ -364,7 +365,7 @@ Kích thước nút lấy từ prop `size` sẵn có của shadcn — **không t
 | `KeywordChipInput` | Ô nhập + chip từ khoá có nút xoá |
 | `SourceFilterList` | Danh sách checkbox "Nguồn ưu tiên" (peer-reviewed, proceedings, …) |
 | `AuthCard` | Khung hẹp giữa canvas cho login/register: logo, tiêu đề, form, link chuyển trang |
-| `LoginForm` / `RegisterForm` | react-hook-form + zod; lỗi hiển thị bằng cách map `ErrorCode` sang tiếng Việt (§7.1) |
+| `LoginForm` / `RegisterForm` | react-hook-form + zod; lỗi hiển thị bằng cách map `ErrorCode` sang tiếng Anh (§7.1) |
 | `ProjectList` / `ProjectCard` | Màn `/projects`: mỗi dự án một card — tên (lấy từ ý tưởng thô, cắt bớt), bước đang đứng, số version, thời điểm sửa cuối, nút mở. Kèm `EmptyState` cho người dùng mới. Mockup không vẽ màn này nhưng nav có mục "Dự án" và ARCHITECTURE §3 đã cấp route |
 | `JobProgress` | Bám SSE, dùng chung cho analyze / search / judge / verify — xem §5.5 |
 | `EmptyState` / `ErrorState` | Trạng thái rỗng và lỗi dùng chung — xem §5.5 |
@@ -425,14 +426,14 @@ hình chờ nhiều hơn nhìn màn hình xong**. Nếu không chốt trước t
 | Nút bận | Thao tác đồng bộ dưới ~1s: lưu quyết định, ước lượng tài nguyên | Nút chuyển trạng thái vô hiệu + vòng xoay nhỏ trong nút. Không skeleton, không overlay |
 | Skeleton | Đọc dữ liệu đã có, dưới vài giây: mở lại một bước, tải danh sách dự án | `skeleton` của shadcn, **đúng hình khối của nội dung thật** — sai hình thì trang nhảy khi dữ liệu về |
 | `JobProgress` có tiến độ | Job nền **biết được tổng số việc**: 5 judge, N unit verify | Thanh tiến độ + "3/5 judge xong" + dòng việc đang chạy. Ở B4, `JudgeCard` tự sáng lên theo SSE — dãy chấm của nó **là** tiến độ, không cần thêm thanh thứ hai |
-| `JobProgress` không tiến độ | Job nền **một lời gọi, không chia nhỏ được**: paraphrase, sinh gap, sinh kế hoạch | Thanh chạy vô định + **câu mô tả hệ thống đang làm gì bằng tiếng Việt** + thời gian đã trôi. Không hiện phần trăm giả |
+| `JobProgress` không tiến độ | Job nền **một lời gọi, không chia nhỏ được**: paraphrase, sinh gap, sinh kế hoạch | Thanh chạy vô định + **câu mô tả hệ thống đang làm gì bằng chữ** + thời gian đã trôi. Không hiện phần trăm giả |
 
 **Sáu luật, tất cả đều để tránh một màn hình đứng im không giải thích được:**
 
 1. **Chờ nằm tại chỗ của nội dung**, không phải overlay toàn trang. Người dùng vẫn phải đọc được cột
    khác và vẫn cuộn được — đó là lý do mọi việc dài đều là job nền chứ không phải request đồng bộ.
 2. **Luôn nói đang làm gì bằng chữ.** "Đang tìm nguồn trên Semantic Scholar…" chứ không phải một vòng
-   xoay trống. Chuỗi này là **tiếng Việt**, kể cả khi kết quả sinh ra là tiếng Anh (STACK §10).
+   xoay trống. Chuỗi này là **tiếng Anh**, cùng ngôn ngữ với mọi thứ còn lại (STACK §10).
 3. **Quá ~10 giây thì hiện thời gian đã trôi**; quá ~60 giây thì thêm một dòng trấn an rằng job vẫn
    chạy và có thể rời trang rồi quay lại. Đây là lời hứa mà `GET /jobs/:id` giữ được, không phải lời
    nói suông.
@@ -573,7 +574,7 @@ icon ở góc, phần còn lại là các hàng nhãn–giá trị.
 |---|---|---|
 | Bốn mục nav toàn cục | Nút ☰ mở `MobileNavDrawer` trượt từ trái | Tần suất thấp (chuyển dự án, xem lịch sử) — không đáng chiếm đáy màn hình |
 | **Đáy màn hình** | Dành **riêng** cho `DecisionSheet` / `ExportBar` | Vùng ngón cái phải thuộc về hành động chính, không thuộc về điều hướng. Đây là lý do **không** làm bottom tab bar |
-| Stepper | `StepperCompact` dính trên cùng: chấm + "Bước 3/5" + tên bước, bấm mở `StepPickerSheet` | Kết hợp *dots stepper* (thấy tổng quan) và *text stepper* (biết chính xác đang ở đâu) — hai biến thể chuẩn cho mobile. Năm nhãn tiếng Việt dài không thể nằm ngang ở 375px |
+| Stepper | `StepperCompact` dính trên cùng: chấm + "Step 3/5" + tên bước, bấm mở `StepPickerSheet` | Kết hợp *dots stepper* (thấy tổng quan) và *text stepper* (biết chính xác đang ở đâu) — hai biến thể chuẩn cho mobile. Năm nhãn bước không thể nằm ngang ở 375px |
 
 `TopNav` và thanh stepper đều thấp hơn một chút trên mobile; mọi phần tử dính khi cuộn phải neo dưới
 tổng chiều cao của hai thanh đó.
@@ -676,7 +677,7 @@ Mục này nói về **tổ chức file**, không nói về styles — nên nó 
 ```
 frontend/src/lib/types.ts         3 union type khai lại tay từ backend/src/contracts/ (STACK §3.1)
 frontend/src/lib/status-style.ts  ánh xạ CardStatus / Severity / SupportLabel / ConfidenceLevel → class
-frontend/src/lib/error-code.ts    ErrorCode → thông báo tiếng Việt
+frontend/src/lib/error-code.ts    ErrorCode → thông báo tiếng Anh
 ```
 
 `status-style.ts` là **nơi §3 biến thành code**. Khai kiểu sao cho thiếu một giá trị enum là **lỗi
@@ -713,7 +714,7 @@ grep -rnE "(bg|text|border|ring|from|to)-(red|green|blue|yellow|orange|purple|vi
 | Container query chỉ dùng cho ba component ở §6.8 | Hai hệ responsive song song ở tầng trang thì không đoán được cái nào thắng |
 | Không đặt thông tin **chỉ** trong `:hover` hoặc `title` | §6.7 — cảm ứng không có hover |
 | Icon dùng `lucide-react` (đi kèm shadcn, không phải dependency mới), giữ vài cỡ cố định theo ngữ cảnh | Tránh mỗi chỗ một cỡ |
-| Chuỗi UI viết thẳng tiếng Việt trong component, **không** dựng hệ thống i18n | STACK §5 |
+| Chuỗi UI viết thẳng tiếng Anh trong component, **không** dựng hệ thống i18n | STACK §5 |
 | Nội dung 14 mục spec render **nguyên văn tiếng Anh** do backend trả, FE không dịch | STACK §10 — dịch ở FE làm lệch cái mà verifier đã chấm |
 | Sửa enum ở `backend/src/contracts/` → sửa `types.ts` **và** `status-style.ts` trong **cùng commit** | STACK §3.1 luật 2 |
 | Không thêm họ màu mới ngoài tám họ ở §2 | Thêm là phá luật "đỏ/cam/vàng = có vấn đề" ở §1 |

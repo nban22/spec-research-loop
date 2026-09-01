@@ -65,8 +65,8 @@ export class SourceClient {
     this.mailto = config.get('OPENALEX_MAILTO', { infer: true });
     this.logger.log(
       this.s2Key
-        ? 'Semantic Scholar: có API key — nhịp 1 req/s.'
-        : 'Semantic Scholar: KHÔNG có API key — dùng pool chung, nhịp nới rộng, 429 thì fallback OpenAlex ngay.',
+        ? 'Semantic Scholar: API key present — rate limited to 1 req/s.'
+        : 'Semantic Scholar: NO API key — using the shared pool with a wider interval; on 429 it falls back to OpenAlex immediately.',
     );
   }
 
@@ -186,7 +186,7 @@ export class SourceClient {
         }
       }
     }
-    return { ok: false, error: 'không rõ nguyên nhân' };
+    return { ok: false, error: 'cause unknown' };
   }
 
   async searchOpenAlex(
@@ -232,7 +232,7 @@ export class SourceClient {
         }
       }
     }
-    return { ok: false, error: 'không rõ nguyên nhân' };
+    return { ok: false, error: 'cause unknown' };
   }
 
   /**

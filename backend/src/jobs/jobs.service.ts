@@ -44,7 +44,7 @@ export class JobsService {
       if (active) {
         throw AppError.conflict(
           'JOB_ALREADY_RUNNING',
-          'Một tiến trình cùng loại đang chạy cho dự án này.',
+          'A job of the same kind is already running for this project.',
           { jobId: active.id },
         );
       }
@@ -78,7 +78,7 @@ export class JobsService {
       });
     } catch (err) {
       this.logger.error(
-        `Không ghi được JobEvent ${jobId}#${seq}: ${err instanceof Error ? err.message : String(err)}`,
+        `Could not write JobEvent ${jobId}#${seq}: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
     this.channels.get(jobId)?.next({ seq, type, payload });
@@ -134,7 +134,7 @@ export class JobsService {
         const code =
           err instanceof AppError ? err.code : ('INTERNAL_ERROR' as const);
         this.logger.error(
-          `Job ${jobId} thất bại: ${err instanceof Error ? err.message : String(err)}`,
+          `Job ${jobId} failed: ${err instanceof Error ? err.message : String(err)}`,
           err instanceof Error ? err.stack : undefined,
         );
         await this.finish(jobId, 'FAILED', code);
@@ -158,7 +158,7 @@ export class JobsService {
         spec_version_id: true,
       },
     });
-    if (!job) throw AppError.notFound('Không tìm thấy tiến trình.');
+    if (!job) throw AppError.notFound('Job not found.');
     return job;
   }
 
@@ -201,6 +201,6 @@ export class JobsService {
       where: { id: jobId, project: { user_id: userId } },
       select: { id: true },
     });
-    if (!found) throw AppError.notFound('Không tìm thấy tiến trình.');
+    if (!found) throw AppError.notFound('Job not found.');
   }
 }

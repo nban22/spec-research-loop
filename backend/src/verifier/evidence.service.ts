@@ -178,7 +178,7 @@ export class EvidenceService {
           )
         : {
             layer: null,
-            why: 'Cặp này chưa đi qua bước kiểm chứng cứ lần nào, nên chưa có nhãn. Nhãn WEAK đang hiện là giá trị mặc định của cơ sở dữ liệu, không phải kết luận của verifier.',
+            why: 'This pair has never been through evidence verification, so it has no label. The WEAK shown is the database default, not a verifier conclusion.',
           };
       const score = scoreOf.get(r.source_id);
       return {

@@ -206,8 +206,8 @@ export class CritiqueService {
     });
 
     this.logger.log(
-      `ambiguity scan ${specVersionId}: ${flaggedCards.size}/${cards.length} thẻ mơ hồ, ` +
-        `hỏi ${selected.length}/${candidates.length} câu (còn ${budget} chỗ trống)`,
+      `ambiguity scan ${specVersionId}: ${flaggedCards.size}/${cards.length} ambiguous cards, ` +
+        `asking ${selected.length}/${candidates.length} questions (${budget} slots left)`,
     );
 
     return {
@@ -259,7 +259,7 @@ export class CritiqueService {
         const parsed = cardStatusSchema.safeParse(status);
         if (!parsed.success) {
           this.logger.warn(
-            `previous_status không hợp lệ (${status}) trên ${cardIds.length} thẻ — bỏ qua khôi phục.`,
+            `Invalid previous_status (${status}) on ${cardIds.length} cards — skipping the restore.`,
           );
           continue;
         }

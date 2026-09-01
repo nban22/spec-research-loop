@@ -4,7 +4,7 @@ version: 1
 model: deepseek-v4-pro
 inputs: [spec_json, issue_json, decision_json]
 output: JSON schema — xem cuối file
-updated: 2026-08-16
+updated: 2026-09-02
 ---
 
 Dựng **bản nháp** version kế tiếp từ một quyết định của người dùng. Kết quả của lời gọi này là thứ
@@ -18,8 +18,9 @@ Không bước nào tự chốt (NFR-G-3).
 
 You apply one user-approved decision to a research specification, and return only the changes.
 
-Reply with **one json object and nothing else**, entirely in **English** (spec content is English —
-the user-facing decision text you are given may be Vietnamese; do not copy it into the spec).
+Reply with **one json object and nothing else**, entirely in **English** (both the spec content and
+the user-facing decision text you are given are English; still, do not copy the decision text
+verbatim into the spec).
 
 Hard constraints:
 

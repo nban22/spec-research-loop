@@ -162,7 +162,7 @@ export class LlmService {
 
       lastError = parsed.error;
       this.logger.warn(
-        `[${opts.promptId}] lần ${attempts}/${maxRetries + 1} không khớp schema: ${lastError.slice(0, 200)}`,
+        `[${opts.promptId}] attempt ${attempts}/${maxRetries + 1} did not match the schema: ${lastError.slice(0, 200)}`,
       );
       // Đính kèm lỗi zod vào lượt sau để model tự sửa (STACK §2.4).
       conversation.push({ role: 'assistant', content });
@@ -185,7 +185,7 @@ export class LlmService {
     );
     throw AppError.unavailable(
       'LLM_INVALID_JSON',
-      `Model trả về JSON không khớp schema sau ${attempts} lần thử (${opts.promptId}).`,
+      `The model returned JSON that did not match the schema after ${attempts} attempts (${opts.promptId}).`,
       lastError.slice(0, 1000),
     );
   }
@@ -221,8 +221,8 @@ export class LlmService {
         const waitMs = TRANSPORT_BACKOFF_MS[attempt - 1] ?? 6000;
         const reason = err instanceof Error ? err.message : String(err);
         this.logger.warn(
-          `[${promptId}] lỗi đường truyền lần ${attempt}/${TRANSPORT_TRIES}: ` +
-            `${reason} — gọi lại sau ${waitMs}ms`,
+          `[${promptId}] transport error, attempt ${attempt}/${TRANSPORT_TRIES}: ` +
+            `${reason} — retrying in ${waitMs}ms`,
         );
         await new Promise((r) => setTimeout(r, waitMs));
       }
@@ -297,7 +297,7 @@ export class LlmService {
       });
     } catch (err) {
       this.logger.error(
-        `Không ghi được LlmCall (${opts.promptId}): ${err instanceof Error ? err.message : String(err)}`,
+        `Could not write LlmCall (${opts.promptId}): ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   }

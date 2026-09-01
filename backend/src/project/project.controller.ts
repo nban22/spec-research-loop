@@ -87,7 +87,7 @@ export class ProjectController {
     const jobId = await this.jobs.create('ANALYZE', {
       projectId: id,
       total: 1,
-      message: 'Đang phân tích ý tưởng…',
+      message: 'Analysing your idea…',
     });
     this.jobs.runInBackground(jobId, () =>
       this.generator.analyze(id, (d, t, m) =>
@@ -107,7 +107,7 @@ export class ProjectController {
     const jobId = await this.jobs.create('SEARCH', {
       projectId: id,
       total: body.queries.length,
-      message: 'Đang tìm nguồn thật…',
+      message: 'Searching for real sources…',
     });
     this.jobs.runInBackground(jobId, async () => {
       await this.sources.searchAndStore(id, body.queries, (d, t, m) =>

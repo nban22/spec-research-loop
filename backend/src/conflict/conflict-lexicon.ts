@@ -2,8 +2,8 @@
  * Từ điển của bộ phát hiện nguồn mâu thuẫn (#3) — **0 token**.
  *
  * Cùng bài học ngôn ngữ với #7 và #12: `prompts/generator.md` §"Language rule" bắt mọi
- * `title`/`body`/`payload` của card phải là **tiếng Anh**, và `Source.abstract` cũng tiếng Anh.
- * Từ điển chính vì thế là tiếng Anh; phần tiếng Việt giữ cho card `origin = USER` người dùng tự gõ.
+ * `title`/`body`/`payload` của card phải là **tiếng Anh**, `Source.abstract` cũng tiếng Anh, và
+ * giao diện nay hoàn toàn tiếng Anh — nên từ điển chỉ còn tiếng Anh.
  *
  * Khác `ambiguity-lexicon.ts` ở một điểm cốt lõi: ở đây mục từ là **cặp có cực**, không phải danh
  * sách từ phẳng. Một túi từ trái nghĩa quét trên hai câu bất kỳ sẽ nổ liên tục — "improves" ở câu
@@ -47,12 +47,6 @@ export const DIRECTION_PAIRS: PolarPair[] = [
     neg: /\b(?:inconsistent(?:ly)?|brittle|unstable)\b/i,
     label: 'consistent↔inconsistent',
   },
-  { pos: /\btăng\b/i, neg: /\bgiảm\b/i, label: 'tăng↔giảm' },
-  {
-    pos: /\bcải thiện\b/i,
-    neg: /\b(?:xấu|kém)\s+đi\b/i,
-    label: 'cải thiện↔kém đi',
-  },
 ];
 
 /**
@@ -63,7 +57,7 @@ export const DIRECTION_PAIRS: PolarPair[] = [
  * Regex có `$` vì nó luôn được thử trên phần văn bản **đứng trước** vị trí khớp.
  */
 export const NEGATION_BEFORE =
-  /\b(?:not|no|never|fails? to|without|cannot|hardly|khong|không)\s+(?:\w+\s+){0,2}$/i;
+  /\b(?:not|no|never|fails? to|without|cannot|hardly)\s+(?:\w+\s+){0,2}$/i;
 
 /**
  * Hai con số chỉ đem ra so được khi **cùng tên metric**.

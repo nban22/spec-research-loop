@@ -111,7 +111,7 @@ export class FullTextService {
     if (this.fetchedThisRun >= MAX_FULLTEXT_SOURCES_PER_RUN) {
       // **Không** ghi cache: đây là giới hạn của lần chạy này, không phải thuộc tính của nguồn.
       this.logger.log(
-        `Đã đạt trần ${MAX_FULLTEXT_SOURCES_PER_RUN} nguồn toàn văn cho lần chạy này.`,
+        `Reached the cap of ${MAX_FULLTEXT_SOURCES_PER_RUN} full-text sources for this run.`,
       );
       return { text: '', status: 'FETCH_ERROR' };
     }

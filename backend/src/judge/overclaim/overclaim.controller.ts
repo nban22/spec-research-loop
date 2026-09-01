@@ -56,7 +56,7 @@ export class OverclaimController {
     });
     // Cờ của user khác → 404, không phải 403 (backend/CLAUDE.md §4).
     if (!flag) {
-      throw AppError.notFound('Không tìm thấy cờ phóng đại này.');
+      throw AppError.notFound('That overclaim flag was not found.');
     }
     await this.spec.assertVersionOwned(flag.spec_version_id, userId);
     return this.overclaim.chooseExit(flagId, body.exit, body.custom_text);

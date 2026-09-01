@@ -108,7 +108,7 @@ export class HumanCheckService {
       },
       select: { support_label: true },
     });
-    if (!pair) throw AppError.notFound('Không tìm thấy cặp khẳng định–nguồn.');
+    if (!pair) throw AppError.notFound('The claim-source pair was not found.');
 
     const match = pair.support_label === humanLabel;
     const existing = await this.prisma.humanCheck.findFirst({

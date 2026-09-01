@@ -60,7 +60,7 @@ export class JudgeService {
     if (version.project.judge_rounds_total >= MAX_JUDGE_ROUNDS) {
       throw AppError.conflict(
         'JUDGE_ROUND_LIMIT',
-        `Đã chạy hết ${MAX_JUDGE_ROUNDS} vòng judge cho dự án này.`,
+        `All ${MAX_JUDGE_ROUNDS} judge rounds for this project have been used.`,
       );
     }
     const existing = await this.prisma.judgeRun.count({
@@ -69,7 +69,7 @@ export class JudgeService {
     if (existing > 0) {
       throw AppError.conflict(
         'JUDGE_ROUND_EXISTS',
-        `Vòng judge ${round} đã chạy trên phiên bản này.`,
+        `Judge round ${round} has already run on this version.`,
       );
     }
 
@@ -84,7 +84,11 @@ export class JudgeService {
     });
     const inputDigest = createHash('sha256').update(sharedInput).digest('hex');
 
-    await opts.onProgress?.(0, JUDGE_DEFS.length, 'Đang chạy 5 judge độc lập…');
+    await opts.onProgress?.(
+      0,
+      JUDGE_DEFS.length,
+      'Running the 5 independent judges…',
+    );
 
     let done = 0;
     // `Promise.allSettled`, **không phải** `Promise.all`: một judge ném lỗi không được làm rơi
@@ -143,7 +147,7 @@ export class JudgeService {
           await opts.onProgress?.(
             done,
             JUDGE_DEFS.length,
-            `${def.key} xong (${out.data.issues.length} vấn đề).`,
+            `${def.key} finished (${out.data.issues.length} issues).`,
           );
           return def.key;
         } catch (err) {
@@ -169,7 +173,11 @@ export class JudgeService {
             })
             .catch(() => undefined);
           done += 1;
-          await opts.onProgress?.(done, JUDGE_DEFS.length, `${def.key} lỗi.`);
+          await opts.onProgress?.(
+            done,
+            JUDGE_DEFS.length,
+            `${def.key} failed.`,
+          );
           throw new Error(`${def.key}: ${message}`);
         }
       }),
@@ -191,7 +199,7 @@ export class JudgeService {
     if (completed.length < MIN_JUDGES_FOR_DONE) {
       throw AppError.unavailable(
         'JUDGE_QUORUM_NOT_MET',
-        `Chỉ ${completed.length}/5 judge chạy được — dưới ngưỡng ${MIN_JUDGES_FOR_DONE}, "đồng thuận" mất nghĩa. Hãy chạy lại.`,
+        `Only ${completed.length}/5 judges completed — below the ${MIN_JUDGES_FOR_DONE} threshold, "agreement" is meaningless. Please run again.`,
         failed,
       );
     }
@@ -217,7 +225,7 @@ export class JudgeService {
       .recompute(specVersionId, round)
       .catch((err: unknown) => {
         this.logger.warn(
-          `không chốt được số đo bất đồng vòng ${round}: ${err instanceof Error ? err.message : String(err)}`,
+          `could not freeze the disagreement metrics for round ${round}: ${err instanceof Error ? err.message : String(err)}`,
         );
       });
 

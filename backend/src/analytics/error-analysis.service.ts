@@ -99,7 +99,7 @@ export class ErrorAnalysisService {
       where: { id: projectId, user_id: userId },
       select: { id: true, title: true, current_spec_version_id: true },
     });
-    if (!project) throw AppError.notFound('Không tìm thấy dự án.');
+    if (!project) throw AppError.notFound('Project not found.');
 
     const [runs, pairs] = await Promise.all([
       this.prisma.verifierRun.findMany({

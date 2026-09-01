@@ -16,7 +16,7 @@ export class AppError extends HttpException {
   }
 
   /** Tài nguyên của user khác cũng trả 404 — 403 xác nhận nó tồn tại (STACK §11.3 luật 2). */
-  static notFound(message = 'Không tìm thấy tài nguyên.'): AppError {
+  static notFound(message = 'Resource not found.'): AppError {
     return new AppError('NOT_FOUND', message, HttpStatus.NOT_FOUND);
   }
 

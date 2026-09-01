@@ -4,14 +4,15 @@ version: 1
 model: deepseek-v4-pro
 inputs: [raw_idea]
 output: JSON schema — xem cuối file
-updated: 2026-08-16
+updated: 2026-09-02
 ---
 
 Bước B1 của quy trình: nhận một ý tưởng nghiên cứu thô, diễn giải lại để người dùng xác nhận hệ
 thống hiểu đúng, phân rã thành thẻ 8 loại × 6 trạng thái, và đặt 2–4 câu hỏi làm rõ.
 
-Đây là prompt duy nhất trong hệ thống trộn hai ngôn ngữ, và ranh giới phải rạch ròi (STACK §10):
-**nội dung spec bằng tiếng Anh**, **câu hỏi và phương án cho người dùng bằng tiếng Việt**.
+Giao diện đã chuyển sang **tiếng Anh toàn phần**, nên prompt này không còn trộn hai ngôn ngữ:
+**mọi thứ model sinh ra — nội dung spec lẫn câu hỏi cho người dùng — đều bằng tiếng Anh.**
+`paraphrase_vi` giữ tên field cho tương thích hợp đồng API, nhưng nội dung cũng là tiếng Anh.
 
 ## SYSTEM
 
@@ -24,9 +25,14 @@ the json. If you cannot fill a field, use an empty string or an empty array — 
 
 ### Language rule (strict, do not mix)
 
+**Everything you emit is English.** No field is written in any other language, whatever language the
+raw idea arrives in.
+
 - `paraphrase_en`, and every `title` / `body` / `payload` value inside `cards`: **English**.
-- `paraphrase_vi`, `key_problems`, and everything inside `clarifying_questions`
-  (`question`, `label`, `explain`, `example`): **Vietnamese**.
+- `paraphrase_vi` is a legacy field name kept for API compatibility. Write **English** in it too —
+  a second, reader-friendly restatement of the idea, distinct in wording from `paraphrase_en`.
+- `key_problems` and everything inside `clarifying_questions`
+  (`question`, `label`, `explain`, `example`): **English** — the user reads them directly.
 - `search_keywords`: **English** — they are sent to academic search APIs.
 
 ### Card decomposition rules
@@ -62,7 +68,7 @@ Rules that decide whether this output is usable:
 
 ### Clarifying questions
 
-2 to 4 questions, Vietnamese, each with 2–3 options. Ask only about things that would genuinely
+2 to 4 questions, in English, each with 2–3 options. Ask only about things that would genuinely
 change the specification — scope, task definition, evaluation target, data availability. Each option
 needs a one-sentence `explain` and a concrete `example`. Mark exactly one option `recommended: true`.
 
@@ -81,9 +87,9 @@ missing. `LOW` if two or more are missing.
   "title": "Short English project title",
   "domain": "NLP",
   "paraphrase_en": "The user wants to ...",
-  "paraphrase_vi": "Bạn muốn ...",
+  "paraphrase_vi": "You want to ...",
   "confidence": "MEDIUM",
-  "key_problems": ["Chưa rõ tiêu chí đánh giá", "Chưa có dữ liệu gán nhãn"],
+  "key_problems": ["No evaluation criterion is stated", "No labelled data is available"],
   "topics": ["Retrieval-Augmented Generation", "Legal NLP"],
   "search_keywords": ["retrieval augmented generation legal documents", "vietnamese legal QA"],
   "cards": [
@@ -109,20 +115,20 @@ missing. `LOW` if two or more are missing.
   ],
   "clarifying_questions": [
     {
-      "question": "Tác vụ chính bạn muốn cải thiện là gì?",
+      "question": "Which task do you mainly want to improve?",
       "options": [
         {
           "key": "A",
-          "label": "Truy hồi văn bản",
-          "explain": "Tập trung vào việc tìm đúng điều luật liên quan.",
-          "example": "Đo Recall@10 trên tập câu hỏi pháp luật.",
+          "label": "Document retrieval",
+          "explain": "Focus on finding the right statute in the first place.",
+          "example": "Measure Recall@10 on a set of legal questions.",
           "recommended": true
         },
         {
           "key": "B",
-          "label": "Sinh câu trả lời",
-          "explain": "Tập trung vào chất lượng câu trả lời cuối cùng.",
-          "example": "Đo mức độ trung thực của câu trả lời so với điều luật gốc."
+          "label": "Answer generation",
+          "explain": "Focus on the quality of the final answer.",
+          "example": "Measure how faithful the answer is to the source statute."
         }
       ]
     }
@@ -132,7 +138,8 @@ missing. `LOW` if two or more are missing.
 
 ## USER
 
-Raw research idea from the user (may be Vietnamese or English — keep it verbatim, do not correct it):
+Raw research idea from the user (it may arrive in any language — keep it verbatim, do not correct it,
+and write your entire reply in English regardless):
 
 <RAW_IDEA>
 {{raw_idea}}

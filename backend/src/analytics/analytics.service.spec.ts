@@ -84,8 +84,8 @@ describe('AnalyticsService', () => {
     const out = await service.costOverview('p-1', 'u-1');
     // B4 tốn nhiều tiền hơn nhưng B1 vẫn phải đứng trước.
     expect(out.by_step.map((b) => b.key)).toEqual([
-      'B1 · Diễn giải & phân rã',
-      'B4 · Judge & sửa spec',
+      'S1 · Paraphrase & decompose',
+      'S4 · Judges & spec fixes',
     ]);
   });
 

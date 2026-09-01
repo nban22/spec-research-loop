@@ -124,7 +124,7 @@ export class VerifierService {
       await opts.onProgress?.(
         i,
         units.length,
-        `Đang kiểm chứng cứ ${i + 1}/${units.length}…`,
+        `Verifying evidence ${i + 1}/${units.length}…`,
       );
 
       const claimText = this.claimTextOf(
@@ -209,7 +209,7 @@ export class VerifierService {
     await opts.onProgress?.(
       units.length,
       units.length,
-      'Đã kiểm xong chứng cứ.',
+      'Evidence verification finished.',
     );
 
     return {
@@ -385,7 +385,7 @@ export class VerifierService {
     } catch (err) {
       // **Fail-closed**: không kiểm được thì không được coi là đã kiểm (C2 · F.8).
       this.logger.error(
-        `Embedding lỗi, hạ nhãn về WEAK: ${err instanceof Error ? err.message : String(err)}`,
+        `Embedding failed, downgrading the label to WEAK: ${err instanceof Error ? err.message : String(err)}`,
       );
       flags.push('LLM_UNAVAILABLE');
       return {
@@ -473,7 +473,7 @@ export class VerifierService {
       evidenceSentence = out.data.evidence_sentence;
     } catch (err) {
       this.logger.warn(
-        `L4 lỗi, đơn vị này nhận WEAK: ${err instanceof Error ? err.message : String(err)}`,
+        `L4 failed, this unit gets WEAK: ${err instanceof Error ? err.message : String(err)}`,
       );
       flags.push('LLM_UNAVAILABLE');
       return {
@@ -637,7 +637,7 @@ export class VerifierService {
       evidenceSentence = out.data.evidence_sentence;
     } catch (err) {
       this.logger.warn(
-        `L3b lỗi, đơn vị này nhận WEAK: ${err instanceof Error ? err.message : String(err)}`,
+        `L3b failed, this unit gets WEAK: ${err instanceof Error ? err.message : String(err)}`,
       );
       flags.push('LLM_UNAVAILABLE');
       return {

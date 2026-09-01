@@ -112,7 +112,7 @@ export class SpecController {
     const card = await this.prisma.card.findFirst({
       where: { id, spec_version: { project: { user_id: userId } } },
     });
-    if (!card) throw AppError.notFound('Không tìm thấy thẻ.');
+    if (!card) throw AppError.notFound('Card not found.');
     const updated = await this.prisma.card.update({
       where: { id },
       data: {
@@ -141,7 +141,7 @@ export class SpecController {
     if (!otherId) {
       throw AppError.badRequest(
         'VALIDATION_FAILED',
-        'Phiên bản này chưa có bản trước để so sánh.',
+        'This version has no earlier version to compare against.',
       );
     }
     const other = await this.spec.assertVersionOwned(otherId, userId);
@@ -176,7 +176,7 @@ export class SpecController {
       projectId: version.project_id,
       specVersionId: id,
       total: 5,
-      message: 'Đang chạy 5 judge độc lập…',
+      message: 'Running the 5 independent judges…',
     });
     this.jobs.runInBackground(jobId, async () => {
       await this.jobs.emit(jobId, 'judge.started', { total: 5 });
@@ -214,7 +214,7 @@ export class SpecController {
       projectId: version.project_id,
       specVersionId: id,
       total: 1,
-      message: 'Đang kiểm chứng cứ…',
+      message: 'Verifying the evidence…',
     });
     this.jobs.runInBackground(jobId, async () => {
       await this.verifier.verifySpecVersion(id, {
@@ -267,7 +267,7 @@ export class SpecController {
     const artifact = await this.prisma.exportArtifact.findFirst({
       where: { id: artifactId, spec_version_id: id },
     });
-    if (!artifact) throw AppError.notFound('Không tìm thấy bản xuất.');
+    if (!artifact) throw AppError.notFound('Export not found.');
 
     const result = await this.exporter.export(id, artifact.format);
     res
