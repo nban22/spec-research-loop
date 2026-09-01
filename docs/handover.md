@@ -29,9 +29,9 @@ là cách tự nói dối về tiến độ.
 | 1 | Website chạy được | ✅ Đủ | `https://dsa-bus-booking.io.vn` · API `https://api.dsa-bus-booking.io.vn` · chạy local theo `README.md` | — |
 | 2 | Source code | ✅ Đủ | Repo `nban22/spec-research-loop`, 3 làn phát triển song song, mọi thay đổi đi qua PR | — |
 | 3 | Tài liệu kiến trúc | ✅ Đủ | `docs/ARCHITECTURE.md` (ERD + API surface) · `docs/STACK.md` · `docs/DESIGN_SYSTEM.md` · `docs/SYSTEM_DESIGN_ANALYSIS.md` · `docs/product-flow-map.html` | — |
-| 4 | Dataset / tập use case | ⚠️ Đủ hình thức | `backend/eval/ideas.json` — 10 ý tưởng, 10 domain | Tập **human-label 20 cặp** (claim, nguồn) để validate nhãn verifier |
+| 4 | Dataset / tập use case | ⚠️ Đủ hình thức | `backend/eval/ideas.json` — 10 ý tưởng, 10 domain · `eval/results/label-sample.json` — 30 cặp đã chấm **mù bởi một mô hình khác nhà cung cấp** | Nhãn của **người thật**. 30 nhãn hiện có do model chấm (ghi rõ trong `HumanCheck.note`), nên chưa tính là human validation — xem §C.12 |
 | 5 | Prompt của Generator và các Judge | ✅ Đủ | `prompts/` — 18 file, có frontmatter, hash ghi vào `LlmCall.prompt_hash` mỗi lời gọi | — |
-| 6 | Cơ chế kiểm tra citation / evidence | ⚠️ Đủ hình thức | `backend/src/verifier/**` — 5 tầng L0→L5, có cơ chế **chặn** xuất bản chứ không chỉ gắn nhãn | Chưa validate bằng người ⇒ mọi nhãn còn ở mức *"máy nói vậy"*. Ngưỡng `τ` là **ước đoán, chưa hiệu chỉnh** |
+| 6 | Cơ chế kiểm tra citation / evidence | ⚠️ Đủ hình thức | `backend/src/verifier/**` — 5 tầng L0→L5, có cơ chế **chặn** xuất bản chứ không chỉ gắn nhãn | Chưa validate bằng người ⇒ mọi nhãn còn ở mức *"máy nói vậy"*. Đối chiếu chéo mô hình đã chạy (§C.12): khớp **4/5 trên thẻ CLAIM**, và phát hiện `calibrate.ts` **không thể** hiệu chỉnh `τ` từ dữ liệu đã lưu |
 | 7 | Ít nhất hai baseline | ⚠️ Đủ hình thức | 4 arm: `B1` · `B2` · `SYS` · `SYS_NO_VERIFY` (`backend/eval/harness.ts`) — **vượt** yêu cầu về code | Mới chạy **2/4 arm × 1/10 ý tưởng**. Chưa có batch đầy đủ |
 | 8 | Báo cáo đánh giá hệ thống | ⚠️ Đủ hình thức | `docs/evaluation_report.md` — §1–§6 + Phụ lục A (làn A) + Phụ lục C (làn C) | Bảng số ở §3 mới **n = 1**; bảng chi phí ở §C **để trống**. Cả hai chờ đúng một batch |
 | 9 | Video demo | ❌ Thiếu | Kịch bản đã có ở §2 dưới đây | **Quay và dựng** |
