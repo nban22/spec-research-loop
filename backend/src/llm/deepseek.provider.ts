@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { AppError } from '../common/app-error';
 import type { Env } from '../common/env';
+import { isTransientLlmError, LlmTransportError } from './llm-transient';
 import type {
   LlmProvider,
   LlmRequest,
@@ -66,9 +67,15 @@ export class DeepseekProvider implements LlmProvider {
         },
       };
     } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      // Phân loại ngay tại đây vì đây là chỗ duy nhất còn giữ lỗi gốc của SDK; bọc thành
+      // `AppError` là mất `status`, `name` và `cause`.
+      if (isTransientLlmError(err)) {
+        throw new LlmTransportError(`Không gọi được DeepSeek: ${detail}`);
+      }
       throw AppError.unavailable(
         'LLM_UNAVAILABLE',
-        `Không gọi được DeepSeek: ${err instanceof Error ? err.message : String(err)}`,
+        `Không gọi được DeepSeek: ${detail}`,
       );
     }
   }
