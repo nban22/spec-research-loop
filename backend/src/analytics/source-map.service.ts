@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppError } from '../common/app-error';
 import { PrismaService } from '../common/prisma.service';
+import { citationGraph, type CitationGraph } from './citation-graph';
 import { cosine, mds2d, sparsity, tfidf } from './similarity';
 
 /**
@@ -9,10 +10,9 @@ import { cosine, mds2d, sparsity, tfidf } from './similarity';
  * Cùng ràng buộc với `AnalyticsService`: **không một lệnh ghi DB nào**, không gọi LLM, không gọi
  * API ngoài. Toàn bộ là `findMany` rồi tính trong bộ nhớ.
  *
- * **Citation graph hoãn, có lý do cụ thể:** nó cần trường `references` từ Semantic Scholar, mà
- * `S2_FIELDS` ở `sources/source.client.ts:29` không xin trường đó — và `backend/src/sources/**`
- * nằm ngoài phạm vi được sửa của #16. Issue đã lường trước: citation graph là phần thêm, thiếu nó
- * hai bản đồ dưới vẫn đứng được một mình.
+ * **Citation graph: đã làm được, không cần đụng `sources/**`.** Truy vấn OpenAlex không có tham
+ * số `select` nên nó trả về cả object work, và `normalizeOpenAlex` lưu nguyên object đó vào
+ * `Source.raw` — tức là `referenced_works` đã nằm sẵn trong DB từ ngày đầu. Xem `citation-graph.ts`.
  */
 
 export type SourceNode = {
@@ -39,6 +39,8 @@ export type SourceMap = {
   timeline: { year: number | null; count: number; cited: number }[];
   /** Nguồn thiếu abstract thì vector TF-IDF rất mỏng — cảnh báo để đừng đọc bản đồ quá tin. */
   weak_text_count: number;
+  /** Đồ thị trích dẫn giữa chính các nguồn của dự án. `coverage` cho biết đọc được bao nhiêu phần. */
+  citations: CitationGraph;
 };
 
 @Injectable()
@@ -63,14 +65,28 @@ export class SourceMapService {
         venue: true,
         citation_count: true,
         doi_verified: true,
+        // `raw` chỉ để đọc `referenced_works` — xem `citation-graph.ts`. Không trả nó ra FE.
+        external_id: true,
+        retrieved_from: true,
+        raw: true,
         _count: { select: { card_sources: true } },
       },
       // Thứ tự cố định: MDS tất định, nhưng chỉ khi đầu vào cũng vào theo cùng một thứ tự.
       orderBy: [{ year: 'asc' }, { id: 'asc' }],
     });
 
-    if (sources.length === 0)
-      return { nodes: [], timeline: [], weak_text_count: 0 };
+    if (sources.length === 0) {
+      return {
+        nodes: [],
+        timeline: [],
+        weak_text_count: 0,
+        citations: {
+          edges: [],
+          coverage: { with_refs: 0, total: 0 },
+          most_cited: [],
+        },
+      };
+    }
 
     const vectors = tfidf(sources.map((s) => `${s.title} ${s.abstract ?? ''}`));
     const n = sources.length;
@@ -111,6 +127,17 @@ export class SourceMapService {
       // 40 ký tự là ngưỡng thô: dưới đó gần như chắc chắn chỉ có tiêu đề, không có abstract.
       weak_text_count: sources.filter((s) => (s.abstract ?? '').length < 40)
         .length,
+      citations: citationGraph(
+        sources.map((s) => ({
+          id: s.id,
+          external_id: s.external_id,
+          retrieved_from: String(s.retrieved_from),
+          title: s.title,
+          year: s.year,
+          citation_count: s.citation_count,
+          raw: s.raw,
+        })),
+      ),
     };
   }
 }

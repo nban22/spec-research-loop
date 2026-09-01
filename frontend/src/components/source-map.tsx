@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleDot, Clock } from 'lucide-react';
+import { CircleDot, Clock, Share2 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useState } from 'react';
 import { EmptyState } from '@/components/states';
@@ -36,7 +36,15 @@ export type SourceMapData = {
   nodes: SourceNode[];
   timeline: { year: number | null; count: number; cited: number }[];
   weak_text_count: number;
+  citations: {
+    edges: { from: string; to: string }[];
+    /** Bao nhiêu nguồn **đọc được** dữ liệu trích dẫn. Thiếu con số này thì đồ thị nói dối. */
+    coverage: { with_refs: number; total: number };
+    most_cited: { id: string; title: string; in_degree: number }[];
+  };
 };
+
+type Tab = 'similarity' | 'timeline' | 'citations';
 
 /** Khung vẽ cố định; SVG tự co theo `viewBox` nên không cần đo container. */
 const W = 640;
@@ -57,7 +65,7 @@ function radiusOf(citations: number | null): number {
 }
 
 export function SourceMapView({ data }: { data: SourceMapData }) {
-  const [tab, setTab] = useState<'similarity' | 'timeline'>('similarity');
+  const [tab, setTab] = useState<Tab>('similarity');
   const [focus, setFocus] = useState<string | null>(null);
   const reduced = useReducedMotion();
 
@@ -95,8 +103,10 @@ export function SourceMapView({ data }: { data: SourceMapData }) {
         >
           {tab === 'similarity' ? (
             <SimilarityMap nodes={data.nodes} focus={focus} onFocus={setFocus} />
-          ) : (
+          ) : tab === 'timeline' ? (
             <Timeline rows={data.timeline} />
+          ) : (
+            <CitationGraph nodes={data.nodes} citations={data.citations} />
           )}
         </motion.div>
       </AnimatePresence>
@@ -108,16 +118,11 @@ export function SourceMapView({ data }: { data: SourceMapData }) {
  * Hai nút `aria-pressed` thay vì `Tabs` của shadcn: component đó đã bị gỡ trong đợt revamp và
  * `components/ui/**` nằm ngoài phạm vi được sửa của issue này.
  */
-function ViewToggle({
-  value,
-  onChange,
-}: {
-  value: 'similarity' | 'timeline';
-  onChange: (v: 'similarity' | 'timeline') => void;
-}) {
+function ViewToggle({ value, onChange }: { value: Tab; onChange: (v: Tab) => void }) {
   const opts = [
     { key: 'similarity' as const, label: 'Bản đồ chủ đề', icon: CircleDot },
     { key: 'timeline' as const, label: 'Dòng thời gian', icon: Clock },
+    { key: 'citations' as const, label: 'Trích dẫn', icon: Share2 },
   ];
   return (
     <div className="border-hairline inline-flex rounded-md border p-0.5">
@@ -279,6 +284,142 @@ function SimilarityMap({
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * Đồ thị trích dẫn giữa **chính các nguồn của dự án**.
+ *
+ * Dùng lại **đúng toạ độ MDS** của bản đồ chủ đề thay vì bố cục riêng: chuyển tab thì nút đứng
+ * nguyên chỗ, nên người xem đọc được "hai paper gần nhau về chủ đề *và* có trích dẫn nhau" —
+ * đó là thông tin mà hai hình vẽ rời nhau không bao giờ nói ra được.
+ *
+ * `coverage` hiện **ngay trên hình, không phải cuối trang**: chỉ nguồn lấy từ OpenAlex mới có dữ
+ * liệu trích dẫn, nên một đồ thị thưa có thể là "các paper này ít trích nhau" **hoặc** "phần lớn
+ * nguồn đến từ Semantic Scholar nên ta không biết gì". Hai kết luận đó trái ngược nhau.
+ */
+function CitationGraph({
+  nodes,
+  citations,
+}: {
+  nodes: SourceNode[];
+  citations: SourceMapData['citations'];
+}) {
+  const reduced = useReducedMotion();
+  const sx = (x: number) => PAD + ((x + 1) / 2) * (W - PAD * 2);
+  const sy = (y: number) => PAD + ((y + 1) / 2) * (H - PAD * 2);
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+
+  const { with_refs, total } = citations.coverage;
+  const linked = new Set(citations.edges.flatMap((e) => [e.from, e.to]));
+
+  return (
+    <div className="space-y-2">
+      <div className="border-hairline bg-surface overflow-x-auto rounded-lg border">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="h-auto w-full min-w-[520px]"
+          role="img"
+          aria-label={`Đồ thị trích dẫn: ${citations.edges.length} liên kết giữa ${total} nguồn`}
+        >
+          <defs>
+            <marker
+              id="cite-arrow"
+              viewBox="0 0 8 8"
+              refX={7}
+              refY={4}
+              markerWidth={6}
+              markerHeight={6}
+              orient="auto-start-reverse"
+            >
+              <path d="M0,0 L8,4 L0,8 z" className="fill-brand-ink" />
+            </marker>
+          </defs>
+
+          {citations.edges.map((e, i) => {
+            const a = byId.get(e.from);
+            const b = byId.get(e.to);
+            if (!a || !b) return null;
+            return (
+              <motion.line
+                key={`${e.from}-${e.to}`}
+                x1={sx(a.x)}
+                y1={sy(a.y)}
+                x2={sx(b.x)}
+                y2={sy(b.y)}
+                className="stroke-brand-ink"
+                strokeWidth={1.2}
+                markerEnd="url(#cite-arrow)"
+                initial={{ pathLength: reduced ? 1 : 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 0.75 }}
+                transition={{
+                  duration: reduced ? 0 : 0.45,
+                  delay: reduced ? 0 : Math.min(i, 20) * 0.04,
+                }}
+              />
+            );
+          })}
+
+          {nodes.map((n) => (
+            <g key={n.id}>
+              <circle
+                cx={sx(n.x)}
+                cy={sy(n.y)}
+                r={radiusOf(n.citation_count)}
+                className={cn(
+                  // Nút không có cạnh nào vẽ rỗng — nhưng chú thích nói rõ đó có thể là
+                  // "không trích ai" hoặc "ta không đọc được dữ liệu trích dẫn của nó".
+                  linked.has(n.id) ? 'fill-brand-ink' : 'fill-surface',
+                )}
+                stroke="currentColor"
+                strokeWidth={1.2}
+              />
+              <text
+                x={sx(n.x)}
+                y={sy(n.y) - radiusOf(n.citation_count) - 4}
+                textAnchor="middle"
+                className="fill-ink-3 pointer-events-none text-[9px]"
+              >
+                {short(n.title, 26)}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <p
+        className={cn(
+          'rounded-md border px-2.5 py-1.5 text-xs',
+          with_refs === total
+            ? 'border-hairline text-ink-3'
+            : 'border-warn-line bg-warn-soft text-warn-strong',
+        )}
+      >
+        Đọc được dữ liệu trích dẫn của <strong>{with_refs}/{total}</strong> nguồn.{' '}
+        {with_refs < total && (
+          <>
+            Phần còn lại lấy từ Semantic Scholar, vốn không trả danh sách tài liệu tham khảo — nút
+            rỗng ở đây nghĩa là <strong>chưa biết</strong>, không phải “không trích ai”.
+          </>
+        )}
+      </p>
+
+      {citations.most_cited.length > 0 && (
+        <div className="border-hairline space-y-1 rounded-md border px-2.5 py-2">
+          <p className="text-ink-2 text-xs font-medium">
+            Được trích nhiều nhất trong chính tập nguồn này
+          </p>
+          <ul className="space-y-0.5">
+            {citations.most_cited.map((m) => (
+              <li key={m.id} className="text-ink-3 flex gap-2 text-xs">
+                <span className="text-brand-strong shrink-0 tabular-nums">{m.in_degree}×</span>
+                <span className="line-clamp-1">{m.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

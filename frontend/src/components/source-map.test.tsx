@@ -29,6 +29,7 @@ const data = (over: Partial<SourceMapData> = {}): SourceMapData => ({
   nodes: [node()],
   timeline: [{ year: 2020, count: 1, cited: 1 }],
   weak_text_count: 0,
+  citations: { edges: [], coverage: { with_refs: 1, total: 1 }, most_cited: [] },
   ...over,
 });
 
@@ -126,4 +127,60 @@ describe('SourceMapView', () => {
     render(<SourceMapView data={data()} />);
     expect(screen.queryByText(/thiếu abstract/)).not.toBeInTheDocument();
   });
+
+  /* Tab trích dẫn. Hai thứ đáng khoá: nút rỗng KHÔNG được đọc thành "không trích ai" khi ta
+     không có dữ liệu, và bảng xếp hạng tính theo in-degree TRONG tập chứ không theo độ nổi
+     tiếng toàn cầu. */
+  it('tab trích dẫn vẽ được cạnh giữa hai nguồn', async () => {
+    render(
+      <SourceMapView
+        data={data({
+          nodes: [
+            node({ id: 's-1', title: 'A', x: -0.5 }),
+            node({ id: 's-2', title: 'B', x: 0.5 }),
+          ],
+          citations: {
+            edges: [{ from: 's-1', to: 's-2' }],
+            coverage: { with_refs: 2, total: 2 },
+            most_cited: [{ id: 's-2', title: 'B', in_degree: 1 }],
+          },
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Trích dẫn' }));
+
+    expect(
+      await screen.findByRole('img', { name: /Đồ thị trích dẫn: 1 liên kết giữa 2 nguồn/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Được trích nhiều nhất trong chính tập nguồn này')).toBeInTheDocument();
+  });
+
+  it('thiếu dữ liệu trích dẫn thì cảnh báo, không để người đọc tưởng là "không ai trích ai"', async () => {
+    render(
+      <SourceMapView
+        data={data({
+          citations: { edges: [], coverage: { with_refs: 0, total: 3 }, most_cited: [] },
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Trích dẫn' }));
+
+    expect(await screen.findByText(/0\/3/)).toBeInTheDocument();
+    expect(screen.getByText(/chưa biết/)).toBeInTheDocument();
+  });
+
+  it('đọc được đủ dữ liệu thì không hiện cảnh báo', async () => {
+    render(
+      <SourceMapView
+        data={data({
+          citations: { edges: [], coverage: { with_refs: 2, total: 2 }, most_cited: [] },
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Trích dẫn' }));
+
+    expect(await screen.findByText(/2\/2/)).toBeInTheDocument();
+    expect(screen.queryByText(/chưa biết/)).not.toBeInTheDocument();
+  });
+
 });
