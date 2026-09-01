@@ -46,7 +46,9 @@ export type VerifierFlag =
   | 'LLM_UNAVAILABLE'
   // Làn A · #2 — khớp 1-1 `verifierFlagSchema` của backend, sửa cùng commit (STACK §3.1).
   | 'FULLTEXT_USED'
-  | 'FULLTEXT_UNAVAILABLE';
+  | 'FULLTEXT_UNAVAILABLE'
+  /** Cặp dừng sau L2 vì loại thẻ không hỏi bằng phép kéo theo (GAP · CONTRIBUTION). */
+  | 'CITATION_ONLY';
 
 /** Làn A · #1 — mức tin cậy của nguồn, khớp cột `SourceScore.tier`. */
 export type CredibilityTier = 'HIGH' | 'MEDIUM' | 'REVIEW';

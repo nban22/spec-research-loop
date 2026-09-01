@@ -43,6 +43,14 @@ export function decidingLayer(
     };
   }
 
+  // Đặt ngay sau L0: nguồn không có thật thì đó mới là lý do chính, cờ này chỉ là thứ yếu.
+  if (flags.includes('CITATION_ONLY')) {
+    return {
+      layer: 'L2',
+      why: 'Loại thẻ này không được kiểm bằng phép kéo theo. Một khoảng trống nghiên cứu khẳng định điều gì đó chưa ai làm, còn một đóng góp khẳng định điều tác giả sắp làm — không tóm tắt đơn lẻ nào chứng minh được hai chuyện đó. Hệ thống chỉ xác nhận trích dẫn có thật, DOI tra được, và con số trong thẻ có mặt trong nguồn.',
+    };
+  }
+
   if (flags.includes('FABRICATED_QUOTE')) {
     return {
       layer: 'L4b',
