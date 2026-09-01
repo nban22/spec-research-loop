@@ -17,10 +17,32 @@ import { expect, test } from '@playwright/test';
  * Dùng Playwright chứ không vitest: hai lỗi này chỉ lộ ra khi cả trang dựng xong với dữ liệu
  * thật chảy qua TanStack Query. Test component sẽ phải mock đúng những hook mà lỗi nằm ở giữa.
  */
+type Status = 'NOT_APPLICABLE' | 'INVALID_PARAMS' | undefined;
+
 test.describe('Bước 3 · có kế hoạch, không có ước lượng', () => {
-  test.beforeEach(async ({ page }) => {
+  /** Dựng đúng một trạng thái server. `runningJob` mô phỏng job còn sống sau khi tải lại trang. */
+  async function mock(
+    page: import('@playwright/test').Page,
+    opts: { status: Status; runningJob?: boolean },
+  ) {
     await page.route('**/api/**', (route) => {
       const url = route.request().url();
+
+      if (url.includes('/api/jobs/')) {
+        return route.fulfill({
+          status: 200,
+          json: {
+            job: {
+              id: 'j-1',
+              kind: 'GENERATE',
+              status: opts.runningJob ? 'RUNNING' : 'DONE',
+              progress: { done: 1, total: 2 },
+              message: 'Đang ước lượng tài nguyên…',
+              error_code: null,
+            },
+          },
+        });
+      }
 
       if (url.includes('/api/auth/me')) {
         return route.fulfill({
@@ -46,6 +68,11 @@ test.describe('Bước 3 · có kế hoạch, không có ước lượng', () =>
               baselines_and_metrics: 'PSQI global score',
               ablation_plan: '—',
               risks_and_limitations: '—',
+              estimate_status: opts.status,
+              estimate_note:
+                opts.status === 'NOT_APPLICABLE'
+                  ? 'Nút thắt là tuyển người tham gia, không phải tính toán.'
+                  : undefined,
             },
             estimate: null,
           },
@@ -99,7 +126,6 @@ test.describe('Bước 3 · có kế hoạch, không có ước lượng', () =>
               related_work_count: 0,
               issue_group_count: 0,
               has_experiment_plan: true,
-              // Đây là trường then chốt của cả bài test.
               has_estimate: false,
               meta: null,
             },
@@ -110,31 +136,62 @@ test.describe('Bước 3 · có kế hoạch, không có ước lượng', () =>
 
       return route.fulfill({ status: 200, json: {} });
     });
-  });
+  }
 
-  test('nói rõ vì sao không có ước lượng, KHÔNG treo skeleton', async ({ page }) => {
+  test('NOT_APPLICABLE: khẳng định kế hoạch không chạy trên mô hình, kèm lý do của model', async ({ page }) => {
+    await mock(page, { status: 'NOT_APPLICABLE' });
     await page.goto('/projects/p-1/step/3');
 
-    /* Khoanh vùng vào đúng panel đang xét. Đếm `.animate-pulse` trên cả trang thì bắt nhầm
-       skeleton thoáng qua của panel khác lúc trang còn đang dựng — test sẽ đỏ ngẫu nhiên khi
-       máy chậm, và đỏ vì lý do không liên quan tới thứ nó muốn kiểm. */
     const panel = page.locator('section').filter({ hasText: 'Kiểm tra tính khả thi' });
-    await expect(
-      panel.getByText(/Kế hoạch này không có phần tính toán để ước lượng/),
-    ).toBeVisible();
+    await expect(panel.getByText(/không chạy trên mô hình nào/)).toBeVisible();
+    await expect(panel.getByText(/tuyển người tham gia/)).toBeVisible();
+    // Không mời tự nhập: ở ca này con số không tồn tại để mà nhập.
+    await expect(panel.getByRole('button', { name: 'Tự nhập tham số ước lượng' })).toHaveCount(0);
     await expect(panel.locator('.animate-pulse')).toHaveCount(0);
   });
 
-  test('vẫn chốt được kế hoạch — không kẹt ở bước 3', async ({ page }) => {
+  test('INVALID_PARAMS: nói tham số hỏng và MỜI tự nhập, không đổ cho "không tính toán"', async ({ page }) => {
+    await mock(page, { status: 'INVALID_PARAMS' });
     await page.goto('/projects/p-1/step/3');
 
-    // Tra theo vai trò, không theo chữ: "Duyệt kế hoạch" xuất hiện ở cả tiêu đề panel lẫn nhãn
-    // phương án. Nút gửi là bằng chứng đủ và duy nhất rằng khối quyết định đã dựng xong.
+    const panel = page.locator('section').filter({ hasText: 'Kiểm tra tính khả thi' });
+    await expect(panel.getByText(/tham số ước lượng hệ thống nhận được\s+không hợp lệ/)).toBeVisible();
+    await expect(panel.getByText(/không chạy trên mô hình nào/)).toHaveCount(0);
+    await expect(panel.getByRole('button', { name: 'Tự nhập tham số ước lượng' })).toBeVisible();
+  });
+
+  test('form tự nhập mở ra là dùng được bằng bàn phím', async ({ page }) => {
+    await mock(page, { status: 'INVALID_PARAMS' });
+    await page.goto('/projects/p-1/step/3');
+
+    await page.getByRole('button', { name: 'Tự nhập tham số ước lượng' }).click();
+    await expect(page.getByLabel('Cỡ model (tỉ tham số)')).toHaveAttribute('type', 'range');
+    await expect(page.getByRole('button', { name: 'Lưu ước lượng' })).toBeVisible();
+  });
+
+  /**
+   * Ca mà bản vá đầu tiên nói dối: trạng thái chưa được ghi (hàng cũ), hoặc job còn chạy mà
+   * trang vừa tải lại nên client mất dấu nó. Không được khẳng định bất cứ điều gì.
+   */
+  test('trạng thái chưa rõ: KHÔNG khẳng định, mà nói có thể đang tính', async ({ page }) => {
+    await mock(page, { status: undefined });
+    await page.goto('/projects/p-1/step/3');
+
+    const panel = page.locator('section').filter({ hasText: 'Kiểm tra tính khả thi' });
+    await expect(panel.getByText(/hệ thống có thể đang tính/)).toBeVisible();
+    await expect(panel.getByText(/không chạy trên mô hình nào/)).toHaveCount(0);
+  });
+
+  test('vẫn chốt được kế hoạch — không kẹt ở bước 3', async ({ page }) => {
+    await mock(page, { status: 'NOT_APPLICABLE' });
+    await page.goto('/projects/p-1/step/3');
+
     await expect(page.getByRole('button', { name: 'Chốt kế hoạch' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Duyệt kế hoạch' })).toBeVisible();
   });
 
   test('kế hoạch thí nghiệm vẫn hiện đầy đủ, không bị mất theo ước lượng', async ({ page }) => {
+    await mock(page, { status: 'NOT_APPLICABLE' });
     await page.goto('/projects/p-1/step/3');
     await expect(page.getByText(/Mindfulness meditation vs sleep hygiene education/)).toBeVisible();
   });

@@ -1,10 +1,10 @@
 ---
 id: generator_experiment
-version: 1
+version: 2
 model: deepseek-v4-pro
 inputs: [spec_json]
 output: JSON schema — xem cuối file
-updated: 2026-08-16
+updated: 2026-09-01
 ---
 
 Sinh kế hoạch thí nghiệm TN1…TNn, baselines & metrics, ablation plan, risks — cộng bộ tham số đầu
@@ -33,6 +33,13 @@ Hard constraints:
    describes the worst case rather than an average. `model_params_b` is in billions of parameters.
    `quantization` is one of `fp16`, `int8`, `int4`. All numbers must be consistent with the protocol
    you just wrote — if no experiment uses 1000 evaluation samples, do not report 1000.
+8. **If no experiment in this plan runs a neural network** — a clinical trial, a human survey, a
+   qualitative study, a hardware benchmark — set `estimator_inputs` to `null` and write one
+   sentence in `estimator_note` naming the resource bottleneck that actually applies (participant
+   recruitment, annotator hours, clinic time, lab equipment). **Never invent a model size or a
+   quantization level to fill the field.** A fabricated 7B/int8 is worse than no number: the
+   product renders it as a computed VRAM and cost figure, and the user has no way to tell.
+   If **any** experiment does run a model, `estimator_inputs` is required and rule 7 applies.
 
 ```json
 {
@@ -60,7 +67,33 @@ Hard constraints:
     "eval_samples": 500,
     "avg_prompt_tokens": 1200,
     "avg_output_tokens": 400
-  }
+  },
+  "estimator_note": ""
+}
+```
+
+Second example — a plan with **no** computational experiment. Note `estimator_inputs: null`:
+
+```json
+{
+  "experiments": [
+    {
+      "code": "TN1",
+      "title": "Mindfulness meditation vs sleep hygiene education for subjective sleep quality",
+      "bullets": [
+        "Compare an 8-week mindfulness program against standard sleep hygiene education",
+        "On 200 community-dwelling adults aged 60+ with moderate sleep disturbance",
+        "Metric: change in Pittsburgh Sleep Quality Index from baseline to 8 weeks",
+        "Success: mindfulness arm improves PSQI by at least 1.5 points more than the control arm"
+      ],
+      "linked_claim_title": "Mindfulness meditation improves subjective sleep quality in older adults."
+    }
+  ],
+  "baselines_and_metrics": "Sleep hygiene education as an active control ... Metrics: PSQI, ISI ...",
+  "ablation_plan": "Drop the weekly group session and keep only the audio guide ...",
+  "risks_and_limitations": "Self-reported sleep quality is subject to expectancy effects ...",
+  "estimator_inputs": null,
+  "estimator_note": "The binding resource is participant recruitment and 8 weeks of trained facilitator time, not compute."
 }
 ```
 

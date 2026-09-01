@@ -310,4 +310,14 @@ export type ApiExperimentPlan = {
   baselines_and_metrics: string;
   ablation_plan: string;
   risks_and_limitations: string;
+  /**
+   * **Vì sao** kế hoạch này có hoặc không có ước lượng tài nguyên — khớp
+   * `backend/src/contracts/estimator.ts`.
+   *
+   * `undefined` ở hàng ghi trước khi trường này tồn tại. Giao diện phải đọc nó là **"chưa rõ"**,
+   * không được mặc định về `NOT_APPLICABLE`: dữ liệu cũ trong DB thật ra thuộc ca
+   * `INVALID_PARAMS`, nên gán nhãn kia là dán một câu sai lên chúng.
+   */
+  estimate_status?: 'OK' | 'NOT_APPLICABLE' | 'INVALID_PARAMS';
+  estimate_note?: string;
 };

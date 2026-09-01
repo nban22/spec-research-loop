@@ -10,6 +10,7 @@ import { OptionList } from '@/components/option-list';
 import { Panel } from '@/components/panel';
 import { SpecCard } from '@/components/spec-cards';
 import { EmptyState, StatTileSkeleton } from '@/components/states';
+import { EstimateForm } from '@/components/estimate-form';
 import { EstimateRows, ExperimentPlanList, StatTileGrid } from '@/components/spec-views';
 import { SummaryBar } from '@/components/summary-bar';
 import { WizardShell } from '@/components/wizard-shell';
@@ -52,8 +53,11 @@ export function Step3({ projectId }: { projectId: string }) {
   const hasPlan = detail?.currentVersion?.has_experiment_plan ?? false;
 
   const { data: planData } = usePlanAndEstimate(versionId);
+  /* Đọc trạng thái đã **ghi xuống**, không suy ra từ việc `estimate` vắng mặt: sự vắng mặt gộp
+     bốn ca cần bốn câu nói khác nhau (`backend/src/contracts/estimator.ts`). */
   const plan = planData?.plan ?? null;
   const estimate = planData?.estimate ? toApiEstimate(planData.estimate) : null;
+  const status = plan?.estimate_status;
 
   const context = (
     <>
@@ -155,23 +159,41 @@ export function Step3({ projectId }: { projectId: string }) {
             />
             <EstimateRows estimate={estimate} />
           </>
+        ) : status === 'NOT_APPLICABLE' ? (
+          /* Mô hình **chủ động** nói kế hoạch này không chạy trên model nào (prompt rule 8).
+             Đây là câu duy nhất được phép khẳng định điều đó — ba ca còn lại nói khác. */
+          <HintBox tone="info">
+            Kế hoạch này không chạy trên mô hình nào nên không có gì để ước lượng.
+            {plan?.estimate_note ? ` ${plan.estimate_note}` : ''}
+          </HintBox>
+        ) : status === 'INVALID_PARAMS' ? (
+          /* Kế hoạch CÓ phần tính toán, chỉ là tham số mô hình trả về không dùng được. Con số đó
+             tồn tại — mời người dùng nhập là việc đúng, không phải đẩy việc. */
+          <div className="space-y-2">
+            <HintBox tone="warn">
+              Kế hoạch này có phần chạy trên mô hình, nhưng tham số ước lượng hệ thống nhận được
+              không hợp lệ nên chưa tính được. Bạn nhập tay bảy tham số là có ngay ước lượng.
+            </HintBox>
+            <EstimateForm projectId={projectId} />
+          </div>
         ) : hasPlan && job.busy ? (
-          /* Job **đang chạy** pha 2: hiện đúng khung bốn ô sắp tới, không hiện chữ như thể
-             không có gì. */
+          /* Job **đang chạy** pha 2: hiện đúng khung bốn ô sắp tới. */
           <StatTileSkeleton />
         ) : hasPlan ? (
-          /* Có kế hoạch, job đã dừng, mà vẫn không có ước lượng ⇒ **không phải đang tải**.
-             Hoặc đây không phải thí nghiệm tính toán (một RCT y khoa thì không có model nào
-             để ước lượng VRAM), hoặc tham số mô hình trả về không hợp lệ và backend đã bỏ qua
-             phần này để giữ lại kế hoạch.
+          /* Không rõ vì sao chưa có ước lượng: hoặc là hàng ghi trước khi có `estimate_status`,
+             hoặc job đang chạy mà trang vừa được tải lại nên client mất dấu nó.
 
-             Trước đây chỗ này hiện skeleton mãi mãi. Skeleton nghĩa là "đang tải"; dùng nó cho
-             một trạng thái đã kết thúc là bắt người dùng chờ một thứ không bao giờ tới. */
-          <HintBox tone="info">
-            Kế hoạch này không có phần tính toán để ước lượng — thường gặp khi thí nghiệm không
-            chạy trên mô hình, ví dụ thử nghiệm lâm sàng hoặc khảo sát người dùng. Kế hoạch thí
-            nghiệm ở cột giữa vẫn dùng được bình thường.
-          </HintBox>
+             **Không khẳng định gì** ở đây. Bản vá đầu tiên nói chắc nịch "kế hoạch này không
+             phải thí nghiệm tính toán" cho cả ba ca — và với dữ liệu cũ trong DB thì câu đó
+             sai, vì chúng thật ra thuộc ca tham số hỏng. */
+          <div className="space-y-2">
+            <StatTileSkeleton />
+            <p className="text-ink-3 text-xs">
+              Chưa có ước lượng tài nguyên. Nếu bạn vừa dựng kế hoạch, hệ thống có thể đang tính
+              — tải lại trang sau ít giây. Nếu vẫn trống, bạn nhập tay bên dưới.
+            </p>
+            <EstimateForm projectId={projectId} />
+          </div>
         ) : (
           <p className="text-ink-3 text-xs">
             Ước lượng xuất hiện sau khi có kế hoạch thí nghiệm. Đây là công thức thuần — không
@@ -197,7 +219,12 @@ export function Step3({ projectId }: { projectId: string }) {
                 example: 'Chạy đúng số candidate và số mẫu đánh giá đang ước lượng.',
                 recommended: estimate?.fits_rtx3090 ?? true,
               },
-              {
+              /* Chỉ hiện khi CÓ ước lượng. Không có ước lượng thì không có đề xuất nào để
+                 áp và không có quy mô nào để giảm — mà `Decision` là dữ liệu đầu vào của
+                 `eval/` và của báo cáo đánh giá, nên ghi vào đó một lựa chọn vô nghĩa là làm
+                 bẩn đúng cái bảng dùng để đo. */
+              ...(estimate
+                ? [{
                 key: 'B',
                 label: 'Giảm quy mô theo đề xuất',
                 explain: 'Áp dụng các đề xuất giảm quy mô để vừa tài nguyên.',
@@ -205,7 +232,8 @@ export function Step3({ projectId }: { projectId: string }) {
                   estimate?.downscale_suggestion?.[0]?.reason ??
                   'Giảm số candidate hoặc hạ lượng tử hoá.',
                 recommended: !(estimate?.fits_rtx3090 ?? true),
-              },
+                  }]
+                : []),
             ]}
             variant="compact"
             submitting={answer.isPending}

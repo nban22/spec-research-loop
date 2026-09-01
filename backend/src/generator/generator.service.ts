@@ -11,9 +11,12 @@ import {
   relatedWorkOutputSchema,
 } from '../contracts/llm-io/generator';
 import {
-  EstimatorService,
+  ESTIMATE_STATUS,
   estimatorInputSchema,
-} from '../estimator/estimator.service';
+  type EstimateStatus,
+  type EstimatorInput,
+} from '../contracts/estimator';
+import { EstimatorService } from '../estimator/estimator.service';
 import { LlmService } from '../llm/llm.service';
 import { SourcesService } from '../sources/sources.service';
 import { SpecService } from '../spec/spec.service';
@@ -400,6 +403,44 @@ export class GeneratorService {
       link: { projectId, specVersionId: version.id },
     });
 
+    /**
+     * Quyết trạng thái ước lượng **trước** khi ghi, rồi ghi **một lần**.
+     *
+     * Trước đây kế hoạch được `upsert` ngay rồi mới parse tham số. Parse ném thì job chết sau
+     * khi kế hoạch đã vào DB — để lại một hàng không mang thông tin nào về việc vì sao nó thiếu
+     * ước lượng, và giao diện buộc phải đoán. Đã xảy ra thật với 5 job.
+     *
+     * Ba trạng thái, ba câu nói khác nhau với người dùng — xem `contracts/estimator.ts`.
+     */
+    const raw = out.data.estimator_inputs;
+
+    let status: EstimateStatus;
+    let inputs: EstimatorInput | null = null;
+
+    if (raw === null) {
+      // Mô hình **chủ động** nói kế hoạch này không chạy trên model nào (prompt rule 8).
+      status = ESTIMATE_STATUS.NOT_APPLICABLE;
+    } else {
+      /* Lưới cuối. Schema output đã dùng chung `estimatorInputSchema` nên nhánh này về lý
+         thuyết không xảy ra — giữ lại vì "về lý thuyết" không phải là một bảo đảm, và cái giá
+         của việc sai ở đây là mất cả kế hoạch thí nghiệm. */
+      const parsed = estimatorInputSchema.safeParse(raw);
+      if (parsed.success) {
+        status = ESTIMATE_STATUS.OK;
+        inputs = parsed.data;
+      } else {
+        status = ESTIMATE_STATUS.INVALID_PARAMS;
+        // Log `path` + `code`, **không** log giá trị nhận được: `message` của một custom error
+        // map có thể kèm giá trị, và đó là output model lọt vào log (backend/CLAUDE.md §5).
+        this.logger.warn(
+          `Ước lượng tài nguyên bị bỏ qua cho version ${version.id} — ` +
+            `estimator_inputs không hợp lệ: ${parsed.error.issues
+              .map((i) => `${i.path.join('.') || '(gốc)'}[${i.code}]`)
+              .join(' · ')}`,
+        );
+      }
+    }
+
     const blob: ExperimentPlanBlob = {
       experiments: out.data.experiments.map((e) => ({
         code: e.code,
@@ -410,6 +451,11 @@ export class GeneratorService {
       baselines_and_metrics: out.data.baselines_and_metrics,
       ablation_plan: out.data.ablation_plan,
       risks_and_limitations: out.data.risks_and_limitations,
+      estimate_status: status,
+      estimate_note:
+        status === ESTIMATE_STATUS.NOT_APPLICABLE
+          ? out.data.estimator_note
+          : undefined,
     };
 
     await this.prisma.experimentPlan.upsert({
@@ -420,43 +466,19 @@ export class GeneratorService {
 
     await onProgress?.(1, 2, 'Đang ước lượng tài nguyên…');
 
-    /**
-     * Ước lượng là **công thức thuần, 0 LLM** — model chỉ cung cấp tham số (S4).
-     *
-     * `safeParse` chứ **không** `parse`. Ba lý do, theo thứ tự quan trọng:
-     *
-     * 1. **Kế hoạch đã lưu ở trên rồi.** `parse` ném thì job chết *sau* khi `ExperimentPlan`
-     *    đã vào DB, để lại một trạng thái kẹt: có kế hoạch, không có ước lượng, và giao diện
-     *    không phân biệt được nó với "đang tính". Đã xảy ra thật — 5 job `GENERATE` chết với
-     *    `INTERNAL_ERROR` đúng tại chuỗi tiến độ này, để lại 3 kế hoạch mồ côi.
-     * 2. **Không phải nghiên cứu nào cũng chạy trên GPU.** `estimator_inputs` hỏi số tham số
-     *    model và mức lượng tử hoá; một RCT y khoa 200 người đo PSQI thì không có model nào,
-     *    nên mô hình buộc phải bịa và cái nó bịa rơi ra ngoài `positive()`/`int()`/enum.
-     *    Vứt cả kế hoạch thí nghiệm chỉ vì phần ước lượng GPU vô nghĩa là đổi sai chiều.
-     * 3. `backend/CLAUDE.md` §3 nói mọi output LLM phải `safeParse`. Chỗ này là ngoại lệ duy
-     *    nhất còn sót, và là ngoại lệ sai.
-     *
-     * Thiếu ước lượng **không** phải lỗi cần báo đỏ: `GET /spec-versions/:id/plan` trả
-     * `estimate: null`, và giao diện nói thẳng là kế hoạch này không ước lượng được.
-     */
-    const parsed = estimatorInputSchema.safeParse(out.data.estimator_inputs);
-    if (!parsed.success) {
-      // Log tham số sai, **không** log toàn bộ output của model (backend/CLAUDE.md §5).
-      this.logger.warn(
-        `Bỏ qua ước lượng tài nguyên cho version ${version.id}: ` +
-          `estimator_inputs không hợp lệ — ${parsed.error.issues
-            .map((i) => `${i.path.join('.')}: ${i.message}`)
-            .join(' · ')}`,
-      );
+    if (inputs === null) {
       await onProgress?.(
         2,
         2,
-        'Đã có kế hoạch thí nghiệm. Kế hoạch này không phải thí nghiệm tính toán nên không ước lượng tài nguyên.',
+        status === ESTIMATE_STATUS.NOT_APPLICABLE
+          ? 'Đã có kế hoạch thí nghiệm. Kế hoạch này không chạy trên mô hình nào nên không cần ước lượng tài nguyên.'
+          : 'Đã có kế hoạch thí nghiệm. Tham số ước lượng chưa hợp lệ — bạn có thể tự nhập ở cột phải.',
       );
       return;
     }
 
-    await this.saveEstimate(version.id, parsed.data);
+    // Ước lượng là **công thức thuần, 0 LLM** — model chỉ cung cấp tham số (S4).
+    await this.saveEstimate(version.id, inputs);
     await onProgress?.(
       2,
       2,
@@ -464,10 +486,7 @@ export class GeneratorService {
     );
   }
 
-  async saveEstimate(
-    specVersionId: string,
-    inputs: ReturnType<typeof estimatorInputSchema.parse>,
-  ) {
+  async saveEstimate(specVersionId: string, inputs: EstimatorInput) {
     const result = this.estimator.estimate(inputs);
     await this.prisma.resourceEstimate.upsert({
       where: { spec_version_id: specVersionId },
