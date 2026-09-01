@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Làn C — Trực quan &amp; Chi phí · bản đồ việc đã làm</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#ffffff; --line:#dfe4ec;
+    --fg:#1a2029; --fg-dim:#4c5768; --fg-mute:#7a8697;
+    --accent:#2f6bff;
+    --z-user:#dfe5f2; --z-screen:#dee6fb; --z-api:#e0efdc; --z-infra:#ece5f3;
+    --ok:#0f9a63; --warn:#c07c00; --danger:#dd4436;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--fg);
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  header{
+    padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel);
+    display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+  }
+  header h1{font-size:16px;margin:0;font-weight:650;letter-spacing:.2px}
+  header .hint{color:var(--fg-mute);font-size:12px}
+  .tabs{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .tab{
+    padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:transparent;
+    color:var(--fg-dim);cursor:pointer;font-size:12.5px;font-family:inherit;
+  }
+  .tab:hover{border-color:var(--accent);color:var(--fg)}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+  main{flex:1;display:flex;min-height:0}
+  #canvasWrap{flex:1;overflow:auto;padding:18px 18px 60px}
+
+  .routebar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px;font-size:11.5px;color:var(--fg-mute)}
+
+  .zone{
+    position:relative;margin-bottom:14px;border:1px solid var(--line);border-radius:12px;
+    padding:26px 12px 12px;background:rgba(255,255,255,.55);
+  }
+  .zone > .zlabel{
+    position:absolute;top:6px;left:12px;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--fg-mute);font-weight:700;background:var(--bg);padding:0 5px;border-radius:4px;
+  }
+  .row{display:flex;flex-wrap:wrap;gap:10px}
+  .flowarrow{text-align:center;color:var(--fg-mute);font-size:18px;margin:-8px 0 6px;line-height:1}
+
+  .node{
+    position:relative;min-width:190px;max-width:250px;flex:1 1 190px;
+    border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;
+    background:var(--panel-2);box-shadow:0 1px 2px rgba(20,30,50,.06);
+    transition:transform .12s,border-color .12s,box-shadow .12s;
+    font-family:inherit;text-align:left;color:inherit;
+  }
+  .node:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .node.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(47,107,255,.28)}
+  .node .nm{font-weight:640;font-size:13px;line-height:1.3}
+  .node .sb{color:var(--fg-mute);font-size:11px;margin-top:3px}
+  .node .badge{
+    display:inline-block;margin-top:6px;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;
+    padding:1px 6px;border-radius:4px;background:rgba(20,30,50,.07);color:var(--fg-dim);
+  }
+  .node .badge.ok{background:#e6f5ee;color:#0b6b46}
+  .node .badge.warn{background:#fdf1dc;color:#8a5a00}
+  .z-user   .node{background:color-mix(in srgb,var(--z-user) 62%,var(--panel-2))}
+  .z-screen .node{background:color-mix(in srgb,var(--z-screen) 62%,var(--panel-2))}
+  .z-api    .node{background:color-mix(in srgb,var(--z-api) 62%,var(--panel-2))}
+  .z-infra  .node{background:color-mix(in srgb,var(--z-infra) 62%,var(--panel-2))}
+
+  aside{
+    width:430px;flex:none;border-left:1px solid var(--line);background:var(--panel);
+    overflow:auto;padding:16px 18px 40px;
+  }
+  aside h2{font-size:15.5px;margin:0 0 2px}
+  aside .sub{color:var(--fg-mute);font-size:12px;margin-bottom:12px}
+  aside h3{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--fg-mute);
+    margin:18px 0 7px;border-top:1px solid var(--line);padding-top:11px;
+  }
+  aside h3:first-of-type{border-top:0;padding-top:0}
+  aside p{margin:0 0 8px;color:var(--fg-dim)}
+  aside ul{margin:0 0 8px;padding-left:18px;color:var(--fg-dim)}
+  aside li{margin-bottom:5px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+  .chip{font-size:11px;padding:2px 8px;border-radius:999px;background:#f2f5fa;border:1px solid var(--line);color:var(--fg-dim)}
+  .chip.infra{background:#f3eefa;border-color:#e0d5f0;color:#5b3d86}
+  .files{list-style:none;margin:0;padding:0}
+  .files li{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;color:var(--fg-mute);
+    background:#f8fafc;border:1px solid var(--line);border-radius:6px;padding:4px 7px;margin-bottom:4px;word-break:break-all}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:#1d4ed8}
+  .why{background:#eef3ff;border:1px solid #c9d8ff;border-radius:8px;padding:9px 11px;margin:0 0 10px;
+    font-size:12.5px;color:#26406e;line-height:1.5}
+  .why b{color:#16305e}
+  .ba{display:grid;grid-template-columns:1fr;gap:7px;margin-bottom:10px}
+  .ba div{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px;line-height:1.45}
+  .ba .before{background:#fbf3f2;border-color:#f0d5d2;color:#7a3630}
+  .ba .after{background:#eef7f2;border-color:#cbe6d8;color:#1d5f43}
+  .ba span{display:block;font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;font-weight:700;margin-bottom:2px;opacity:.75}
+  table.mini{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:10px}
+  table.mini th,table.mini td{border:1px solid var(--line);padding:4px 7px;text-align:left;vertical-align:top}
+  table.mini th{background:#f2f5fa;color:var(--fg-mute);font-size:10px;text-transform:uppercase;letter-spacing:.6px}
+  .placeholder{color:var(--fg-mute);font-size:12.5px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Làn C — Trực quan &amp; Chi phí</h1>
+  <span class="hint">Bản đồ việc đã làm · click một ô để xem quyết định thiết kế, techstack và lý do</span>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<main>
+  <div id="canvasWrap"><div id="zones"></div></div>
+  <aside id="panel"></aside>
+</main>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   Bản đồ làn C (epic #23) — trích từ source thật và từ PR đã merge.
+   Anh em với `product-flow-map.html`: cùng ngôn ngữ thị giác, khác góc nhìn.
+   File kia trả lời "sản phẩm chạy thế nào"; file này trả lời
+   "làn C đã thêm gì, vì sao làm thế, và dựng bằng gì".
+   ═══════════════════════════════════════════════════════════════════ */
+
+const TABS = [
+  {id:'work',  label:'Việc đã làm',   hint:'7 issue được giao + 3 việc ngoài issue. Mỗi ô là một sản phẩm giao được.'},
+  {id:'flow',  label:'Luồng dữ liệu', hint:'Một màn hình của làn C lấy số từ đâu. Điểm mấu chốt: gần như toàn bộ là ĐỌC.'},
+  {id:'ux',    label:'Sáng tạo UI/UX',hint:'Từng thay đổi: trước thế nào, sau thế nào, và vì sao đáng đổi.'},
+  {id:'stack', label:'Techstack',     hint:'Mỗi công nghệ: nó làm gì ở đây, chọn vì sao, và đã loại cái gì.'},
+];
+
+/* ───────────────────────── TAB 1 · VIỆC ĐÃ LÀM ───────────────────────── */
+const WORK = [
+ {zone:'Bước 1–2 của đề · hiểu và phân rã ý tưởng', cls:'z-screen', items:[
+
+  {id:'c1', nm:'#14 · Concept map', sb:'Bước 1 · PR #34', badge:'ok', badgeText:'đã merge',
+   step:'Bước 1 — "Sơ đồ · Concept map · Danh sách thành phần" · Bước 2 — "Biểu diễn các thẻ thành graph", "Dùng màu thể hiện trạng thái"',
+   what:'Bản đồ khái niệm ở bước 1: 8 loại thẻ × 6 trạng thái vẽ thành đồ thị toả tròn, bấm một thẻ là sửa tại chỗ.',
+   why:'Bảng thẻ trả lời được câu "hệ thống hiểu ý tưởng tôi thế nào" nhưng phải đọc từng dòng. Đồ thị trả lời trong một cái liếc, và giữ nguyên đường đọc-văn-bản ở tab thứ hai chứ không thay thế nó.',
+   decisions:[
+    'Bố cục toả tròn <b>tất định</b>, không force-directed: cùng dữ liệu phải ra cùng hình, nếu không người dùng tưởng dữ liệu đổi mỗi lần mở.',
+    'Nhãn loại thẻ <b>không cắt ngắn</b> — tiêu đề thẻ là văn bản tự do nên cắt được, tên phân loại thì không. Nới rộng ô thay vì rút chữ.',
+    'Dùng lại <code>PATCH /cards/:id</code> đã có, không thêm endpoint.'],
+   tech:['Next.js App Router','React 19','SVG viết tay','TanStack Query','Tailwind v4'],
+   files:['frontend/src/components/concept-map.tsx','frontend/src/components/steps/step-1.tsx']},
+
+  {id:'c2', nm:'#15 · Bản đồ claim–evidence kéo thả', sb:'Bước 2 · PR #38 + #39', badge:'ok', badgeText:'điểm nhấn demo',
+   step:'Bước 2 — "Cho phép kéo thả để liên kết claim với evidence"',
+   what:'Màn <code>/claim-map</code>: cột trái là nguồn, cột phải là claim. Kéo nguồn thả vào claim để nối, kéo liên kết sang claim khác để chuyển, kéo xuống vùng gỡ để tháo.',
+   why:'Câu hỏi nó trả lời trong một giây: <b>claim nào đang treo, không nguồn nào đỡ</b>. Đó chính là chỗ verifier sẽ gắn UNSUPPORTED rồi chặn xuất bản.',
+   decisions:[
+    '<b>Tách hai PR.</b> Ba endpoint ghi nằm ngoài phạm vi sở hữu của làn C, nên để riêng một PR nhỏ additive-only — người sở hữu vùng đó duyệt trong vài phút, và không đồng ý thì revert được độc lập.',
+    '<code>@dnd-kit</code> chứ không HTML5 Drag and Drop API: API gốc <b>không chạy trên cảm ứng</b> và không có đường đi bằng bàn phím.',
+    '<b>Kéo thả không phải đường duy nhất</b> — mỗi thao tác đều có nút thật có <code>aria-label</code>.',
+    'Chuyển claim = <b>nối trước, gỡ sau</b>: lệnh gỡ hỏng thì bằng chứng vẫn còn. Mất liên kết tệ hơn thừa liên kết.',
+    'Cặp nối tay có <code>verifier_run_id: null</code> = <b>chưa kiểm</b>, khác <code>WEAK</code> = đã kiểm và thấy yếu.'],
+   tech:['@dnd-kit/core','motion (layout animation)','NestJS module mới','Prisma upsert'],
+   files:['frontend/src/components/claim-evidence-map.tsx','backend/src/card-link/card-link.service.ts','frontend/src/lib/use-card-link.ts']},
+ ]},
+
+ {zone:'Bước 3 của đề · nghiên cứu công trình liên quan', cls:'z-screen', items:[
+
+  {id:'c3', nm:'#16 · Timeline · Similarity map · Citation graph', sb:'Bước 3 · PR #35 + #42', badge:'ok', badgeText:'đã merge',
+   step:'Bước 3 — "Citation graph · Timeline nghiên cứu · Similarity map giữa các paper"',
+   what:'Màn <code>/map</code> ba tab: dòng thời gian theo năm, bản đồ chủ đề, và đồ thị trích dẫn.',
+   why:'Vùng thưa trên bản đồ chủ đề là <b>gợi ý research gap bằng hình</b> — §8 của đề hỏi "cách phát hiện research gap", đây là một câu trả lời nhìn được.',
+   decisions:[
+    'Tự viết TF-IDF thay vì gọi <code>EmbedderService</code> của làn A — ràng buộc độc lập của issue. Thứ bản đồ cần là khoảng cách <i>tương đối</i> giữa vài chục paper cùng lĩnh vực; trùng từ khoá đủ tách cụm.',
+    '<b>MDS cổ điển chứ không t-SNE/UMAP</b>: tất định, không thêm dependency, và giữ khoảng cách toàn cục — t-SNE bóp méo đúng phần "vùng thưa" mà ta cần đọc.',
+    'Timeline <b>không điền năm trống</b>: chỗ trống giữa 2019 và 2023 là thông tin thật.',
+    'Citation graph ban đầu bị hoãn vì tưởng phải xin trường <code>references</code>. Nhìn lại: truy vấn OpenAlex không có tham số <code>select</code> nên trả về cả object, và <code>Source.raw</code> lưu nguyên nó — <b><code>referenced_works</code> đã nằm sẵn trong DB từ ngày đầu</b>.',
+    'Đồ thị trích dẫn <b>dùng lại đúng toạ độ MDS</b>: chuyển tab thì nút đứng nguyên chỗ, nên đọc được "hai paper gần nhau về chủ đề <i>và</i> trích dẫn nhau".'],
+   tech:['TF-IDF + cosine (tự viết)','MDS cổ điển (power iteration)','SVG viết tay','motion'],
+   files:['backend/src/analytics/similarity.ts','backend/src/analytics/citation-graph.ts','frontend/src/components/source-map.tsx']},
+ ]},
+
+ {zone:'Bước 6–7 của đề · thí nghiệm và tài nguyên', cls:'z-api', items:[
+
+  {id:'c4', nm:'#17 · Bảng token · thời gian · chi phí thật', sb:'Bước 7 · PR #30', badge:'ok', badgeText:'làm đầu tiên',
+   step:'Bước 7 — "Dashboard theo dõi thời gian và chi phí thực tế"',
+   what:'Màn <code>/cost</code>: gom <code>LlmCall</code> theo bước, theo prompt, theo model. Tỉ lệ ăn cache prefix, tỉ lệ phải thử lại, và <code>estimate_vs_actual</code>.',
+   why:'<code>LlmCall</code> đã ghi đủ token, cache và độ trễ cho <b>mọi</b> lời gọi từ ngày đầu mà chưa màn hình nào đọc. Issue này chỉ là mở mắt cho dữ liệu đã nằm sẵn đó.',
+   decisions:[
+    'Đơn giá <b>chép cố ý</b> từ <code>estimator.service.ts</code> và dùng đúng cùng con số: mục tiêu là đo <i>sai số của phép ước lượng</i>, nên hai vế phải cùng thước.',
+    '<code>estimate_vs_actual</code> ghi rõ trong docstring rằng <b>hai vế đo hai thứ khác loại</b> — dự toán cho thí nghiệm sẽ chạy, so với tiền đã tiêu để dựng spec. Chính caveat này về sau bác bỏ một thiết kế đo sai (xem ô "Đo chi phí ablation").'],
+   tech:['NestJS service chỉ đọc','Prisma aggregate','TanStack Query'],
+   files:['backend/src/analytics/analytics.service.ts','frontend/src/app/(app)/projects/[id]/cost/page.tsx']},
+
+  {id:'c5', nm:'#18 · Mô phỏng chi phí + đường Pareto', sb:'Bước 6 + 7 · PR #36', badge:'ok', badgeText:'đã merge',
+   step:'Bước 6 — "Pareto frontier giữa chất lượng và chi phí" · Bước 7 — "Cost simulator"',
+   what:'Màn <code>/simulate</code>: 5 thanh trượt, số cập nhật theo thời gian thực. Biểu đồ X = chi phí, Y = VRAM, vạch 24 GB vẽ thẳng lên trục kèm vùng tô đỏ.',
+   why:'Đề đòi "quá vạch là thấy ngay, không phải đọc chữ". Trục tung là VRAM nên vạch 24 GB là một đường thật trên một trục thật.',
+   decisions:[
+    '<b>Không thêm endpoint, không chép công thức</b> <code>EstimatorService</code> sang frontend. Chép thì hai bên lệch nhau ngay lần đầu ai sửa đơn giá, mà cái sai đó không ai phát hiện vì cả hai đều "có vẻ đúng". Giá phải trả: mỗi cấu hình một lời gọi — chấp nhận được vì endpoint là hàm thuần 0 I/O và cache <code>staleTime: Infinity</code>.',
+    'Lưới 36 cấu hình = 4 cỡ model × 3 mức lượng tử hoá × 3 mức ngân sách. <b>Phải có trục ngân sách</b> vì chi phí chỉ đổi theo nhóm đó — thiếu nó thì lưới thành một cột dọc.',
+    'Điểm chất lượng là <b>proxy, không phải số đo</b>, và nói thẳng điều đó trên UI. Nó trừ điểm theo mức lượng tử hoá — bỏ qua thì int4 và fp16 hoà nhau và đường Pareto zigzag dọc.'],
+   tech:['input[type=range] gốc','motion (chấm trượt)','SVG viết tay','useQueries'],
+   files:['frontend/src/components/cost-simulator.tsx','frontend/src/lib/use-debounced.ts']},
+
+  {id:'c6', nm:'#19 · Phân tích lỗi trực quan', sb:'Bước 6 · PR #33', badge:'ok', badgeText:'đã merge',
+   step:'Bước 6 — "Error analysis trực quan"',
+   what:'Màn <code>/errors</code>: ngưỡng và <code>label_counts</code> theo từng <code>VerifierRun</code>, tỉ lệ xuống tầng L4, ma trận cờ×loại thẻ và nhãn×loại thẻ.',
+   why:'Trả lời "verifier sai ở đâu, theo kiểu nào" thay vì chỉ một con số tổng.',
+   decisions:[
+    'Ghi rõ trong code: <code>CardSource.verifier_run_id</code> bị ghi đè mỗi lần chạy, nên dữ liệu ở mức từng cặp <b>chỉ có bản mới nhất</b>. Không nói ra thì người đọc tưởng đang xem lịch sử.',
+    'Bảng cờ <b>đếm lần xuất hiện, không phân hoạch</b> — một cặp mang nhiều cờ thì được đếm nhiều dòng, và đó là đúng. Bảng nhãn thì ngược lại: tổng phải bằng số cặp.'],
+   tech:['NestJS service chỉ đọc','Prisma groupBy','SVG viết tay'],
+   files:['backend/src/analytics/error-analysis.service.ts','frontend/src/app/(app)/projects/[id]/errors/page.tsx']},
+ ]},
+
+ {zone:'Bàn giao và đo đạc', cls:'z-infra', items:[
+
+  {id:'c7', nm:'#20 · Bộ tài liệu bàn giao', sb:'§6 của đề · PR #41', badge:'warn', badgeText:'thiếu video',
+   step:'§6 Sản phẩm bàn giao — "Video demo", "Một research spec hoàn chỉnh do hệ thống tạo"',
+   what:'<code>docs/handover.md</code>: đối chiếu 10 sản phẩm bàn giao, kịch bản video 14 cảnh, bản đồ tài liệu cho người chấm.',
+   why:'Đọc rời từng dòng thì tưởng còn 5 việc. Đối chiếu xong mới thấy <b>4 trong 5 dòng ⚠️ chặn bởi cùng một thứ</b>: chưa chạy batch đầy đủ. Đó là một lần chạy máy, không phải bốn hạng mục.',
+   decisions:[
+    'Bảng dùng đúng ba mức: Đủ / Đủ hình thức / Thiếu. <b>Cố ý không có mức "gần xong"</b> — hoặc nộp được hoặc không.',
+    'Kịch bản video có cảnh <b>cố tình cho gate chặn</b> trước khi sửa: đó là chỗ chứng minh cơ chế kiểm citation không phải trang trí.',
+    'Ba điều đừng làm khi quay, kèm lý do: đừng tua phần chờ (mâu thuẫn với màn chi phí ở cảnh 12), đừng giấu bước hỏng, đừng đọc kịch bản thành lời.'],
+   tech:['Markdown'],
+   files:['docs/handover.md']},
+
+  {id:'x1', nm:'Đo chi phí ablation', sb:'ngoài issue · PR #40', badge:'warn', badgeText:'chờ batch',
+   step:'§6 — "Báo cáo đánh giá hệ thống" (deliverable #8)',
+   what:'Hàm thuần <code>eval-cost.ts</code> + script <code>eval/cost-report.ts</code>: chi phí mỗi bậc kiến trúc của ablation 4 arm. Phụ lục C của báo cáo.',
+   why:'Ablation đã đo <b>chất lượng</b>. Chưa ai đo <b>cái giá</b>. Câu hỏi: ngân sách token đi đâu, và mỗi bậc mua được gì với giá bao nhiêu.',
+   decisions:[
+    'Một agent phản biện độc lập bắt được hai lỗi làm hỏng kết luận. <b>Một:</b> chỉ số "USD trên mỗi +0,1 citation_validity" <b>chia cho 0</b> ở 2/3 phép so, vì mọi nguồn đều có <code>external_id</code> nên không bao giờ bị gắn <code>SOURCE_NOT_FOUND</code> — con số 1.000 là hằng số theo cấu trúc. <b>Hai:</b> <code>B1→B2</code> gộp bốn biến, trong đó có <i>chi phí của chính cái thước</i>.',
+    '<code>median + IQR + cả 10 giá trị thô</code> thay <code>mean ± sd</code>: chi phí LLM lệch phải đuôi dày, trên 10 mẫu thì <code>mean ± sd</code> cho khoảng tràn xuống dưới 0.',
+    'Hiệu tính <b>theo cặp ý tưởng</b>, bootstrap CI với seed cố định — báo cáo đổi số mỗi lần build thì không ai kiểm lại được.',
+    'Bẫy đã tránh: <code>LlmCall</code> phải join theo <code>project_id</code>. Join theo <code>eval_run_id</code> chỉ ra chi phí auditor và cho một bảng trông hoàn toàn hợp lý.'],
+   tech:['Hàm thuần + jest','Bootstrap CI (LCG seed)','Prisma findMany'],
+   files:['backend/src/analytics/eval-cost.ts','backend/eval/cost-report.ts','backend/eval/pricing.json']},
+
+  {id:'x2', nm:'Đối chiếu chéo mô hình', sb:'ngoài issue · PR #47', badge:'warn', badgeText:'không phải human validation',
+   step:'§6 — deliverable #4 và #6',
+   what:'<code>eval/label-sample.ts</code> xuất mẫu mù rồi nạp lại. 30 cặp claim–nguồn được một mô hình <b>khác nhà cung cấp</b> chấm mù.',
+   why:'§5.5 của báo cáo ghi "Auditor không đổi được nhà cung cấp. MVP chỉ có DeepSeek". Đây là lần đầu có một mô hình ngoài chấm trên chính dữ liệu hệ thống.',
+   decisions:[
+    '<b>Gọi đúng tên.</b> Ghi nhãn model vào cột <code>human_label</code> rồi báo cáo là "đã validate bằng người" là bịa bằng chứng. Mỗi dòng ghi nguồn gốc; sản phẩm #4 và #6 <b>giữ nguyên ⚠️</b>.',
+    'Phát hiện: gộp chung thì Cohen κ = −0,002, nhưng <b>trên thẻ CLAIM — loại thẻ phép kiểm được thiết kế cho — khớp 4/5</b>. Bất đồng dồn vào CONTRIBUTION, nơi claim dạng "We develop…" là lời hứa sẽ làm chứ không phải phát biểu về thế giới.',
+    'Phát hiện lớn nhất: <b><code>calibrate.ts</code> không thể hiệu chỉnh τ từ dữ liệu đã lưu.</b> Cả 27 tổ hợp ngưỡng ra số giống hệt nhau — τ chỉ quyết định <i>có gọi L4 hay không</i>, mà replay chỉ chạy được với cặp <i>đã có</i> entailment. Hai điều kiện loại trừ nhau.'],
+   tech:['Lấy mẫu phân tầng có bù','Cohen κ','Prisma'],
+   files:['backend/eval/label-sample.ts','backend/eval/results/label-sample.json','docs/evaluation_report.md §C.12']},
+ ]},
+];
+
+/* ───────────────────────── TAB 2 · LUỒNG DỮ LIỆU ───────────────────────── */
+const FLOW = [
+ {zone:'1 · Trình duyệt', cls:'z-user', items:[
+  {id:'f1', nm:'Màn hình làn C', sb:'/map · /cost · /simulate · /errors · /claim-map',
+   what:'Năm màn hình treo <b>ngoài</b> wizard 5 bước, cộng bản đồ khái niệm nhúng trong bước 1.',
+   why:'Để riêng vì thao tác ở đây là <i>ngắm và sửa tay</i>, không phải một bước của quy trình. Wizard giữ nguyên 5 bước, không phình ra.',
+   decisions:[
+    'Lối vào qua <b>bảng lệnh ⌘K</b>, không phải thanh nav: <code>top-nav.tsx</code> nằm ngoài phạm vi sở hữu của làn C, và nó cũng không mang được <code>projectId</code>.',
+    'Mọi hình đều là <b>SVG viết tay</b> — xem tab Techstack để biết vì sao không dùng thư viện biểu đồ.'],
+   tech:['Next.js App Router','React 19','Tailwind v4'],
+   files:['frontend/src/components/command-palette.tsx']},
+ ]},
+
+ {zone:'2 · Tầng dữ liệu phía client', cls:'z-screen', items:[
+  {id:'f2', nm:'TanStack Query', sb:'cache theo khoá phân cấp',
+   what:'Mọi lời gọi đi qua <code>lib/api.ts</code>, khoá phân cấp khai ở object <code>qk</code>.',
+   why:'Không copy dữ liệu server vào Zustand. Zustand chỉ giữ UI state — bước đang mở, panel nào bung, filter bảng.',
+   decisions:[
+    'Màn mô phỏng đặt <code>staleTime: Infinity</code>: endpoint <code>estimate/preview</code> là <b>hàm thuần</b>, kết quả không bao giờ cũ. Nhờ vậy kéo thanh trượt qua lại chỉ tốn mạng đúng lần đầu.',
+    'Thanh trượt <b>debounce 200ms</b> trước khi gọi — kéo một lần bắn ra hàng chục sự kiện, mỗi giá trị trung gian không đáng một lời gọi.'],
+   tech:['@tanstack/react-query','useQueries','useDebounced (tự viết)'],
+   files:['frontend/src/lib/api.ts','frontend/src/lib/use-debounced.ts']},
+ ]},
+
+ {zone:'3 · Qua proxy của Next', cls:'z-screen', items:[
+  {id:'f3', nm:'rewrites() /api/* → :3001', sb:'cùng origin, cookie đi được',
+   what:'Frontend luôn gọi đường dẫn tương đối <code>/api/...</code>; Next chuyển tiếp sang NestJS.',
+   why:'Cùng origin thì cookie auth và SSE chạy được mà không cần CORS. Cấm hardcode <code>localhost:3001</code> trong component.',
+   tech:['Next.js rewrites'],
+   files:['frontend/next.config.ts']},
+ ]},
+
+ {zone:'4 · Backend — module analytics CHỈ ĐỌC', cls:'z-api', items:[
+  {id:'f4', nm:'AnalyticsModule', sb:'4 cặp service/controller · 0 lệnh ghi',
+   what:'<code>Analytics*</code> (chi phí) · <code>ErrorAnalysis*</code> (lỗi) · <code>SourceMap*</code> (bản đồ nguồn) — cộng hai file hàm thuần mượn thư mục để có test.',
+   why:'Ràng buộc cứng của epic #23: <b>làn C không ghi gì vào pipeline</b>. Nhờ vậy nó không bao giờ chặn hai làn kia, và merge lúc nào cũng được.',
+   decisions:[
+    'Không <code>@Global()</code>: không service nào khác cần nó, và để toàn cục là mời người khác nối vào rồi vô tình ghi qua đây.',
+    '<code>eval-cost.ts</code> và <code>citation-graph.ts</code> <b>không</b> là service — không <code>@Injectable</code>, không đăng ký vào module. Chúng chỉ mượn thư mục <code>src/</code> để jest quét được.',
+    'Kiểm được bằng grep: không một <code>create</code>/<code>update</code>/<code>delete</code> nào trong module.'],
+   tech:['NestJS 11','DI qua constructor'],
+   files:['backend/src/analytics/analytics.module.ts']},
+
+  {id:'f5', nm:'CardLinkModule', sb:'ngoại lệ duy nhất — 3 lệnh GHI',
+   what:'<code>POST /cards/:id/sources</code> · <code>DELETE /card-sources/:id</code> · <code>DELETE /cards/:id</code>.',
+   why:'Bản đồ kéo thả cần lưu được, mà ba endpoint này chưa ai làm. Chúng nằm ngoài phạm vi sở hữu của làn C.',
+   decisions:[
+    'Viết thành <b>module mới hoàn toàn</b>, không sửa một dòng nào của file người khác — chỉ thêm ba dòng vào cuối <code>app.module.ts</code>. Không đồng ý thì revert đúng module này.',
+    'Đã comment lên issue báo trước kèm thiết kế, mời phản đối, <b>trước khi</b> viết code.',
+    '<code>upsert</code> chứ không <code>create</code>: kéo thả thì thả trùng là chuyện thường, không được thành lỗi 500.'],
+   tech:['NestJS controller mỏng','zod','Prisma upsert'],
+   files:['backend/src/card-link/card-link.service.ts']},
+ ]},
+
+ {zone:'5 · Dữ liệu', cls:'z-infra', items:[
+  {id:'f6', nm:'PostgreSQL qua Prisma 7', sb:'Neon · driver adapter',
+   what:'Bảng đọc: <code>LlmCall</code> · <code>Source</code> · <code>CardSource</code> · <code>VerifierRun</code> · <code>ResourceEstimate</code> · <code>EvalRun</code>.',
+   why:'Mô típ lặp lại ba lần ở làn C: <b>dữ liệu đã nằm sẵn trong DB, chưa ai đọc</b>. <code>LlmCall</code> ghi đủ token từ ngày đầu (#17); <code>Source.raw</code> chứa <code>referenced_works</code> của OpenAlex (citation graph); <code>HumanCheck</code> có bảng mà không dòng code nào ghi (làn A #4).',
+   decisions:['Prisma 7 bắt buộc driver adapter — <code>datasourceUrl</code> trong constructor đã bị bỏ. Đây cũng là lý do script eval phải biên dịch trước rồi mới chạy: <code>tsx</code> không phát metadata cho DI.'],
+   tech:['Prisma 7','@prisma/adapter-pg','PostgreSQL (Neon)'],
+   files:['backend/src/common/prisma.service.ts']},
+
+  {id:'f7', nm:'Không có LLM ở làn này', sb:'0 token',
+   what:'Không một màn hình nào của làn C gọi DeepSeek.',
+   why:'Mọi con số đều tính từ dữ liệu đã lưu. Đó là lý do các màn này mở tức thì, và là lý do làn C chạy được cả khi hết hạn mức API.',
+   decisions:['Ngoại lệ duy nhất là <code>eval/label-sample.ts</code>, nhưng nó cũng không gọi LLM — nó xuất file để người hoặc mô hình <i>ngoài hệ thống</i> chấm.'],
+   tech:['—'],
+   files:[]},
+ ]},
+];
+
+/* ───────────────────────── TAB 3 · SÁNG TẠO UI/UX ───────────────────────── */
+const UX = [
+ {zone:'Chuyển động mang thông tin', cls:'z-screen', items:[
+
+  {id:'u1', nm:'Chuyển bước có đường ra', sb:'PR #37',
+   before:'CSS keyframe: bước cũ biến mất tức thì, rồi bước mới mới trượt vào. Mắt thấy một khoảng trắng nháy ở giữa.',
+   after:'<code>AnimatePresence mode="wait"</code> giữ bước cũ sống đủ lâu để nó trượt ra trước. Lò xo nhận vận tốc đang có nếu người dùng bấm nhanh hai bước liền.',
+   why:'CSS làm tốt phần <b>vào</b> nhưng không có hoạt cảnh <b>ra</b>. Đó là toàn bộ khác biệt giữa "có animation" và "mượt".',
+   tech:['motion v13','AnimatePresence','spring'],
+   files:['frontend/src/components/step-transition.tsx']},
+
+  {id:'u2', nm:'Chấm Pareto trượt thay vì nhảy', sb:'PR #37 · thắng lớn nhất',
+   before:'Kéo thanh trượt là cả lưới 36 cấu hình nhảy sang toạ độ mới trong một khung hình.',
+   after:'Mỗi chấm trượt tới vị trí mới bằng lò xo.',
+   why:'Nhảy tức thì thì <b>mất dấu điểm đang theo dõi</b> và không đọc được nó dịch theo hướng nào. Đây là chỗ chuyển động mang thông tin rõ nhất trong cả sản phẩm.',
+   note:'Đường Pareto thì <b>hoà mờ</b> chứ không trượt: thuộc tính <code>points</code> không tween được khi số đỉnh của frontier đổi. Thà hoà mờ còn hơn một đường giật sang hình khác.',
+   tech:['motion.circle','spring','AnimatePresence (crossfade)'],
+   files:['frontend/src/components/cost-simulator.tsx']},
+
+  {id:'u3', nm:'Hộp chi tiết mở bằng chiều cao', sb:'PR #37',
+   before:'Bấm sang nguồn khác thì hộp chi tiết hiện tức thì, đẩy cả trang nhảy một nhịp.',
+   after:'Mở bằng <code>height: auto</code> có hoạt cảnh, nội dung dưới nó trôi xuống mượt.',
+   why:'Mờ dần <b>không đủ</b> khi phần tử đẩy nội dung khác — thứ gây khó chịu là cú giật bố cục, không phải độ trong suốt.',
+   tech:['motion','layout animation'],
+   files:['frontend/src/components/source-map.tsx']},
+
+  {id:'u4', nm:'prefers-reduced-motion tắt HẲN', sb:'mọi màn hình',
+   before:'—',
+   after:'Mọi chỗ đọc <code>useReducedMotion()</code> và cho <code>duration: 0</code>. Animation trang chủ thì <b>không tự chạy</b>.',
+   why:'Tắt hiệu ứng nghĩa là <b>tắt</b>, không phải làm chậm lại. Chuyển động tự động là thứ khó chịu nhất với người nhạy cảm tiền đình.',
+   tech:['useReducedMotion'],
+   files:['frontend/src/components/research-flow.tsx']},
+ ]},
+
+ {zone:'Hình mang thông tin', cls:'z-screen', items:[
+
+  {id:'u5', nm:'Animation luồng nghiên cứu', sb:'PR #42 · Bước 1 của đề',
+   before:'Trang chủ giải thích quy trình bằng hai câu chữ. Ai chưa dùng thì đọc xong vẫn không hình dung được có bao nhiêu bước.',
+   after:'Sáu chặng tự chạy, <b>mỗi chặng vẽ đúng thứ chặng đó sinh ra</b>: vệt chữ mờ → sáu thẻ nảy ra → chấm nguồn → đường nối kèm một claim treo → năm huy hiệu judge → khối tài liệu.',
+   why:'Không phải sáu ô chữ nhật đổi màu. Hình phải mang thông tin, nếu không thì một danh sách gạch đầu dòng đã đủ và rẻ hơn.',
+   note:'Đặt <b>ngay dưới ô nhập ý tưởng</b>, không phải cuối trang: người chưa dùng cần biết bấm xong thì gì xảy ra <i>trước khi</i> quyết định gõ gì vào ô trên.',
+   tech:['motion','SVG viết tay'],
+   files:['frontend/src/components/research-flow.tsx']},
+
+  {id:'u6', nm:'Vùng thưa tô ba mức, không gradient', sb:'#16',
+   before:'—',
+   after:'Độ thưa quanh mỗi nguồn tô <b>ba mức màu rời</b>, không phải dải liên tục.',
+   why:'Mắt không đọc được sắc độ liên tục. Ba mức thì phân biệt được ngay, và đó là thứ cần: "chỗ này thưa" chứ không phải "thưa 0,63".',
+   tech:['Token màu theo vai'],
+   files:['frontend/src/components/source-map.tsx']},
+
+  {id:'u7', nm:'Vạch 24 GB là đường thật trên trục thật', sb:'#18',
+   before:'Đề xuất giảm quy mô chỉ là một dòng chữ trong bảng ước lượng.',
+   after:'Trục tung là VRAM, vạch 24 GB kẻ ngang kèm <b>vùng tô đỏ phía trên</b>. Cấu hình hệ thống đề xuất vẽ thành chấm xanh lá bấm được.',
+   why:'Đề đòi "quá vạch là thấy ngay, không phải đọc chữ". Trục tung luôn chứa vạch kể cả khi mọi cấu hình đều nhẹ — vạch biến mất thì người dùng tưởng nó không tồn tại.',
+   tech:['SVG','motion'],
+   files:['frontend/src/components/cost-simulator.tsx']},
+
+  {id:'u8', nm:'Claim treo nhìn ra trong một giây', sb:'#15',
+   before:'Bảng related-work trả lời được "claim nào thiếu nguồn" nhưng phải đọc từng dòng.',
+   after:'Claim rỗng vẽ <b>viền cảnh báo</b> và nói thẳng bằng chữ. Nguồn chưa ai dùng vẽ viền đứt.',
+   why:'Đó chính là chỗ verifier sẽ gắn <code>UNSUPPORTED</code> rồi chặn xuất bản — thứ đáng nhìn nhất màn hình.',
+   tech:['Tailwind','motion layout'],
+   files:['frontend/src/components/claim-evidence-map.tsx']},
+ ]},
+
+ {zone:'Tiếp cận được — không phải mục tô điểm', cls:'z-api', items:[
+
+  {id:'u9', nm:'Kéo thả không phải đường duy nhất', sb:'#15',
+   before:'—',
+   after:'Mỗi nguồn có nút "Nối vào…", mỗi liên kết có nút gỡ, mỗi thẻ có nút xoá — đều là <code>&lt;button&gt;</code> thật có <code>aria-label</code>.',
+   why:'Một tính năng chỉ dùng được bằng cách kéo là <b>tính năng không dùng được</b> bằng ngón tay run, trackpad tệ, hay bàn phím.',
+   note:'<code>activationConstraint</code> 6px cho <code>PointerSensor</code>: thiếu nó thì mọi cú bấm vào nút bên trong thẻ bị nuốt thành thao tác kéo, và nút gỡ không bao giờ bấm được. Loại lỗi chỉ lộ ra khi thử tay.',
+   tech:['@dnd-kit KeyboardSensor','aria-label'],
+   files:['frontend/src/components/claim-evidence-map.tsx']},
+
+  {id:'u10', nm:'Chấm SVG là nút thật', sb:'#14 · #16 · #18',
+   before:'<code>&lt;circle onClick&gt;</code> — chuột bấm được, bàn phím thì không, trình đọc màn hình không thấy gì.',
+   after:'<code>&lt;g role="button" tabIndex={0}&gt;</code> có <code>aria-label</code> và xử lý Enter/Space.',
+   why:'Phần tử bấm được phải tới được bằng bàn phím và có tên. Phát hiện lúc viết test: icon của lucide cũng render <code>&lt;circle&gt;</code>, nên test quét theo thẻ bắt nhầm icon — đổi sang tra theo <i>vai trò và tên</i> vừa sửa test vừa sửa cả khả năng tiếp cận.',
+   tech:['ARIA','onKeyDown'],
+   files:['frontend/src/components/concept-map.tsx','frontend/src/components/source-map.tsx']},
+
+  {id:'u11', nm:'Thông tin không nằm trong hover', sb:'mọi màn hình',
+   before:'—',
+   after:'Chi tiết nguồn hiện <b>bằng chữ dưới bản đồ</b>; lý do gắn cờ hiện thành chữ cạnh nhãn.',
+   why:'Cảm ứng không có hover. Thông tin chỉ nằm trong hover thì trên điện thoại là <b>không tồn tại</b>.',
+   tech:['—'],
+   files:['frontend/src/components/source-map.tsx']},
+
+  {id:'u12', nm:'Nhãn lạ không làm trắng trang', sb:'PR #34 hotfix',
+   before:'<code>CARD_STATUS_STYLE[status].label</code> — backend thêm một trạng thái thứ bảy là <code>undefined.label</code> làm trắng cả trang.',
+   after:'<code>styleOr()</code> trả fallback <b>hiện nguyên văn giá trị lạ</b>, áp cho cả bốn component nhãn.',
+   why:'Nuốt thành "Không rõ" là biến một lỗi ồn ào thành một lỗi im lặng. Hiện nguyên văn thì người dùng thấy có gì chưa khớp, lập trình viên đọc ra ngay giá trị nào gây chuyện.',
+   note:'Lỗi này do CI bắt được, không phải do review. Bản đồ khái niệm vẽ <b>mọi</b> thẻ ngay lập tức nên nó lộ ra; bảng thẻ thì bọc trong accordion, nhóm đang đóng không được mount nên không bao giờ vỡ.',
+   tech:['TypeScript narrowing'],
+   files:['frontend/src/lib/unknown-style.ts']},
+ ]},
+];
+
+/* ───────────────────────── TAB 4 · TECHSTACK ───────────────────────── */
+const STACK = [
+ {zone:'Frontend', cls:'z-screen', items:[
+
+  {id:'t1', nm:'Next.js 16 · App Router', sb:'React 19',
+   what:'Mỗi màn hình của làn C là một route riêng dưới <code>app/(app)/projects/[id]/</code>.',
+   why:'Chọn sẵn từ trước làn C. Điều làn C dùng tới: <code>rewrites()</code> để frontend và API cùng origin, và <code>PageProps&lt;route&gt;</code> — type của route <b>do Next sinh lúc build</b>, nên thêm route mới mà chưa build thì <code>tsc</code> báo đỏ. Đã vấp đúng chỗ này hai lần.',
+   tech:[],files:[]},
+
+  {id:'t2', nm:'motion v13 (Framer Motion)', sb:'thêm ở PR #37',
+   what:'Hoạt cảnh ra/vào, animation layout, lò xo.',
+   why:'CSS làm được phần <b>vào</b>. <code>motion</code> để dành đúng ba việc CSS không làm được: hoạt cảnh <b>ra</b> (<code>AnimatePresence</code>), animation <b>layout</b>, và lò xo nhận được vận tốc đang có khi bị ngắt giữa chừng.',
+   note:'Việc thêm nó <b>đảo một quyết định trong tài liệu</b>: STACK §5 và frontend/CLAUDE.md §7 đang ghi "không animation phức tạp". Đã sửa cả hai kèm lý do và ba ràng buộc, vì để nguyên thì luật mâu thuẫn với code và người sau sẽ revert.',
+   tech:[],files:['docs/STACK.md §5']},
+
+  {id:'t3', nm:'@dnd-kit', sb:'thêm ở PR #39',
+   what:'Kéo thả cho bản đồ claim–evidence.',
+   why:'HTML5 Drag and Drop API <b>không chạy trên cảm ứng</b> và không có đường đi bằng bàn phím. <code>KeyboardSensor</code> của dnd-kit là thứ duy nhất làm kéo thả dùng được với trình đọc màn hình.',
+   tech:[],files:[]},
+
+  {id:'t4', nm:'SVG viết tay — KHÔNG thư viện biểu đồ', sb:'quyết định lặp lại 4 lần',
+   what:'Bản đồ khái niệm, bản đồ nguồn, timeline, Pareto, đồ thị trích dẫn, animation luồng — tất cả là SVG viết tay.',
+   why:'Mấy hình này cần chấm tròn, cột, đường nối và nhãn. Kéo <code>recharts</code> hay <code>d3</code> vào bundle để có bấy nhiêu là <b>đắt hơn phần thu được</b> — và mọi hình ở đây đều lệch chuẩn của thư viện (vạch ngưỡng trên trục, toạ độ dùng chung giữa hai tab, nút SVG có ARIA).',
+   note:'Đánh đổi thật: tự viết thì phải tự lo trục, tỉ lệ và khả năng tiếp cận. Chấp nhận vì đổi lại là kiểm soát hoàn toàn và bundle không phình.',
+   tech:[],files:[]},
+
+  {id:'t5', nm:'TanStack Query + Zustand', sb:'ranh giới rõ',
+   what:'Query giữ dữ liệu server, Zustand chỉ giữ UI state.',
+   why:'Copy dữ liệu server vào Zustand là hai nguồn sự thật. Ở làn C điều này quan trọng hơn bình thường vì mọi màn đều <i>chỉ đọc</i> — cache là toàn bộ tầng dữ liệu.',
+   tech:[],files:['frontend/src/lib/api.ts']},
+
+  {id:'t6', nm:'Tailwind v4 · @theme', sb:'9 họ màu theo VAI',
+   what:'Token màu đặt tên theo vai (<code>brand</code> · <code>ok</code> · <code>warn</code> · <code>danger</code> · <code>decide</code> · <code>neutral</code>), không theo tên màu.',
+   why:'Class màu thô chỉ được xuất hiện ở <code>lib/status-style.ts</code> và <code>components/ui/</code>. Nhờ vậy đổi bảng màu là sửa một chỗ.',
+   note:'Cạm bẫy đã vấp: class Tailwind phải là <b>chuỗi literal</b> trong source. Sinh động bằng <code>.replace(\'bg-\',\'fill-\')</code> cho ra một class chưa bao giờ được biên dịch.',
+   tech:[],files:['frontend/src/app/globals.css']},
+ ]},
+
+ {zone:'Backend', cls:'z-api', items:[
+
+  {id:'t7', nm:'NestJS 11 · module chỉ đọc', sb:'DI qua constructor',
+   what:'Một module <code>analytics/</code> gom bốn cặp service/controller.',
+   why:'Ranh giới tầng: controller mỏng (parse → gọi service → trả DTO), service không biết HTTP. Nhờ vậy <code>eval/</code> gọi thẳng service được, không cần qua HTTP.',
+   tech:[],files:['backend/src/analytics/analytics.module.ts']},
+
+  {id:'t8', nm:'Prisma 7 + adapter-pg', sb:'PostgreSQL trên Neon',
+   what:'Truy vấn <code>findMany</code> / <code>groupBy</code> / <code>aggregate</code>, <code>select</code> tường minh.',
+   why:'<code>select</code> tường minh là ràng buộc bảo mật, không phải thẩm mỹ — <code>password_hash</code> và <code>refresh_token_hash</code> không bao giờ được lọt ra. Ở làn C nó còn một vai nữa: hàng đợi gán nhãn <b>cố ý thiếu</b> mọi trường nhãn máy để chấm mù.',
+   note:'Prisma 7 bắt buộc driver adapter. Hệ quả bất ngờ: <code>tsx</code> không phát metadata cho DI, nên mọi script eval phải <code>tsc</code> trước rồi mới <code>node</code>.',
+   tech:[],files:['backend/src/common/prisma.service.ts']},
+
+  {id:'t9', nm:'Toán tự viết — TF-IDF · MDS · bootstrap', sb:'hàm thuần, có test',
+   what:'TF-IDF + cosine + MDS cổ điển (bản đồ chủ đề), độ thưa k-lân-cận, bootstrap CI với LCG seed cố định (báo cáo chi phí).',
+   why:'Ba lý do lặp lại: <b>tất định</b> (cùng dữ liệu ra cùng kết quả), <b>không thêm dependency</b>, và <b>test được</b> vì là hàm thuần không I/O.',
+   note:'Chỗ tự viết đắt nhất là MDS — nhưng t-SNE/UMAP có seed ngẫu nhiên và bóp méo khoảng cách toàn cục, đúng phần "vùng thưa" mà ta cần đọc.',
+   tech:[],files:['backend/src/analytics/similarity.ts','backend/src/analytics/eval-cost.ts']},
+
+  {id:'t10', nm:'zod', sb:'hệ validation duy nhất',
+   what:'Mọi input từ ngoài <code>safeParse</code> trước khi dùng.',
+   why:'Một hệ validation dùng chung FE/BE/schema của LLM. Ở làn C dùng ít vì hầu hết là GET — chỗ dùng thật là body của ba endpoint ghi.',
+   tech:[],files:['backend/src/card-link/card-link.service.ts']},
+ ]},
+
+ {zone:'Kiểm thử', cls:'z-infra', items:[
+
+  {id:'t11', nm:'jest · vitest · playwright', sb:'ba tầng, ba vai',
+   what:'jest cho hàm thuần và service backend (mock Prisma), vitest + Testing Library cho component, playwright cho ba hành trình end-to-end.',
+   why:'Nguyên tắc áp cho cả làn: <b>test hợp đồng, không test cơ chế</b>. Ví dụ kéo thả — jsdom không dựng được toạ độ chuột và phép đo bố cục, nên test kéo ở đó chỉ tạo <i>cảm giác an toàn giả</i>. Thứ được khoá lại là: mọi thao tác làm được bằng nút, claim treo nhìn ra được, nút bị khoá khi đang chờ.',
+   note:'Test tra phần tử theo <b>vai trò và tên</b> chứ không theo thẻ. Nhờ vậy nó vừa kiểm hành vi vừa kiểm khả năng tiếp cận — và đã bắt được đúng một lỗi thật theo cách đó.',
+   tech:[],files:[]},
+
+  {id:'t12', nm:'CI · GitHub Actions', sb:'4 job',
+   what:'Frontend lint+test, Playwright, Backend unit, Backend integration.',
+   why:'Bài học đắt nhất của làn: <code>npm install</code> bằng npm 11 ở máy <b>xoá</b> một entry mà npm 10 trên CI coi là bắt buộc, và <code>npm ci</code> đỏ ngay. Từ đó mọi lần đụng dependency đều verify bằng <code>npx npm@10.9.8 ci --dry-run</code>.',
+   tech:[],files:['.github/workflows/test-frontend.yml']},
+ ]},
+];
+
+const DATA = {work:WORK, flow:FLOW, ux:UX, stack:STACK};
+
+/* ───────────────────────── RENDER ───────────────────────── */
+const $tabs = document.getElementById('tabs');
+const $zones = document.getElementById('zones');
+const $panel = document.getElementById('panel');
+let tab = 'work', sel = null;
+
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function renderTabs(){
+  $tabs.innerHTML = '';
+  for (const t of TABS){
+    const b = document.createElement('button');
+    b.className = 'tab' + (t.id === tab ? ' on' : '');
+    b.textContent = t.label;
+    b.onclick = () => { tab = t.id; sel = null; render(); };
+    $tabs.appendChild(b);
+  }
+}
+
+function render(){
+  renderTabs();
+  const meta = TABS.find((t) => t.id === tab);
+  const groups = DATA[tab];
+  let html = `<div class="routebar">${esc(meta.hint)}</div>`;
+  groups.forEach((g, gi) => {
+    html += `<div class="zone ${g.cls}"><div class="zlabel">${esc(g.zone)}</div><div class="row">`;
+    for (const it of g.items){
+      const badge = it.badge
+        ? `<span class="badge ${it.badge}">${esc(it.badgeText || '')}</span>` : '';
+      html += `<button class="node${sel === it.id ? ' sel' : ''}" data-id="${it.id}">
+        <div class="nm">${it.nm}</div><div class="sb">${esc(it.sb || '')}</div>${badge}</button>`;
+    }
+    html += `</div></div>`;
+    if (tab === 'flow' && gi < groups.length - 1) html += `<div class="flowarrow">↓</div>`;
+  });
+  $zones.innerHTML = html;
+  for (const b of $zones.querySelectorAll('.node')) b.onclick = () => { sel = b.dataset.id; render(); };
+  renderPanel();
+}
+
+function renderPanel(){
+  if (!sel){
+    $panel.innerHTML = `<h2>${esc(TABS.find((t) => t.id === tab).label)}</h2>
+      <div class="sub">Chưa chọn ô nào</div>
+      <p class="placeholder">${esc(TABS.find((t) => t.id === tab).hint)}</p>
+      <h3>File này là gì</h3>
+      <p class="placeholder">Anh em với <code>product-flow-map.html</code>. File kia trả lời
+        <b>"sản phẩm chạy thế nào"</b>; file này trả lời <b>"làn C đã thêm gì, vì sao làm thế,
+        và dựng bằng gì"</b>.</p>`;
+    return;
+  }
+  const it = DATA[tab].flatMap((g) => g.items).find((x) => x.id === sel);
+  if (!it) return;
+
+  let h = `<h2>${it.nm}</h2><div class="sub">${esc(it.sb || '')}</div>`;
+  if (it.step) h += `<h3>Bám vào mục nào của đề</h3><p>${it.step}</p>`;
+  if (it.what) h += `<h3>Làm gì</h3><p>${it.what}</p>`;
+  if (it.before || it.after){
+    h += `<h3>Trước và sau</h3><div class="ba">
+      <div class="before"><span>Trước</span>${it.before}</div>
+      <div class="after"><span>Sau</span>${it.after}</div></div>`;
+  }
+  if (it.why) h += `<div class="why"><b>Vì sao.</b> ${it.why}</div>`;
+  if (it.note) h += `<div class="why" style="background:#fdf6e8;border-color:#f0e0bd;color:#6b4e12"><b>Đáng lưu ý.</b> ${it.note}</div>`;
+  if (it.decisions && it.decisions.length){
+    h += `<h3>Quyết định thiết kế</h3><ul>${it.decisions.map((d) => `<li>${d}</li>`).join('')}</ul>`;
+  }
+  if (it.tech && it.tech.length){
+    h += `<h3>Techstack</h3><div class="chips">${it.tech.map((t) => `<span class="chip">${esc(t)}</span>`).join('')}</div>`;
+  }
+  if (it.files && it.files.length){
+    h += `<h3>File</h3><ul class="files">${it.files.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>`;
+  }
+  $panel.innerHTML = h;
+}
+
+render();
+</script>
+</body>
+</html>

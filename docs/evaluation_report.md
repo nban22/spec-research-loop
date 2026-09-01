@@ -505,3 +505,97 @@ là giới hạn của báo cáo và phải viết ra.
    phương sai giữa-lần-chạy. Rẻ nhất để có ước lượng nhiễu-lần-chạy: lặp 3 lần trên 2 ý tưởng ở arm
    `SYS` (~6 lượt thêm). Nếu nhiễu đó cùng bậc với nhiễu giữa-ý-tưởng thì mọi khác biệt nhỏ giữa
    arm là vô nghĩa — biết trước điều đó đáng giá hơn thêm 2 ý tưởng.
+
+## C.12 Đối chiếu chéo mô hình trên 30 cặp — KHÔNG phải human validation
+
+> ⚠️ **Đọc câu này trước khi đọc số:** 30 nhãn trong bảng `HumanCheck` ở lần chạy này do
+> **`claude-opus-5` chấm, không phải người.** Mỗi dòng ghi nguồn gốc trong `HumanCheck.note`.
+> Sản phẩm bàn giao #4 và #6 vì thế **vẫn chưa đạt** — chúng đòi nhãn của người.
+>
+> Nhưng nó không vô giá trị: §5.5 ghi *"Auditor không đổi được nhà cung cấp. MVP chỉ có DeepSeek"*.
+> Đây là lần đầu có một **mô hình khác nhà cung cấp** chấm mù trên chính dữ liệu của hệ thống, nên
+> nó vá đúng một phần lỗ hổng đó — miễn là gọi đúng tên: **đối chiếu chéo mô hình**.
+
+**Cách làm.** `eval/label-sample.ts --export` rút 30 cặp phân tầng theo nhãn máy, **vứt nhãn máy đi
+trước khi ghi file**, xáo thứ tự bằng seed cố định. Bản xuất chỉ có claim + tiêu đề nguồn +
+abstract. Chấm xong nạp lại bằng `--import --by=...`; `--by` là **bắt buộc**.
+
+Mẫu: `backend/eval/results/label-sample.json` (commit kèm, tái lập được với `--seed=42`).
+
+### Phát hiện ① — gộp chung thì κ ≈ 0, tách theo loại thẻ thì ngược hẳn
+
+| | Số cặp | Khớp | Ghi chú |
+| --- | --- | --- | --- |
+| **CLAIM** | 5 | **4/5** | Loại thẻ mà phép kiểm chứng cứ **được thiết kế cho** |
+| CONTRIBUTION | 14 | 1/14 | 8 cặp: người-chéo nói `SUPPORTED`, máy nói `WEAK` |
+| GAP | 11 | 5/11 | 4 cặp: `WEAK` vs `UNSUPPORTED` |
+| **Tổng** | **30** | **10/30** | accuracy 0.333 · **Cohen's κ = −0.002** |
+
+κ ≈ 0 trên toàn mẫu là con số dễ trích dẫn nhất và cũng **dễ hiểu sai nhất**. Nó không nói *"verifier
+chấm như tung đồng xu"*. Nó nói: mẫu bị chi phối bởi hai loại thẻ mà phép kéo theo không trả lời
+được.
+
+**Vì sao CONTRIBUTION lệch có hệ thống.** Claim dạng *"We develop a retriever that…"* là **lời hứa
+về việc sẽ làm**, không phải phát biểu về thế giới. Nguồn có mô tả đúng kỹ thuật đó thì mô hình
+chấm chéo gọi là `SUPPORTED` (kỹ thuật này có thật, nguồn nói vậy), còn verifier gọi là `WEAK`
+(abstract không nói *nhóm này* làm điều đó). **Cả hai đều đúng theo cách hiểu của mình** — đây là
+bất đồng về *định nghĩa*, không phải về sự thật.
+
+### Phát hiện ② — hệ thống đã có luật cho đúng chuyện này, nhưng thêm muộn
+
+Cờ `CITATION_ONLY` (*"Cặp dừng sau L2 vì loại thẻ không hỏi bằng phép kéo theo — GAP · CONTRIBUTION"*)
+đúng là câu trả lời cho ①. Nhưng đếm trên toàn DB:
+
+| Loại thẻ | Có `CITATION_ONLY` | Không, và đã chạy L4 |
+| --- | --- | --- |
+| GAP | 12 | **280** |
+| CONTRIBUTION | 7 | **130** |
+
+Luật này do làn A thêm ở #2, **không áp ngược** cho 410 hàng cũ. Mẫu 30 cặp rút từ điều kiện
+`entailment != null`, tức là **rút toàn bộ từ hàng cũ**. Nên bảng ở ① mô tả hành vi **trước** khi
+có luật, không phải hành vi hiện tại.
+
+### Phát hiện ③ — lưới ngưỡng không thể hiệu chỉnh được τ, và đó là vấn đề thiết kế
+
+`calibrate.ts` quét 27 tổ hợp `τ_low × τ_high × conf_min` và **cả 27 cho ra số hệt nhau**:
+precision 1.000, recall 0.100, macroF1 0.311. Không phải hoà — **giống hệt tới từng chữ số**.
+
+Nguyên nhân, và nó không phải lỗi của script:
+
+- `τ_low`/`τ_high` chỉ quyết định **có gọi L4 hay không**.
+- Một khi `entailment` đã có, nhãn suy ra từ `entailment` — τ không còn tác dụng.
+- `calibrate.ts` **replay** trên dữ liệu đã lưu, nên nó chỉ chạy được với cặp **đã có** `entailment`.
+
+Hai điều kiện đó loại trừ nhau: **cặp mà τ quyết định được là cặp không có `entailment` để replay.**
+Vì vậy `calibrate.ts` ở dạng hiện tại **không bao giờ** hiệu chỉnh được τ từ dữ liệu đã lưu, dù gán
+bao nhiêu nhãn đi nữa. `conf_min` cũng vậy: `confidence` trong mẫu nằm trong 0,65–1,00 nhưng nó
+không tham gia quyết định sau khi có `entailment`.
+
+Cái τ **có** ảnh hưởng là **chi phí**: nới τ_low là gọi L4 nhiều hơn, tức tốn tiền hơn — xem §C.6.
+
+**Muốn hiệu chỉnh τ thật thì phải chạy verifier lại ở từng bộ ngưỡng** trên cùng một tập cặp, tức
+27 lần tiền LLM. Đó chính là cái `calibrate.ts` cố tránh, và lý do tránh vẫn đúng. Đường ra rẻ hơn:
+chạy L4 **một lần cho mọi cặp trong mẫu bất kể τ**, lưu kết quả, rồi replay — lúc đó τ mới thay đổi
+được nhãn. Việc này thuộc làn A (`verifier/**`).
+
+### Kết luận được rút và không được rút
+
+**Được:**
+- Trên **CLAIM** — loại thẻ phép kiểm được thiết kế cho — hai mô hình khác nhà cung cấp khớp **4/5**.
+- Bất đồng **tập trung ở một khác biệt định nghĩa** với thẻ CONTRIBUTION, không rải đều.
+- `DEFAULT_THRESHOLDS` **không đổi**, và lần này có lý do đo được: lưới không phân biệt được gì.
+- `calibrate.ts` không thể hiệu chỉnh τ từ dữ liệu đã lưu — vấn đề thiết kế, đã nêu ở ③.
+
+**Không được:**
+- Gọi đây là **human validation**. Nó không phải. Sản phẩm #4 và #6 vẫn ⚠️.
+- Suy ra chất lượng verifier **hiện tại** từ bảng ①: mẫu rút toàn hàng cũ, trước luật `CITATION_ONLY`.
+- Đọc κ = −0,002 thành *"verifier chấm bừa"*. Xem ①.
+- Bất kỳ kết luận nào ở mức từng loại thẻ với n = 5 (CLAIM).
+
+### Việc còn lại
+
+1. **Người thật gán 30 cặp** qua `/projects/[id]/label` — con số duy nhất làm #4 và #6 chuyển ✅.
+   So thêm được người ↔ mô hình chấm chéo, và đó là một bảng đáng giá.
+2. Lấy mẫu lại **chỉ từ hàng có `CITATION_ONLY`** hoặc từ dữ liệu chạy sau luật đó, để đo hành vi
+   hiện tại thay vì hành vi cũ.
+3. Làn A xử lý ③ nếu muốn ngưỡng thành *số đo* thay vì *số chọn*.
