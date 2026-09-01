@@ -40,4 +40,30 @@ describe('SupportTag', () => {
     expect(screen.getByText('PARTIAL')).toBeInTheDocument();
   });
 
+  /**
+   * Điều kiện quan trọng nhất của component này: `verified={false}` phải **đè** `label`.
+   * `CardSource.support_label` mặc định là `WEAK` ngay từ lúc generator tạo cặp, nên nếu tag
+   * vẫn hiện WEAK thì cả bảng thẻ ở bước 3 nói rằng verifier đã chấm — trong khi nó chưa chạy.
+   */
+  it('hiện CHƯA KIỂM thay cho nhãn khi cặp chưa qua verifier', () => {
+    render(<SupportTag label="WEAK" verified={false} />);
+    expect(screen.queryByText('WEAK')).toBeNull();
+    const tag = screen.getByText('CHƯA KIỂM');
+    expect(tag).toHaveClass('border-neutral-line', 'border-dashed');
+    expect(
+      screen.getByText('chưa chạy kiểm chứng cứ cho cặp này'),
+    ).toBeInTheDocument();
+  });
+
+  it('không hiện cờ chẩn đoán của cặp chưa kiểm', () => {
+    render(<SupportTag label="WEAK" verified={false} flags={['STALE_SOURCE']} />);
+    expect(screen.getByText('CHƯA KIỂM')).toBeInTheDocument();
+    expect(screen.queryByText(/xuất bản đã lâu/i)).toBeNull();
+  });
+
+  it('mặc định coi như đã kiểm — chỗ gọi cũ không đổi hành vi', () => {
+    render(<SupportTag label="SUPPORTED" />);
+    expect(screen.getByText('SUPPORTED')).toBeInTheDocument();
+    expect(screen.queryByText('CHƯA KIỂM')).toBeNull();
+  });
 });

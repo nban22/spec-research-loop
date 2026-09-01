@@ -37,12 +37,18 @@ export type EvidencePairView = {
     venue: string | null;
   };
   support_label: SupportLabel;
+  /**
+   * `false` ⇒ cặp chưa từng đi qua verifier, và `support_label` chỉ là mặc định `WEAK` của
+   * schema. Mọi field bên dưới đều rỗng trong trường hợp đó — kể cả `layer`.
+   */
+  verified: boolean;
   similarity: number | null;
   entailment: Entailment | null;
   confidence: number | null;
   evidence_sentence: string | null;
   flags: VerifierFlag[];
-  layer: VerifierLayer;
+  /** `null` khi `verified === false`: không tầng nào từng chạm vào cặp này để mà suy ngược. */
+  layer: VerifierLayer | null;
   layer_why: string;
   credibility: { tier: string; reason: string } | null;
   passages: EvidencePassageView[];
@@ -61,7 +67,10 @@ export type EvidenceTrace = {
     units_total: number;
     units_l4: number;
   } | null;
+  /** **Chỉ đếm cặp đã kiểm chứng.** Cặp chưa kiểm nằm ở `unverified`, không nằm ở đây. */
   summary: Record<SupportLabel, number>;
+  /** Số cặp chưa từng đi qua verifier. `summary` + `unverified` = `pairs.length`. */
+  unverified: number;
   pairs: EvidencePairView[];
 };
 
@@ -145,25 +154,39 @@ export class EvidenceService {
       UNSUPPORTED: 0,
     };
 
+    let unverified = 0;
+
     const pairs = rows.map((r) => {
-      summary[r.support_label] += 1;
+      const verified = r.verifier_run_id !== null;
+      if (verified) summary[r.support_label] += 1;
+      else unverified += 1;
+
       const flags = parseFlags(r.flags);
       const own = passagesOf.get(r.id) ?? [];
-      const trace = decidingLayer(
-        {
-          similarity: r.similarity,
-          entailment: r.entailment,
-          flags,
-          hasPassages: own.length > 0,
-        },
-        thresholds,
-      );
+      // Chưa kiểm thì **không suy tầng**. `decidingLayer` đọc dữ liệu verifier đã lưu; trên một
+      // cặp toàn `null` nó vẫn trả về một tầng nghe rất hợp lý, và trang giải trình sẽ khẳng
+      // định một tầng nào đó đã quyết định cái nhãn mà thật ra không tầng nào từng chạm vào.
+      const trace = verified
+        ? decidingLayer(
+            {
+              similarity: r.similarity,
+              entailment: r.entailment,
+              flags,
+              hasPassages: own.length > 0,
+            },
+            thresholds,
+          )
+        : {
+            layer: null,
+            why: 'Cặp này chưa đi qua bước kiểm chứng cứ lần nào, nên chưa có nhãn. Nhãn WEAK đang hiện là giá trị mặc định của cơ sở dữ liệu, không phải kết luận của verifier.',
+          };
       const score = scoreOf.get(r.source_id);
       return {
         card_source_id: r.id,
         card: r.card,
         source: r.source,
         support_label: r.support_label,
+        verified,
         similarity: r.similarity,
         entailment: r.entailment,
         confidence: r.confidence,
@@ -187,6 +210,7 @@ export class EvidenceService {
           }
         : null,
       summary,
+      unverified,
       pairs,
     };
   }

@@ -98,6 +98,8 @@ export type VerificationPair = {
   card: { id: string; title: string; type: string; status: string };
   source: { id: string; title: string; year: number | null; doi: string | null };
   support_label: SupportLabel;
+  /** `false` ⇒ chưa kiểm chứng lần nào; `support_label` chỉ là mặc định của schema. */
+  verified: boolean;
   similarity: number | null;
   entailment: string | null;
   evidence_sentence: string | null;
@@ -108,9 +110,12 @@ export function useVerification(versionId: string | undefined) {
   return useQuery({
     queryKey: qk.verification(versionId ?? 'none'),
     queryFn: () =>
-      api.get<{ pairs: VerificationPair[]; summary: Record<SupportLabel, number> }>(
-        `/spec-versions/${versionId}/verification`,
-      ),
+      api.get<{
+        pairs: VerificationPair[];
+        /** Chỉ đếm cặp đã kiểm chứng. */
+        summary: Record<SupportLabel, number>;
+        unverified: number;
+      }>(`/spec-versions/${versionId}/verification`),
     enabled: Boolean(versionId),
   });
 }
@@ -388,12 +393,15 @@ export type ApiEvidencePair = {
     venue: string | null;
   };
   support_label: SupportLabel;
+  /** `false` ⇒ chưa kiểm chứng lần nào; `support_label` chỉ là mặc định của schema. */
+  verified: boolean;
   similarity: number | null;
   entailment: string | null;
   confidence: number | null;
   evidence_sentence: string | null;
   flags: VerifierFlag[];
-  layer: string;
+  /** `null` khi `verified === false` — không tầng nào từng chạm vào cặp này. */
+  layer: string | null;
   layer_why: string;
   credibility: { tier: CredibilityTier; reason: string } | null;
   passages: {
@@ -421,7 +429,10 @@ export type ApiEvidenceTrace = {
     units_total: number;
     units_l4: number;
   } | null;
+  /** **Chỉ đếm cặp đã kiểm chứng** — cặp chưa kiểm nằm ở `unverified`. */
   summary: Record<SupportLabel, number>;
+  /** Số cặp chưa từng đi qua verifier. `summary` + `unverified` = `pairs.length`. */
+  unverified: number;
   pairs: ApiEvidencePair[];
 };
 

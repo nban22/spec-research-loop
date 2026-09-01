@@ -9,6 +9,7 @@ import {
   OctagonAlert,
   ShieldAlert,
   ShieldCheck,
+  ShieldQuestion,
   ShieldX,
   TriangleAlert,
   type LucideIcon,
@@ -119,6 +120,24 @@ export const SUPPORT_STYLE: Record<SupportLabel, StatusStyle> = {
     icon: ShieldX,
     className: 'border-danger-ink text-danger-strong',
   },
+};
+
+/**
+ * **Trạng thái thứ tư của cặp thẻ–nguồn: chưa hề kiểm chứng.**
+ *
+ * Cố ý **không** thêm vào `SupportLabel` — enum đó là ba phán quyết của verifier, còn đây là
+ * "verifier chưa nhìn tới". Trộn hai thứ vào một enum thì mọi chỗ đếm nhãn đều nói dối.
+ * Tín hiệu lấy từ `CardSource.verifier_run_id === null`, không phải từ nhãn.
+ *
+ * Dùng `neutral` chứ **không** dùng `warn`: chưa đo không phải là một kết quả xấu, nó là chưa
+ * có kết quả — cùng lý lẽ với ghi chú của `CONFIDENCE_STYLE` ngay dưới đây.
+ */
+export const UNVERIFIED_STYLE: StatusStyle = {
+  // Viền đứt nét mượn đúng tín hiệu "chỗ trống" của `MISSING`: đọc được cả khi in trắng đen,
+  // là chỗ dựa duy nhất khi ba tag `SupportLabel` kia đều rỗng ruột và cùng cỡ chữ.
+  label: 'CHƯA KIỂM',
+  icon: ShieldQuestion,
+  className: 'border-neutral-line border-dashed text-neutral-strong',
 };
 
 /**
