@@ -72,3 +72,26 @@ export const VERIFIABLE_CARD_TYPES = [
   'CONTRIBUTION',
   'EVIDENCE',
 ] as const;
+
+/**
+ * Thẻ nào được **hỏi bằng phép kéo theo** (L3–L4). Tập con thật sự của
+ * `VERIFIABLE_CARD_TYPES`: mọi loại thẻ vẫn qua L0–L2 (nguồn có thật · DOI tra được · con số
+ * có trong nguồn), nhưng chỉ hai loại này mới có nghĩa khi hỏi *"nguồn có kéo theo câu này
+ * không"*.
+ *
+ * Hai loại bị loại ra, và lý do là ngữ nghĩa chứ không phải hiệu năng:
+ *
+ * - **GAP khẳng định một sự vắng mặt** — *"No retrieved work evaluates a cross-encoder reranker
+ *   on Vietnamese legal statute passages"*. Không tóm tắt đơn lẻ nào kéo theo được một phủ định
+ *   phổ quát; câu hỏi đúng cho trích dẫn của một gap là *"nguồn này có thuộc mảng mà gap nói
+ *   tới không"*, tức độ liên quan, không phải kéo theo.
+ * - **CONTRIBUTION khẳng định việc tác giả sắp làm** — *"We define a paired evaluation that…"*.
+ *   Một bài báo cũ mà kéo theo được nó thì nghĩa là đóng góp **không mới**, tức `ENTAILS` đáng
+ *   ra là tín hiệu xấu — ngược hẳn cách bảng quyết định L5 đang dùng.
+ *
+ * Đo trên toàn bộ dữ liệu đã kiểm chứng của dự án: **0/315 cặp GAP** và **0/130 cặp
+ * CONTRIBUTION** từng đạt `SUPPORTED`, trong khi `CLAIM` — đúng loại thẻ phép thử này sinh ra
+ * để phục vụ — vẫn có 4/67. Không phải ngẫu nhiên, và nó là nguyên nhân của
+ * `unsupported_rate ≈ 1` trong bảng ablation ở `docs/evaluation_report.md` phụ lục A.
+ */
+export const ENTAILMENT_CARD_TYPES = ['CLAIM', 'EVIDENCE'] as const;

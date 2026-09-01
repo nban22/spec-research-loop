@@ -249,6 +249,46 @@ rằng chúng chạy đúng đến từ dự án demo dựng sẵn và từ lư�
 (§A.2), không đến từ bảng trên. Việc còn lại là thời gian máy: chạy đủ 10 ý tưởng (~3 giờ) và sửa
 khiếm khuyết ② để ba nhánh dùng chung một tập khẳng định.
 
+### A.3.1 Vì sao `unsupported_rate` ≈ 1 — nguyên nhân thật, tìm ra sau khi chạy full flow
+
+Ba nhận xét ② và ③ ở trên nói đúng *hiện tượng* nhưng chưa chạm *nguyên nhân*. Một lượt chạy toàn
+bộ luồng sinh spec trên API thật đã chỉ ra nó, và nó là **lỗi ngữ nghĩa của verifier**, không phải
+nhiễu của LLM.
+
+Thống kê trên **toàn bộ** cặp thẻ–nguồn đã kiểm chứng trong cơ sở dữ liệu, mọi dự án, mọi lượt chạy:
+
+| loại thẻ | n | SUPPORTED | WEAK | UNSUPPORTED |
+| --- | ---: | ---: | ---: | ---: |
+| `GAP` | 315 | **0 (0%)** | 15 | 300 |
+| `CONTRIBUTION` | 130 | **0 (0%)** | 16 | 114 |
+| `CLAIM` | 67 | 4 (6%) | 0 | 63 |
+
+**0/315 và 0/130 không phải xác suất thấp — đó là điều không thể xảy ra.** Lý do nằm ở chỗ
+`VERIFIABLE_CARD_TYPES` cho cả bốn loại thẻ đi qua tầng L4, trong khi phép thử của L4 là *kéo theo*:
+
+- **`GAP` khẳng định một sự vắng mặt** — *"No retrieved work evaluates a cross-encoder reranker on
+  Vietnamese legal statute passages"*. Không tóm tắt đơn lẻ nào kéo theo được một phủ định phổ
+  quát. Câu hỏi đúng cho trích dẫn của một gap là *"nguồn này có thuộc mảng mà gap nói tới không"* —
+  độ liên quan, không phải kéo theo.
+- **`CONTRIBUTION` khẳng định việc tác giả sắp làm** — *"We define a paired evaluation that…"*. Một
+  bài báo cũ mà kéo theo được nó thì nghĩa là đóng góp **không mới**; tức `ENTAILS` đáng ra là tín
+  hiệu **xấu**, ngược hẳn cách bảng quyết định L5 đang dùng.
+
+Vì 445/512 cặp thuộc hai loại đó, `unsupported_rate` bị đẩy về 1 bất kể ba cờ của làn A bật hay
+tắt — nhận xét ② nói "nhiễu giữa các lượt sinh thẻ" là **chưa đủ**: phần lớn chênh lệch bị nén
+xuống bởi một trần cứng. Và ③ là hệ quả dây chuyền: mọi cặp cùng `UNSUPPORTED` thì không tồn tại
+cặp PRO–CON, nên `conflict_detected` không thể khác 0.
+
+**Đã sửa:** thêm `ENTAILMENT_CARD_TYPES = ['CLAIM', 'EVIDENCE']`. Mọi loại thẻ **vẫn** qua L0–L2
+(nguồn có thật · DOI tra được · con số trong thẻ có mặt trong nguồn) — tuyến chống bịa trích dẫn
+không mất; chỉ L3–L4 mới giới hạn theo loại thẻ. Cặp dừng sau L2 nhận nhãn `WEAK` kèm cờ
+`CITATION_ONLY` để không lẫn với "đã hỏi mô hình và bằng chứng yếu". Cổng xuất bản tự sửa theo:
+nó lọc `support_label = 'UNSUPPORTED'`, nên thôi chặn vì những cặp không bao giờ thắng được, nhưng
+vẫn chặn khi nguồn của một `GAP` không tra ra (L0 chạy trước, mọi loại thẻ).
+
+Hệ quả về chi phí phải đo lại ở lượt ablation sau: 445/512 cặp không còn gọi L4, nên `l4_llm_ratio`
+và tổng token sẽ giảm mạnh — con số 0,944–1,000 ở bảng A.3 là của **phiên bản trước** khi sửa.
+
 ## A.4 Những chỗ **không** cải thiện — đọc kỹ mục này
 
 **① `fulltext_hit_rate` thấp, và đó là giới hạn của thiết kế, không phải lỗi.**

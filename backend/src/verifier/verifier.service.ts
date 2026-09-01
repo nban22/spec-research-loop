@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { entailmentOutputSchema } from '../contracts/llm-io/judge';
-import { VERIFIABLE_CARD_TYPES } from '../contracts/card';
+import {
+  ENTAILMENT_CARD_TYPES,
+  VERIFIABLE_CARD_TYPES,
+} from '../contracts/card';
 import type { VerifierFlag } from '../contracts/enums';
 import { PrismaService } from '../common/prisma.service';
 import { collapseWhitespace, splitSentences } from '../common/text';
@@ -134,6 +137,8 @@ export class VerifierService {
           cardSourceId: u.id,
           cardId: u.card_id,
           sourceId: u.source_id,
+          // Quyết định L3–L4 có chạy hay không, xem `ENTAILMENT_CARD_TYPES`.
+          cardType: u.card.type,
           claimText,
           abstract: u.source.abstract ?? '',
           doi: u.source.doi,
@@ -238,6 +243,7 @@ export class VerifierService {
       cardSourceId: string;
       cardId: string;
       sourceId: string;
+      cardType: string;
       claimText: string;
       abstract: string;
       doi: string | null;
@@ -321,6 +327,28 @@ export class VerifierService {
     if (missingNumbers.length > 0) {
       flags.push('NUMBER_NOT_IN_SOURCE');
       capWeak = true;
+    }
+
+    // ── Chốt chặn theo LOẠI THẺ · trước mọi thứ tốn kém ───────────────────────
+    // GAP khẳng định một sự vắng mặt, CONTRIBUTION khẳng định việc tác giả sắp làm — không
+    // tóm tắt đơn lẻ nào kéo theo được hai thứ đó, nên L3–L4 chỉ có thể trả về NOT_ENTAILED.
+    // Đo thật: 0/315 cặp GAP và 0/130 cặp CONTRIBUTION từng đạt SUPPORTED. Xem
+    // `ENTAILMENT_CARD_TYPES` để biết vì sao đây là chuyện ngữ nghĩa chứ không phải ngưỡng.
+    //
+    // Đặt SAU L0–L2 là cố ý: trích dẫn của gap vẫn phải có thật, DOI vẫn phải tra được, con số
+    // vẫn phải nằm trong nguồn. Chỉ bỏ đúng phép thử không áp dụng được.
+    if (!(ENTAILMENT_CARD_TYPES as readonly string[]).includes(unit.cardType)) {
+      flags.push('CITATION_ONLY');
+      return {
+        ...base,
+        label: 'WEAK',
+        similarity: null,
+        entailment: null,
+        confidence: null,
+        evidenceSentence: null,
+        flags,
+        usedL4: false,
+      };
     }
 
     // Abstract rỗng thì không có gì để embed hay đọc — dừng ở WEAK.

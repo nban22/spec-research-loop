@@ -59,6 +59,13 @@ export function replayLabel(
     return { label: 'UNSUPPORTED', why: 'REPLAYED' };
   }
 
+  // Loại thẻ không hỏi bằng phép kéo theo ⇒ pipeline dừng sau L2, mọi ngưỡng cho cùng kết quả.
+  // Nhánh `similarity === null` bên dưới cũng ra WEAK, nhưng viết tường minh ở đây để ý định
+  // không phụ thuộc vào một nhánh khác tình cờ đúng.
+  if (flags.includes('CITATION_ONLY')) {
+    return { label: 'WEAK', why: 'REPLAYED' };
+  }
+
   // L3 hỏng hoặc L4 hỏng ⇒ pipeline ép WEAK, không phụ thuộc ngưỡng ("không kiểm được thì
   // không được coi là đã kiểm" — SYSTEM_DESIGN_ANALYSIS C2 · F.8).
   if (flags.includes('LLM_UNAVAILABLE')) {

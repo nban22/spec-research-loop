@@ -179,6 +179,9 @@ export const VERIFIER_FLAG_LABEL: Record<string, string> = {
   FULLTEXT_USED: 'Nhãn này đọc từ toàn văn bài báo, không chỉ abstract',
   FULLTEXT_UNAVAILABLE:
     'Không lấy được toàn văn — đã lùi về đối chiếu abstract',
+  // Loại thẻ này khẳng định một sự vắng mặt (khoảng trống) hoặc một việc sắp làm (đóng góp),
+  // nên hỏi "nguồn có kéo theo câu này không" là hỏi sai câu. Trích dẫn vẫn được kiểm có thật.
+  CITATION_ONLY: 'Đã kiểm trích dẫn có thật; loại thẻ này không chấm bằng phép kéo theo',
 };
 
 /**
