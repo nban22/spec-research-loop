@@ -259,3 +259,20 @@ export type JudgeAgreement = Prisma.JudgeAgreementModel
  *  * 4 chỉ cho thêm dòng vào cuối file.
  */
 export type JudgeCalibration = Prisma.JudgeCalibrationModel
+/**
+ * Model JudgeAttempt
+ * *
+ *  * Một **lần chạy thô** trong k lần của cơ chế tự nhất quán (#45).
+ *  *
+ *  * Vì sao là bảng phụ chứ không phải thêm dòng `JudgeRun`: `JudgeRun` có
+ *  * `@@unique([spec_version_id, judge_key, round])`, nên k lần chạy cùng vòng cùng judge **vi phạm
+ *  * ràng buộc đó** — và luật chung 2 cấm sửa ràng buộc đang có. Luật 2 nói luôn cách làm: *"cần
+ *  * trạng thái mới thì thêm bảng phụ"*.
+ *  *
+ *  * Nhờ vậy `JudgeRun` vẫn **đúng 5 dòng mỗi vòng** và giữ kết quả **đã gộp**, nên bằng chứng độc lập
+ *  * (*"5 dòng cùng `input_digest`"*) và ngưỡng quorum `MIN_JUDGES_FOR_DONE` không phải sửa gì.
+ *  *
+ *  * `judge_run_id` để scalar trần, không relation — cùng lý do các model khác của làn B: relation đòi
+ *  * thêm field ngược vào `JudgeRun`, mà luật chung 4 chỉ cho thêm dòng vào cuối file.
+ */
+export type JudgeAttempt = Prisma.JudgeAttemptModel

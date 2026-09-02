@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { AppError } from '../common/app-error';
 import { json } from '../common/prisma-json';
@@ -16,15 +17,38 @@ import {
   shuffleForJudge,
 } from './card-shuffle';
 import { GeneratorService } from '../generator/generator.service';
-import { LlmService } from '../llm/llm.service';
+import { LlmService, type CompleteJsonResult } from '../llm/llm.service';
+import type { LlmModel } from '../llm/llm-provider.interface';
 import { SourcesService } from '../sources/sources.service';
 import { SpecService } from '../spec/spec.service';
 import { AgreementService } from './agreement/agreement.service';
 import { groupIssues, type RankOf, type RawIssue } from './issue-grouping';
 import { calibratedRank, groupScale, judgeStats } from './severity-calibration';
+import { consensusOf, judgeToRepeat } from './self-consistency';
 import type { JudgeKey } from './judge.types';
 
 type Progress = (done: number, total: number, message: string) => Promise<void>;
+
+/** Kiểu trả về của `completeJson` cho schema judge — tránh `as` khi dựng lại object. */
+type JudgeCall = CompleteJsonResult<z.infer<typeof judgeOutputSchema>>;
+
+/**
+ * Số lần chạy của cơ chế tự nhất quán (#45). `3` là con số đề bài #8 đặt.
+ *
+ * Chỉ áp cho **một** judge, không cả 5 — xem `judgeToRepeat`.
+ */
+export const SELF_CONSISTENCY_K = 3;
+
+/** Đọc `nullTest.disruptive` từ cột `JudgeAgreement.patterns` (Json) — `safeParse`, không `as`. */
+const disruptiveSchema = z.object({
+  nullTest: z
+    .object({
+      disruptive: z
+        .object({ judgeKey: z.string(), significant: z.boolean() })
+        .nullable(),
+    })
+    .optional(),
+});
 
 export type JudgeRoundResult = {
   round: number;
@@ -108,6 +132,19 @@ export class JudgeService {
       ? canonicalDigest(specJson, sourcesJson)
       : legacyDigest(specJson, sourcesJson);
 
+    // Làn B · #45 — chọn **một** judge chạy k lần. Không bật cho cả 5: job dài nhất ~90 giây, và
+    // 5 × 3 = 15 lời gọi có thể vượt. Judge được chọn là judge gây nhiễu nhất theo Δκ của #9 —
+    // con số **đã qua kiểm định null hoán vị** nên không buộc tội oan. Chưa có số đo ⇒ không bật
+    // cho ai, vì đoán sai là trả giá gấp ba cho một judge không có vấn đề.
+    const repeatKey = debias
+      ? judgeToRepeat(await this.disruptiveJudge(specVersionId))
+      : null;
+    if (repeatKey) {
+      this.logger.log(
+        `#45 tự nhất quán: chạy ${repeatKey} ${SELF_CONSISTENCY_K} lần (các judge khác 1 lần)`,
+      );
+    }
+
     await opts.onProgress?.(0, JUDGE_DEFS.length, 'Đang chạy 5 judge độc lập…');
 
     let done = 0;
@@ -124,15 +161,17 @@ export class JudgeService {
         const judgeSpecJson = shuffleSeed
           ? shuffleForJudge(specJson, shuffleSeed)
           : specJson;
+        const k = def.key === repeatKey ? SELF_CONSISTENCY_K : 1;
         try {
-          const out = await this.llm.completeJson({
+          // k = 1 là **đúng đường cũ**: một lời gọi, `attempts` không được ghi, `raw_output` là
+          // đầu ra thô. k > 1 thì `out.data.issues` bị thay bằng tập đã lọc nhất quán.
+          const { out, attempts } = await this.runAttempts(k, {
             promptId: def.promptId,
-            schema: judgeOutputSchema,
             model: def.model,
-            purpose: 'JUDGE',
-            reasoningEffort: 'low',
-            maxTokens: 8_000,
-            variables: { spec_json: judgeSpecJson, sources_json: sourcesJson },
+            variables: {
+              spec_json: judgeSpecJson,
+              sources_json: sourcesJson,
+            },
             link: {
               projectId: version.project_id,
               specVersionId,
@@ -158,6 +197,22 @@ export class JudgeService {
             },
             select: { id: true },
           });
+
+          // #45 — lưu **từng lần chạy thô**: đó là bằng chứng cho việc lọc nhất quán đã lọc cái gì.
+          // Chỉ ghi khi thật sự chạy nhiều lần; k = 1 không sinh bản ghi nào, nên bảng này rỗng ở
+          // chế độ cũ và không ai phải giải thích một bảng đầy dữ liệu vô nghĩa.
+          if (attempts.length > 1) {
+            await this.prisma.judgeAttempt.createMany({
+              data: attempts.map((a, idx) => ({
+                judge_run_id: run.id,
+                attempt_no: idx + 1,
+                status: a.ok ? ('OK' as const) : ('FAILED' as const),
+                error_code: a.errorCode,
+                raw_output: json(a.raw),
+                latency_ms: a.latencyMs,
+              })),
+            });
+          }
 
           await this.prisma.issue.createMany({
             data: out.data.issues.map((i) => ({
@@ -299,6 +354,130 @@ export class JudgeService {
         data: { target_card_id: card.id },
       });
     }
+  }
+
+  /**
+   * Judge gây nhiễu nhất theo #9, **chỉ khi kiểm định null nói nó đáng kể**.
+   *
+   * Đọc từ bản ghi `JudgeAgreement` đã lưu chứ không tính lại: số đo phải cố định (NFR-JDG-6), và
+   * tính lại ở đây là để một vòng judge tự chọn ai bị chạy ba lần dựa trên dữ liệu của chính nó.
+   */
+  private async disruptiveJudge(
+    specVersionId: string,
+  ): Promise<{ judgeKey: string; significant: boolean } | null> {
+    const row = await this.prisma.judgeAgreement.findFirst({
+      where: { spec_version_id: specVersionId },
+      orderBy: { round: 'desc' },
+      select: { patterns: true },
+    });
+    if (!row) return null;
+    const parsed = disruptiveSchema.safeParse(row.patterns);
+    if (!parsed.success) return null;
+    return parsed.data.nullTest?.disruptive ?? null;
+  }
+
+  /**
+   * Chạy một judge `k` lần rồi gộp bằng `consensusOf`.
+   *
+   * `k = 1` là **đúng đường cũ từng byte**: một lời gọi, trả nguyên `out`, không lọc gì.
+   *
+   * `Promise.allSettled` chứ không `Promise.all`, cùng lý do như 5 judge: một lần chạy lỗi không
+   * được làm rơi hai lần kia — chúng **đã tốn tiền thật**. Và mẫu số của phép lọc chỉ đếm lần chạy
+   * **thành công**; tính cả lần lỗi thì một sự cố mạng đẩy mọi issue trượt ngưỡng `≥ 2`.
+   */
+  private async runAttempts(
+    k: number,
+    req: {
+      promptId: string;
+      model: LlmModel;
+      variables: Record<string, unknown>;
+      link: {
+        projectId: string;
+        specVersionId: string;
+        evalRunId: string | null;
+      };
+    },
+  ): Promise<{
+    out: JudgeCall;
+    attempts: {
+      ok: boolean;
+      errorCode: string | null;
+      raw: unknown;
+      latencyMs: number;
+    }[];
+  }> {
+    const call = async () => {
+      const t0 = Date.now();
+      const out = await this.llm.completeJson({
+        promptId: req.promptId,
+        schema: judgeOutputSchema,
+        model: req.model,
+        purpose: 'JUDGE',
+        reasoningEffort: 'low',
+        maxTokens: 8_000,
+        variables: req.variables,
+        link: req.link,
+      });
+      return { out, latencyMs: Date.now() - t0 };
+    };
+
+    if (k <= 1) {
+      const { out, latencyMs } = await call();
+      return {
+        out,
+        attempts: [{ ok: true, errorCode: null, raw: out.data, latencyMs }],
+      };
+    }
+
+    const settled = await Promise.allSettled(
+      Array.from({ length: k }, () => call()),
+    );
+    const attempts = settled.map((r) =>
+      r.status === 'fulfilled'
+        ? {
+            ok: true,
+            errorCode: null,
+            raw: r.value.out.data,
+            latencyMs: r.value.latencyMs,
+          }
+        : {
+            ok: false,
+            // Cùng mã lỗi với đường `FAILED` của cả judge — không thêm mã mới cho một tình
+            // huống đã có mã.
+            errorCode: 'LLM_UNAVAILABLE',
+            raw: { error: String(r.reason) },
+            latencyMs: 0,
+          },
+    );
+
+    const okRuns = settled.flatMap((r) =>
+      r.status === 'fulfilled' ? [r.value.out] : [],
+    );
+    // Cả k lần đều lỗi ⇒ ném lại lỗi đầu tiên để judge này vào đường `FAILED` như trước.
+    if (okRuns.length === 0) {
+      const first = settled.find((r) => r.status === 'rejected');
+      throw first && first.status === 'rejected'
+        ? first.reason
+        : new Error('JUDGE_ALL_ATTEMPTS_FAILED');
+    }
+
+    // Truyền issue **nguyên vẹn**: `consensusOf` là generic nên kiểu chặt của `severity` và
+    // `target_card_title` đi xuyên qua, không cần dựng lại và không cần `as`.
+    const consensus = consensusOf(okRuns.map((o) => o.data.issues));
+    this.logger.log(
+      `#45 ${req.promptId}: ${consensus.attempts}/${k} lần chạy được · giữ ${consensus.issues.length} issue · loại ${consensus.dropped} (chỉ xuất hiện 1 lần)`,
+    );
+
+    // Trả về theo hình dạng của **một** lời gọi, với tập issue đã lọc. `promptHash` và `attempts`
+    // lấy từ lần chạy đầu thành công — chúng nói về prompt và số lần sửa JSON, không về k.
+    const base = okRuns[0];
+    return {
+      out: {
+        ...base,
+        data: { ...base.data, issues: consensus.issues },
+      },
+      attempts,
+    };
   }
 
   /**
