@@ -23,6 +23,11 @@ export const errorCodeSchema = z.enum([
   // llm
   'LLM_UNAVAILABLE',
   'LLM_INVALID_JSON',
+  /**
+   * Model đụng trần `max_tokens` và câu trả lời bị cắt ngang — **khác** `LLM_INVALID_JSON`.
+   * Ở đây model trả JSON đúng; bên đặt trần quá thấp mới là bên có lỗi, nên thử lại vô ích.
+   */
+  'LLM_OUTPUT_TRUNCATED',
 
   // judge
   'JUDGE_ROUND_EXISTS',

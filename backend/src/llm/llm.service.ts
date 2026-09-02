@@ -120,6 +120,7 @@ export class LlmService {
     while (attempts <= maxRetries) {
       attempts += 1;
       let content = '';
+      let finishReason: string | null = null;
       try {
         const res = await this.completeWithTransportRetry(opts.promptId, {
           model: opts.model,
@@ -129,6 +130,7 @@ export class LlmService {
           cacheScope: opts.link?.projectId ?? undefined,
         });
         content = res.content;
+        finishReason = res.finish_reason;
         total.prompt_tokens += res.usage.prompt_tokens;
         total.completion_tokens += res.usage.completion_tokens;
         total.cache_hit_tokens += res.usage.cache_hit_tokens;
@@ -161,6 +163,41 @@ export class LlmService {
       }
 
       lastError = parsed.error;
+
+      /**
+       * Bị **cắt ngang** thì dừng ngay, không thử lại.
+       *
+       * Thử lại chỉ cứu được câu trả lời *sai schema*: đính lỗi zod vào rồi model sửa. Còn câu
+       * trả lời *đụng trần* thì lượt sau cũng dài đúng ngần ấy và cũng bị cắt đúng chỗ đó —
+       * ba lượt để hỏng y hệt, tốn gấp ba tiền.
+       *
+       * Đo thật: J4 `judge_evidence` hỏng 3/19 lượt, mỗi lần ghi `completion_tokens = 24 000`
+       * = 3 × trần 8 000. Toàn bộ số đó là tiền đốt để nhận cùng một lỗi.
+       *
+       * Mã lỗi cũng phải khác: `LLM_INVALID_JSON` đọc ra là "model trả rác", trong khi model
+       * trả JSON đúng và **ta** mới là bên đặt trần quá thấp. Sai chỗ đổ lỗi thì người sửa đi
+       * dò nhầm hướng.
+       */
+      if (finishReason === 'length') {
+        this.logger.warn(
+          `[${opts.promptId}] output hit the ${maxTokens}-token ceiling and was truncated ` +
+            `at attempt ${attempts}; not retrying — a retry would be cut at the same place.`,
+        );
+        await this.recordCall(
+          opts,
+          promptHash,
+          total,
+          attempts,
+          false,
+          'LLM_OUTPUT_TRUNCATED',
+        );
+        throw AppError.unavailable(
+          'LLM_OUTPUT_TRUNCATED',
+          'The model ran out of output budget before it finished. Try again with fewer sources, or raise the ceiling for this step.',
+          { promptId: opts.promptId, maxTokens },
+        );
+      }
+
       this.logger.warn(
         `[${opts.promptId}] attempt ${attempts}/${maxRetries + 1} did not match the schema: ${lastError.slice(0, 200)}`,
       );

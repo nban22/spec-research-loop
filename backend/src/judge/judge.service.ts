@@ -103,7 +103,8 @@ export class JudgeService {
             model: def.model,
             purpose: 'JUDGE',
             reasoningEffort: 'low',
-            maxTokens: 8_000,
+            // Trần theo từng judge, không phải hằng số chung — xem `JUDGE_DEFS`.
+            maxTokens: def.maxTokens,
             variables: { spec_json: specJson, sources_json: sourcesJson },
             link: {
               projectId: version.project_id,
