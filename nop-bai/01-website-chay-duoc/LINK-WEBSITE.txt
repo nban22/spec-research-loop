@@ -1,0 +1,19 @@
+SpecResearch Loop — Website chạy được (sản phẩm bàn giao #1)
+============================================================
+
+Giao diện    https://dsa-bus-booking.io.vn
+API          https://api.dsa-bus-booking.io.vn
+Healthcheck  https://api.dsa-bus-booking.io.vn/health   ->  {"ok":true}
+
+Đăng ký một tài khoản bất kỳ, tạo dự án mới, đi hết một vòng B1 -> B5.
+Chỗ đáng dừng lại: bước 5, bấm xuất bản khi còn claim UNSUPPORTED -> hệ
+thống chặn thật, trả 409 EXPORT_BLOCKED_UNSUPPORTED_CITATION.
+
+Video demo   https://www.youtube.com/watch?v=aQMGFN3kzoA
+
+Chạy tại máy: xem README.md ở gốc repo.
+Yêu cầu Node.js >= 20.9, một PostgreSQL bất kỳ, một DEEPSEEK_API_KEY.
+Cấu hình triển khai thật đang chạy nằm ở deploy/ trong repo.
+
+Tên miền dùng lại từ một dự án trước cho khỏi mua thêm, không liên quan
+tới nội dung đồ án.

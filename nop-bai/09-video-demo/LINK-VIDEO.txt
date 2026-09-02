@@ -1,0 +1,22 @@
+SpecResearch Loop — Video demo (sản phẩm bàn giao #9)
+=====================================================
+
+https://www.youtube.com/watch?v=aQMGFN3kzoA
+
+Đi hết một vòng B1 -> B5 trên một ý tưởng thật, không cắt ghép để giấu lỗi,
+không tua nhanh phần chờ.
+
+Ba cảnh đáng dừng lại:
+
+  * Màn "Vì sao nhãn này" — hệ thống chỉ ra ĐÚNG CÂU trong paper đỡ cho claim,
+    và nhãn đó đến từ tầng kiểm nào. Đây là phần trả lời "làm sao biết nó
+    không bịa".
+
+  * Bước 5, gate chặn export — cố tình xuất bản khi còn claim UNSUPPORTED,
+    hệ thống trả 409 và KHÔNG xuất. Chỗ phân biệt cơ chế thật với trang trí.
+
+  * Màn /cost — cả vòng vừa rồi tốn bao nhiêu token, bao nhiêu giây, bao nhiêu
+    tiền. Số thật lấy từ bảng LlmCall, cùng nguồn với báo cáo đánh giá.
+
+Kịch bản gốc: docs/handover.md §2 trong repo.
+Kịch bản trình bày trực tiếp hai bản đồ: docs/kich-ban-trinh-bay.md.

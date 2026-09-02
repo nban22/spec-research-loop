@@ -1,0 +1,9 @@
+metric,B1_mean,B2_mean,B1_std,B2_std
+citation_validity,0.4000,1.0000,0.0000,0.0000
+unsupported_rate,0.6000,0.9167,0.0000,0.0000
+completeness_14,6.0000,14.0000,0.0000,0.0000
+issues_major_critical,0.0000,0.0000,0.0000,0.0000
+json_validity,1.0000,0.6875,0.0000,0.0000
+l4_llm_ratio,0.0000,0.9167,0.0000,0.0000
+total_tokens,3902.0000,128406.0000,0.0000,0.0000
+wall_ms,36210.0000,471889.0000,0.0000,0.0000

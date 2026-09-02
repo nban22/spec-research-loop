@@ -9,7 +9,9 @@ chứng**, và **không bước nào tự chốt thay người dùng**.
 - Giao diện: `docs/DESIGN_SYSTEM.md` · Đánh đổi & điểm vỡ: `docs/SYSTEM_DESIGN_ANALYSIS.md`
 - Kịch bản trình bày hai bản đồ: `docs/kich-ban-trinh-bay.md`
 - **Vấn đáp: `docs/vandap.md`** — kiến trúc, mô hình AI, session, judge, rework, chi phí đo thật
-- **Bàn giao & nộp bài: `docs/handover.md`** — đối chiếu 10 sản phẩm bàn giao, kịch bản video, việc còn lại
+- **▶ Người chấm đọc trước: `nop-bai/README.md`** — 10 sản phẩm bàn giao, mỗi cái một thư mục
+- Bàn giao chi tiết: `docs/handover.md` — bảng đối chiếu gốc, kịch bản video, việc còn lại
+- Video demo: <https://www.youtube.com/watch?v=aQMGFN3kzoA>
 - Bản đồ luồng sản phẩm: `docs/product-flow-map.html` · Bản đồ làn C: `docs/lane-c-map.html` (mở bằng trình duyệt)
 
 ---
@@ -174,4 +176,5 @@ backend/          NestJS · Prisma · DeepSeek · verifier 5 tầng · eval harn
 frontend/         Next.js 16 · Tailwind v4 · shadcn/ui · TanStack Query
 prompts/          deliverable #5 — prompt runtime, KHÔNG gitignore
 docs/             kiến trúc, design system, phân tích thiết kế, báo cáo đánh giá
+nop-bai/          hồ sơ nộp bài — 10 sản phẩm bàn giao, mỗi cái một thư mục
 ```

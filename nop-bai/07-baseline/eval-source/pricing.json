@@ -1,0 +1,9 @@
+{
+  "_source": "CẦN XÁC NHẬN — chưa file nào trong repo chốt được nguồn của đơn giá DeepSeek. Hai bản sao 0.28/0.42 đang nằm ở estimator.service.ts và analytics.service.ts, cũng không ghi nguồn. Trước khi nộp báo cáo phải tra bảng giá chính thức rồi cập nhật file này.",
+  "_updated": "2026-09-01",
+  "_unit": "USD trên 1 triệu token",
+  "_note": "cached_input đang đặt bằng input ở kịch bản này — xem hai kịch bản trong cost-report.ts. Đặt bằng nhau nghĩa là KHÔNG giảm giá cho cache hit, tức là cận trên của chi phí.",
+  "default": { "input": 0.28, "cached_input": 0.28, "output": 0.42 },
+  "deepseek-v4-pro": { "input": 0.28, "cached_input": 0.28, "output": 0.42 },
+  "deepseek-v4-flash": { "input": 0.28, "cached_input": 0.28, "output": 0.42 }
+}

@@ -1,0 +1,307 @@
+{
+  "_huong_dan": "Điền \"label\" cho từng mục: SUPPORTED (abstract có đoạn đỡ cho claim) · WEAK (liên quan nhưng không đủ đỡ) · UNSUPPORTED (không đỡ hoặc mâu thuẫn). Để trống thì bỏ qua.",
+  "exported_at": "2026-09-01T08:49:25.259Z",
+  "seed": 42,
+  "items": [
+    {
+      "card_source_id": "7024681b-cc2b-440d-bb7a-2c36407df64e",
+      "claim_title": "Reference-aware retrieval module",
+      "claim_body": "We develop a retriever that uses the cross-reference graph to expand queries and rerank chunks based on graph proximity and semantic similarity, ensuring referenced provisions are included before generation.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "SUPPORTED",
+      "note": "abstract nêu thẳng graph-aware retrieval + hybrid ranking kết hợp semantic similarity và graph-derived confidence"
+    },
+    {
+      "card_source_id": "03859b21-3eb2-4400-8e15-9abf9a16f9b8",
+      "claim_title": "Evaluation relies on practice patterns rather than guideline-based appropriateness",
+      "claim_body": "These evaluations treat real-world clinical decisions as the reference standard, so they cannot detect suggestions that are common but not evidence-based, and they do not penalize recommendations that ignore contraindications or deviant patient histories.",
+      "source_title": "ICSI Protocol Advisor: A decision support system for infertility protocol suggestion",
+      "source_year": 2022,
+      "source_abstract": "Intra-Cytoplasmic Sperm Injection (ICSI) is one of the most common infertility treatments in which ovarian stimulation is carried out to extract the eggs from the ovaries. There are three, short, long, and pure treatment protocols of ovarian stimulation that vary by the type of medicine, the dosage of medicine, and the treatment term. Today, physicians choose an appropriate treatment protocol based on the patient's condition, such as age, and hormonal condition. This could be a relatively subjective and inaccurate method, particularly if the physician is not highly experienced. The present study investigates whether a decision support system can propose a more objective treatment protocol based on the patients’ data and data mining methods like logistic regression, decision tree, and SVM. Such a system draws upon classification methods to propose proper treatment protocols for ICSI. Moreover, a separate module was developed to calculate the success rate of the proposed protocols. The system was tested with real data of treated patients at a Hospital in Tehran, Iran. The results showed the proposed system can predict the most proper treatment protocol with an accuracy of 81.90%. The proposed system can help inexperienced physicians to feel more confident about their advice.",
+      "label": "WEAK",
+      "note": "đúng chủ đề DSS chọn phác đồ, nhưng abstract không nói gì về việc lấy quyết định lâm sàng thật làm chuẩn đánh giá"
+    },
+    {
+      "card_source_id": "10aad62a-fe22-4ec0-a1d8-dd7c72ae9eac",
+      "claim_title": "A Hybrid Retrieval Pipeline for Vietnamese Legal QA",
+      "claim_body": "We combine BM25 and a dense retriever using normalized reciprocal rank fusion, then rerank the top-50 candidates with a cross-encoder fine-tuned on Vietnamese legal question-article pairs.",
+      "source_title": "Vietnamese Legal Information Retrieval in Question-Answering System",
+      "source_year": 2024,
+      "source_abstract": "In the modern era of rapidly increasing data volumes, accurately retrieving and recommending relevant documents has become crucial in enhancing the reliability of Question Answering (QA) systems. Recently, Retrieval Augmented Generation (RAG) has gained significant recognition for enhancing the capabilities of large language models (LLMs) by mitigating hallucination issues in QA systems, which is particularly beneficial in the legal domain. Various methods, such as semantic search using dense vector embeddings or a combination of multiple techniques to improve results before feeding them to LLMs, have been proposed. However, these methods often fall short when applied to the Vietnamese language due to several challenges, namely inefficient Vietnamese data processing leading to excessive token length or overly simplistic ensemble techniques that lead to instability and limited improvement. Moreover, a critical issue often overlooked is the ordering of final relevant documents which are used as reference to ensure the accuracy of the answers provided by LLMs. In this report, we introduce our three main modifications taken to address these challenges. First, we explore various practical approaches to data processing to overcome the limitations of the embedding model. Additionally, we enhance Reciprocal Rank Fusion by normalizing order to combine results from keyword and vector searches effectively. We also meticulously re-rank the source pieces of information used by LLMs with A",
+      "label": "WEAK",
+      "note": "cùng bài toán VN legal IR, nhưng abstract không nêu BM25+dense, RRF, top-50 hay cross-encoder"
+    },
+    {
+      "card_source_id": "826c15e5-d7fc-410b-b202-db6b491bff5e",
+      "claim_title": "Cross-reference resolution in Vietnamese legal knowledge graphs does not handle temporal validity and ambiguous references",
+      "claim_body": "That knowledge graph is restricted to three law domains and does not resolve references that are ambiguous (e.g., pointing to multiple possible articles) or that may become outdated when laws are amended or replaced.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "WEAK",
+      "note": "đúng bài báo được nói tới, nhưng abstract không nêu giới hạn ba lĩnh vực luật hay tính hiệu lực theo thời gian"
+    },
+    {
+      "card_source_id": "4821d7aa-cc00-448b-9eef-7ca80eca9562",
+      "claim_title": "Reference-aware retrieval module",
+      "claim_body": "We develop a retriever that uses the cross-reference graph to expand queries and rerank chunks based on graph proximity and semantic similarity, ensuring referenced provisions are included before generation.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "SUPPORTED",
+      "note": "trùng cặp [0]"
+    },
+    {
+      "card_source_id": "f0c53527-bd7b-4c0a-b79a-709a86be44b9",
+      "claim_title": "Cross-reference graph builder for Vietnamese legal texts",
+      "claim_body": "We define a parsing and linking component that extracts explicit statutory references and constructs a graph of nodes for laws, chapters, sections, articles, clauses, and points, with edges representing cross-reference relations.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "SUPPORTED",
+      "note": "abstract khớp gần như nguyên văn: hierarchy Document→Chapter→Section→Article→Clause→Point và cross-reference relations"
+    },
+    {
+      "card_source_id": "2f4965fe-6a6c-4226-bbd1-22049c4ccdf4",
+      "claim_title": "Cross-reference graph builder for Vietnamese legal texts",
+      "claim_body": "We define a parsing and linking component that extracts explicit statutory references and constructs a graph of nodes for laws, chapters, sections, articles, clauses, and points, with edges representing cross-reference relations.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "SUPPORTED",
+      "note": "trùng cặp [5]"
+    },
+    {
+      "card_source_id": "acc4be2f-676b-4db7-9ca5-95a54704dc11",
+      "claim_title": "Target audience characteristics are not tied to content design decisions for cat slide decks",
+      "claim_body": "Those studies focus on health/nutrition and patient education, not general audience biology; there is no evidence on how audience age or background influences cat slide content depth and media choices.",
+      "source_title": "Factors Influencing Nutritional Intake and Interests in Educational Content of Athletes and Sport Professionals Toward the Development of a Clinician-Supported Mobile App to Combat Relative Energy Deficiency in Sport: Formative Research and a Description of App Functions",
+      "source_year": 2023,
+      "source_abstract": "Background Relative energy deficiency in sport (RED-S) as a consequence of athlete malnutrition remains a prominent issue. However, it remains underrecognized, in part due to the perceived outward health of athletes. The Eat2Win app was designed to combat RED-S and athlete malnutrition by providing education, behavior modification, and direct communication with expert sports dietitians to athletes and sport professionals (professionals who work with athletes, eg, sport coaches and athletic trainers). Objective The purpose of this formative research was to gain critical insight on motivators and barriers to optimal nutritional intake from both the athletes’ and sport professionals’ perspectives. Additionally, since these 2 groups represent the primary end users of an app aimed at improving athlete nutrition and reducing the risk of RED-S, a secondary objective was to gain insight on the preferences and perceptions of app-based educational content and functionality. Methods An electronic survey was developed by an interdisciplinary team of experts. Survey questions were established based upon prevailing literature, professional dietetic field experience, and app design considerations to obtain respondent knowledge on key sports nutrition topics along with motivations and barriers to meal choices. Additionally, the survey included questions about the development of an integrative, clinician-support app aimed at addressing RED-S. These questions included preferences for education",
+      "label": "WEAK",
+      "note": "abstract xác nhận nghiên cứu thuộc mảng dinh dưỡng/giáo dục, nhưng không đỡ cho phần \"chưa có bằng chứng về ảnh hưởng của độ tuổi khán giả\""
+    },
+    {
+      "card_source_id": "e390e92e-0a55-4f6f-9eb3-27ecfe41e625",
+      "claim_title": "No evaluation benchmark or protocol exists for Swift unit test generation",
+      "claim_body": "There is no public dataset of real Swift/SwiftUI/UIKit projects paired with human-written tests and no standardized protocol for measuring compile rate, test pass rate, coverage, mutation score, or framework-specific defects (e.g., lifecycle, async) on iOS.",
+      "source_title": "CITYWALK: Enhancing LLM-Based C++ Unit Test Generation via Project-Dependency Awareness and Language-Specific Knowledge",
+      "source_year": 2025,
+      "source_abstract": "Unit testing plays a pivotal role in the software development lifecycle, as it ensures code quality. However, writing high-quality unit tests remains a time-consuming task for developers in practice. More recently, the application of large language models (LLMs) in automated unit test generation has demonstrated promising results. Existing approaches primarily focus on interpreted programming languages (e.g., Java), while mature solutions tailored to compiled programming languages like C++ are yet to be explored. The intricate language features of C++, such as pointers, templates, and virtual functions, pose particular challenges for LLMs in generating both executable and high-coverage unit tests. To tackle the aforementioned problems, this article introduces CITYWALK, a novel LLM-based framework for C++ unit test generation. CITYWALK enhances LLMs by providing a comprehensive understanding of the dependency relationships within the project under test via program analysis. Furthermore, CITYWALK incorporates language-specific knowledge about C++ derived from project documentation and empirical observations, significantly improving the correctness of the LLM-generated unit tests. We implement CITYWALK by employing the widely popular LLM GPT-4o. The experimental results show that CITYWALK outperforms current state-of-the-art approaches on a collection of ten popular C++ projects. Our findings demonstrate the effectiveness of CITYWALK in generating high-quality C++ unit tests.",
+      "label": "UNSUPPORTED",
+      "note": "bài về C++, abstract không nhắc Swift một lần nào"
+    },
+    {
+      "card_source_id": "e458cc92-e1dc-4726-911c-061b6ff26fbc",
+      "claim_title": "Diagnostic CDSS outputs stop short of treatment protocol recommendations",
+      "claim_body": "These systems output diagnoses or risk predictions but do not retrieve or rank specific treatment protocols from clinical guidelines.",
+      "source_title": "Multimodal Deep Learning and NLP-Based Intelligent Healthcare Assistant for Clinical Decision Support Systems",
+      "source_year": 2026,
+      "source_abstract": "The fast evolution of artificial intelligence in the medical field has made it possible to create intelligent clinical decision support systems that can enhance patient care and diagnosis. This article introduces Multimodal Deep Learning and NLP-Based Intelligent Healthcare Assistant that is developed to process heterogeneous medical data, such as electronic health records, medical images, laboratory reports, and clinical text. The suggested framework combines Convolutional Neural Networks (CNNs) to analyze medical images, Bidirectional Long Short-Term Memory (Bi-LSTM) networks to process sequential healthcare data, and the Transformer-based Natural Language Processing (NLP) to understand the meaning of a clinical note and patient history. A multimodal fusion mechanism that is based on attention is used in order to integrate the extracted features and come up with correct diagnostic recommendations. The system is able to predict diseases, assess risks, and support clinical processes in real-time, making diagnostic processes of healthcare professionals less complex. Experimental analysis shows the proposed model has better classification accuracy, precision, recall, and F1-score than traditional machine-learned and single-modal deep-learned methods. Clinical predictions are also made to be more robust and reliable with the integration of multimodal data. The smart healthcare assistant suggested is a highly efficient, scalable, and data-driven system that can be used as the nex",
+      "label": "WEAK",
+      "note": "abstract mô tả hệ hỗ trợ chẩn đoán đa phương thức, không nói nó dừng lại trước khâu gợi ý phác đồ"
+    },
+    {
+      "card_source_id": "cf356af9-bcbf-46d7-8060-1fa6ad1bf8b1",
+      "claim_title": "Cross-reference-aware retrieval for Vietnamese statutes",
+      "claim_body": "We build a statutory reference graph from internal citations, then expand first-hop retrieval with referenced articles and evaluate on cross-reference-heavy queries.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "SUPPORTED",
+      "note": "đồ thị tham chiếu điều luật và truy hồi theo đồ thị đều có trong abstract"
+    },
+    {
+      "card_source_id": "713a01fb-413a-45ba-b912-1d4294e73b6e",
+      "claim_title": "Hallucination detection for legal QA is too resource-intensive for low-latency Vietnamese deployment",
+      "claim_body": "These methods add substantial latency and compute, conflicting with the requirement to keep response speed high for real-time Vietnamese legal assistance.",
+      "source_title": "Who Checks the Citations? Benchmarking Legal Hallucination Detection",
+      "source_year": 2026,
+      "source_abstract": "Attorneys, judges, and pro se filers increasingly use AI to draft legal documents, yet these tools frequently fabricate citations. Despite predictions that newer models would hallucinate less or that court sanctions would deter negligent filers, we found over 1,000 filings containing fabricated citations---with this number growing year-over-year. This study evaluates whether AI-based systems can mitigate these errors by automatically detecting hallucinations. We propose a taxonomy of legal citation hallucinations grounded in actual court filings and introduce a dataset of 1,300 brief excerpts containing injected errors. Benchmarking five models in agentic and non-agentic settings as well as Claude Code reveals that while the latest iterations perform better---GPT-5 achieves 84.4% recall and a 55.0% F1 score in an agentic framework---all models struggle with subtle error categories. Agentic verification remains resource-intensive, with GPT-5 averaging 15.3 steps per excerpt. Furthermore, restricted information access limits the efficacy of even the best agents. This gap creates policy concerns, as it disadvantages both AI systems and litigants who lack subscriptions to commercial legal databases. Together, our dataset, tools, and policy recommendations provide a foundation for building and auditing reliable legal citation checking tools.",
+      "label": "UNSUPPORTED",
+      "note": "abstract nói về benchmark phát hiện hallucination, không có số liệu hay nhận định nào về độ trễ và chi phí tính toán"
+    },
+    {
+      "card_source_id": "f0b457a0-7c72-49a9-aa57-d5678ce84783",
+      "claim_title": "A reranking stage that raises answer quality",
+      "claim_body": "We contribute a cross-encoder reranking stage that raises answer quality.",
+      "source_title": "Reranking trade-offs in low-resource retrieval",
+      "source_year": 2023,
+      "source_abstract": "We measure cross-encoder reranking on low-resource legal corpora. Reranking raises answer quality when the candidate pool is already precise, and degrades it when the pool is noisy. The direction of the effect therefore depends entirely on the first-stage retriever.",
+      "label": "UNSUPPORTED",
+      "note": "MÂU THUẪN: abstract nói rerank chỉ nâng chất lượng khi pool đã chính xác và LÀM TỆ ĐI khi pool nhiễu; claim phát biểu vô điều kiện"
+    },
+    {
+      "card_source_id": "cabccda6-348f-461e-b259-f11f8a717faf",
+      "claim_title": "An expert-annotated Vietnamese legal answer support dataset",
+      "claim_body": "We generate answers on ALQAC/VLQA questions with a RAG system, have legal experts label each answer as supported or unsupported by the cited provisions, and release the labels with a train/dev/test split.",
+      "source_title": "A Summary of the ALQAC 2024 Competition",
+      "source_year": 2024,
+      "source_abstract": "This paper presents an overview of the fourth edition of the Automated Legal Question Answering Competition (ALQAC 2024), held in association with the KSE 2024 conference. The primary objective of ALQAC is to advance the state-of-the-art in processing legal texts for low-resource languages, with a focus on Vietnamese statute law documents. This year, the competition introduces new challenges to foster innovation and collaboration, including scenario-based queries that simulate real-world legal problem-solving and the provision of both expertverified and non-expert-verified training data. ALQAC 2024 features two tasks: Legal Document Retrieval (Task 1) and Legal Question Answering (Task 2). Task 1 requires participants to develop systems capable of retrieving relevant legal articles based on given queries, evaluated using the Macro-F2 score. Task 2 involves creating systems that can accurately answer various types of legal questions, including the newly introduced scenario-based queries, with expert-judged accuracy as the primary evaluation metric. The competition saw increased participation, with 8 teams submitting a total of 36 runs across both tasks. This paper provides a detailed description of the tasks, datasets, and evaluation metrics, followed by an analysis of the approaches adopted by the participating teams. The results and insights gained from this year's competition are discussed, highlighting the significant advancements in legal question answering and document r",
+      "label": "WEAK",
+      "note": "ALQAC 2024 có nhắc dữ liệu expert-verified, nhưng đó là dữ liệu của cuộc thi, không phải bộ nhãn supported/unsupported mà claim mô tả"
+    },
+    {
+      "card_source_id": "0517b125-7755-4bc4-82b3-ae45140dd40b",
+      "claim_title": "Hallucination detection for legal QA is too resource-intensive for low-latency Vietnamese deployment",
+      "claim_body": "These methods add substantial latency and compute, conflicting with the requirement to keep response speed high for real-time Vietnamese legal assistance.",
+      "source_title": "HalluGraph: Auditable Hallucination Detection for Legal RAG Systems via Knowledge Graph Alignment",
+      "source_year": 2025,
+      "source_abstract": "Legal AI systems powered by retrieval-augmented generation (RAG) face a critical accountability challenge: when an AI assistant cites case law, statutes, or contractual clauses, practitioners need verifiable guarantees that generated text faithfully represents source documents. Existing hallucination detectors rely on semantic similarity metrics that tolerate entity substitutions, a dangerous failure mode when confusing parties, dates, or legal provisions can have material consequences. We introduce HalluGraph, a graph-theoretic framework that quantifies hallucinations through structural alignment between knowledge graphs extracted from context, query, and response. Our approach produces bounded, interpretable metrics decomposed into \\textit{Entity Grounding} (EG), measuring whether entities in the response appear in source documents, and \\textit{Relation Preservation} (RP), verifying that asserted relationships are supported by context. On structured control documents, HalluGraph achieves near-perfect discrimination ($>$400 words, $>$20 entities), HalluGraph achieves $AUC = 0.979$, while maintaining robust performance ($AUC \\approx 0.89$) on challenging generative legal task, consistently outperforming semantic similarity baselines. The framework provides the transparency and traceability required for high-stakes legal applications, enabling full audit trails from generated assertions back to source passages.",
+      "label": "UNSUPPORTED",
+      "note": "HalluGraph nói về thay thế thực thể và tính kiểm chứng được, không nói gì về độ trễ hay chi phí"
+    },
+    {
+      "card_source_id": "f35d7e3e-9537-4cc9-8c76-e93ee6555e02",
+      "claim_title": "Cross-reference-aware retrieval for Vietnamese statutes",
+      "claim_body": "We build a statutory reference graph from internal citations, then expand first-hop retrieval with referenced articles and evaluate on cross-reference-heavy queries.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "SUPPORTED",
+      "note": "trùng cặp [10]"
+    },
+    {
+      "card_source_id": "d7979df3-3c0a-456d-af12-fb9bb2b74c71",
+      "claim_title": "The RNN logic error detector, when applied to code review diffs, underperforms fine-tuned LLMs in detecting logic errors.",
+      "claim_body": "The RNN logic error detector, when applied to code review diffs, underperforms fine-tuned LLMs in detecting logic errors.",
+      "source_title": "Logic Error Detection Algorithm Based on RNN with Threshold Selection",
+      "source_year": 2020,
+      "source_abstract": "Logical errors in source code can be detected by probabilities obtained from a language model trained by the recurrent neural network (RNN). Using the probabilities and determining thresholds, places that are likely to be logic errors can be enumerated. However, when the threshold is set inappropriately, user may miss true logical errors because of passive extraction or unnecessary elements obtained from excessive extraction. Moreover, the probabilities of output from the language model are different for each task, so the threshold should be selected properly. In this paper, we propose a logic error detection algorithm using an RNN and an automatic threshold determination method. The proposed method selects thresholds using incorrect codes and can enhance the detection performance of the trained language model. For evaluating the proposed method, experiments with data from an online judge system, which is one of the educational systems that provide the automated judge for many programming tasks, are conducted. The experimental results show that the selected thresholds can be used to improve the logic error detection performance of the trained language model.",
+      "label": "UNSUPPORTED",
+      "note": "bài 2020 về ngưỡng cho RNN, không hề so sánh với LLM fine-tune"
+    },
+    {
+      "card_source_id": "7b532418-38c3-41bd-96fc-aaad0a8d822c",
+      "claim_title": "Cross-reference-aware retrieval for Vietnamese statutes",
+      "claim_body": "We build a statutory reference graph from internal citations, then expand first-hop retrieval with referenced articles and evaluate on cross-reference-heavy queries.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "SUPPORTED",
+      "note": "trùng cặp [10]"
+    },
+    {
+      "card_source_id": "390bc7de-8def-4f95-8d84-09d4d6cd031e",
+      "claim_title": "Hybrid retrieval's Recall@50 advantage over BM25 is larger in the unnormalised candidate-pool condition than in the matched condition, and in the matched condition hybrid fails to ",
+      "claim_body": "Hybrid retrieval's Recall@50 advantage over BM25 is larger in the unnormalised candidate-pool condition than in the matched condition, and in the matched condition hybrid fails to exceed BM25.",
+      "source_title": "Hybrid retrieval for Vietnamese legal question answering",
+      "source_year": 2024,
+      "source_abstract": "We study hybrid sparse-dense retrieval for Vietnamese statutes. Hybrid retrieval improves recall@50 by 12% over a BM25 baseline on our legal corpus. The gain holds across three statute families and two query styles. We release the index and the evaluation harness so the numbers can be reproduced end to end.",
+      "label": "UNSUPPORTED",
+      "note": "MÂU THUẪN: abstract nói hybrid tăng recall@50 12% so với BM25 và mức tăng giữ nguyên qua ba nhóm điều luật; claim nói hybrid không vượt được BM25 ở điều kiện matched"
+    },
+    {
+      "card_source_id": "ae02495a-1df7-40d5-8cc1-5821a3d93cfd",
+      "claim_title": "Attention alone suffices for sequence transduction",
+      "claim_body": "A model built only on attention matches recurrent architectures on translation.",
+      "source_title": "Attention Is All You Need",
+      "source_year": 2017,
+      "source_abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.",
+      "label": "SUPPORTED",
+      "note": "abstract nói kiến trúc dựa hoàn toàn vào attention, bỏ hẳn recurrence và convolution"
+    },
+    {
+      "card_source_id": "bfc4a9cb-04a1-4cfc-b81e-568c8fb2fdbe",
+      "claim_title": "Existing LLM-based unit test generation approaches adapted to Swift achieve less than 50% compile pass rate on the Swift benchmark, demonstrating its difficulty.",
+      "claim_body": "Existing LLM-based unit test generation approaches adapted to Swift achieve less than 50% compile pass rate on the Swift benchmark, demonstrating its difficulty.",
+      "source_title": "HITS: High-coverage LLM-based Unit Test Generation via Method Slicing",
+      "source_year": 2024,
+      "source_abstract": "Large language models (LLMs) have behaved well in generating unit tests for Java projects. However, the performance for covering the complex focal methods within the projects is poor. Complex methods comprise many conditions and loops, requiring the test cases to be various enough to cover all lines and branches. However, existing test generation methods with LLMs provide the whole method-to-test to the LLM without assistance on input analysis. The LLM has difficulty inferring the test inputs to cover all conditions, resulting in missing lines and branches. To tackle the problem, we propose decomposing the focal methods into slices and asking the LLM to generate test cases slice by slice. Our method simplifies the analysis scope, making it easier for the LLM to cover more lines and branches in each slice. We build a dataset comprising complex focal methods collected from the projects used by existing state-of-the-art approaches. Our experiment results show that our method significantly outperforms current test case generation methods with LLMs and the typical SBST method Evosuite regarding both line and branch coverage scores.CCS CONCEPTS• Software and its engineering → Software testing and debugging; • Computing methodologies → Natural language processing.",
+      "label": "UNSUPPORTED",
+      "note": "HITS là bài về Java, không có Swift và không có con số tỉ lệ biên dịch nào"
+    },
+    {
+      "card_source_id": "32da7142-cd20-44c8-b961-30e22f35ef82",
+      "claim_title": "Cross-encoder reranking degrades answer quality when the first-stage candidate pool is noisy.",
+      "claim_body": "Cross-encoder reranking degrades answer quality when the first-stage candidate pool is noisy.",
+      "source_title": "Reranking trade-offs in low-resource retrieval",
+      "source_year": 2023,
+      "source_abstract": "We measure cross-encoder reranking on low-resource legal corpora. Reranking raises answer quality when the candidate pool is already precise, and degrades it when the pool is noisy. The direction of the effect therefore depends entirely on the first-stage retriever.",
+      "label": "SUPPORTED",
+      "note": "abstract nói đúng câu đó: rerank làm tệ đi khi pool nhiễu"
+    },
+    {
+      "card_source_id": "959e1ef7-e314-40e8-b130-34c16d9139da",
+      "claim_title": "No evaluation metric isolates logic-error detection performance",
+      "claim_body": "None of these metrics distinguish logic errors from other defect types; a high score can mask logic error misses because most review comments concern style or documentation.",
+      "source_title": "BitsAI-CR: Automated Code Review via LLM in Practice",
+      "source_year": 2025,
+      "source_abstract": "Code review remains a critical yet resource-intensive process in software development, particularly challenging in large-scale industrial environments. While Large Language Models (LLMs) show promise for automating code review, existing solutions face significant limitations in precision and practicality. This paper presents BitsAI-CR, an innovative framework that enhances code review through a two-stage approach combining RuleChecker for initial issue detection and ReviewFilter for precision verification. The system is built upon a comprehensive taxonomy of review rules and implements a data flywheel mechanism that enables continuous performance improvement through structured feedback and evaluation metrics. Our approach introduces an Outdated Rate metric that can reflect developers' actual adoption of review comments, enabling automated evaluation and systematic optimization at scale. Empirical evaluation demonstrates BitsAI-CR's effectiveness, achieving 75.0% precision in review comment generation. For the Go language which has predominant usage at ByteDance, we maintain an Outdated Rate of 26.7%. The system has been successfully deployed at ByteDance, serving over 12,000 Weekly Active Users (WAU). Our work provides valuable insights into the practical application of automated code review and offers a blueprint for organizations seeking to implement automated code reviews at scale.",
+      "label": "WEAK",
+      "note": "BitsAI-CR có nói tới hạn chế về precision, nhưng không đỡ cho phát biểu \"không metric nào tách riêng được lỗi logic\""
+    },
+    {
+      "card_source_id": "18f75bf3-31c9-42de-b437-ed52f371eb9b",
+      "claim_title": "Hallucination detection for legal QA is too resource-intensive for low-latency Vietnamese deployment",
+      "claim_body": "These methods add substantial latency and compute, conflicting with the requirement to keep response speed high for real-time Vietnamese legal assistance.",
+      "source_title": "Who Checks the Citations? Benchmarking Legal Hallucination Detection",
+      "source_year": 2026,
+      "source_abstract": "Attorneys, judges, and pro se filers increasingly use AI to draft legal documents, yet these tools frequently fabricate citations. Despite predictions that newer models would hallucinate less or that court sanctions would deter negligent filers, we found over 1,000 filings containing fabricated citations---with this number growing year-over-year. This study evaluates whether AI-based systems can mitigate these errors by automatically detecting hallucinations. We propose a taxonomy of legal citation hallucinations grounded in actual court filings and introduce a dataset of 1,300 brief excerpts containing injected errors. Benchmarking five models in agentic and non-agentic settings as well as Claude Code reveals that while the latest iterations perform better---GPT-5 achieves 84.4% recall and a 55.0% F1 score in an agentic framework---all models struggle with subtle error categories. Agentic verification remains resource-intensive, with GPT-5 averaging 15.3 steps per excerpt. Furthermore, restricted information access limits the efficacy of even the best agents. This gap creates policy concerns, as it disadvantages both AI systems and litigants who lack subscriptions to commercial legal databases. Together, our dataset, tools, and policy recommendations provide a foundation for building and auditing reliable legal citation checking tools.",
+      "label": "UNSUPPORTED",
+      "note": "trùng cặp [11]"
+    },
+    {
+      "card_source_id": "4ecdee0e-2921-404d-9be1-bc5b8db04ee5",
+      "claim_title": "Cross-reference-aware retrieval for Vietnamese statutes",
+      "claim_body": "We build a statutory reference graph from internal citations, then expand first-hop retrieval with referenced articles and evaluate on cross-reference-heavy queries.",
+      "source_title": "Integrating Knowledge Graph with Retrieval-Augmented Generation for Vietnamese Legal Question Answering",
+      "source_year": 2025,
+      "source_abstract": "Large Language Models (LLMs) are increasingly used for question answering, but legal applications require grounded answers with article-level citations and minimal unsupported statements. This paper presents a framework that integrates an ontology-driven Knowledge Graph (KG) with Retrieval-Augmented Generation (RAG) for Vietnamese legal question answering. The method builds a document-aware KG that preserves the hierarchical structure of statutes (Document → Chapter → Section → Article → Clause → Point) and encodes semantic and cross-reference relations. Graph-aware retrieval is combined with a hybrid ranking function that balances semantic similarity and graph-derived confidence, and the retrieved legal provisions are provided to an LLM using a constrained prompting template to generate answers with explicit citations. Experiments on three Vietnamese law domains (Electronic Transaction Law, Land Law, and Labor Law) report 85.7% answer accuracy, outperforming BM25 keyword search (62.3%) and a pure LLM baseline (71.5%), while improving citation quality. The framework is intended to increase traceability by grounding generation in retrieved statutory provisions.",
+      "label": "SUPPORTED",
+      "note": "trùng cặp [10]"
+    },
+    {
+      "card_source_id": "2ea05f73-aa87-4ec1-86a6-c54515cf69d3",
+      "claim_title": "No benchmark dataset for logic errors in code review diffs",
+      "claim_body": "These datasets are not organized around code review diffs and lack annotations for semantic logic errors that require understanding intended behavior, so they cannot serve as evaluation benchmarks for LLM-based review assistants.",
+      "source_title": "Code Clone Detection Techniques Based on Large Language Models",
+      "source_year": 2025,
+      "source_abstract": "Code duplication, commonly known as code cloning, is a persistent challenge in software development. While reusing code fragments boosts productivity, excessive cloning poses challenges to maintenance and elevates the risk of bugs. Therefore, integrating code clone detection into the development process is crucial. The extensive code-related knowledge inherent in Large Language Models (LLMs) renders them high-potential candidates for addressing diverse software engineering challenges. However, the effectiveness of LLMs in the specific task of code clone detection requires precise evaluation. This paper proposes an innovative methodology leveraging few-shot instruction-tuned GPT-3.5 Turbo and GPT-4 to detect code clones across all types, focusing on complex clones (Type-3 and Type-4). Unlike conventional approaches confined to specific language pairs or tasks, our method employs versatile language models, showcases generalization strengths for semantic understanding, and leverages instruction tuning with few-shot inference for task-specific adaptability in code clone detection. A conversational dataset was crafted from BigCloneBench for instruction tuning, enhancing task alignment and performance. This study evaluates the proficiency of LLMs in identifying code clones, analyzing the impact of instruction tuning, and assessing the efficiency across various clone types. Experimental results demonstrate these models achieving competitive performance against existing tools for ove",
+      "label": "UNSUPPORTED",
+      "note": "bài về phát hiện code clone, không liên quan tới benchmark lỗi logic trên diff review"
+    },
+    {
+      "card_source_id": "61b57706-bb0c-4b68-997e-a8f6870980e0",
+      "claim_title": "A benchmark results set comparing LLM configurations and baselines for logic-error detection",
+      "claim_body": "Benchmark results comparing fine-tuned and prompted LLMs (with and without taxonomy guidance, with and without issue context) against static analysis, RNN logic error detection, and existing review models on the logic-error detection benchmark.",
+      "source_title": "Fine-Tuning Large Language Models to Improve Accuracy and Comprehensibility of Automated Code Review",
+      "source_year": 2024,
+      "source_abstract": "As code review is a tedious and costly software quality practice, researchers have proposed several machine learning-based methods to automate the process. The primary focus has been on accuracy, that is, how accurately the algorithms are able to detect issues in the code under review. However, human intervention still remains inevitable since results produced by automated code review are not 100% correct. To assist human reviewers in making their final decisions on automatically generated review comments, the comprehensibility of the comments underpinned by accurate localization and relevant explanations for the detected issues with repair suggestions is paramount. However, this has largely been neglected in the existing research. Large language models (LLMs) have the potential to generate code review comments that are more readable and comprehensible by humans, thanks to their remarkable processing and reasoning capabilities. However, even mainstream LLMs perform poorly in detecting the presence of code issues because they have not been specifically trained for this binary classification task required in code review. In this article, we contribute Comprehensibility of Automated Code Review using Large Language Models (Carllm), a novel fine-tuned LLM that has the ability to improve not only the accuracy but, more importantly, the comprehensibility of automated code review, as compared to state-of-the-art pre-trained models and general LLMs.",
+      "label": "WEAK",
+      "note": "là một baseline hợp lý để so, nhưng abstract không đỡ cho bộ kết quả benchmark mà claim mô tả"
+    },
+    {
+      "card_source_id": "1afbe9e9-4660-4bf8-bbce-04579acc3eb4",
+      "claim_title": "Integrated RAG with refusal policy and latency controls",
+      "claim_body": "We integrate the retriever, generator, and support detector, tune the refusal threshold to balance hallucination, coverage, and latency, and benchmark end-to-end on a held-out set.",
+      "source_title": "A Self-Reflection Mechanism for Reducing Hallucination in Vietnamese Legal Question Answering Systems",
+      "source_year": 2026,
+      "source_abstract": "Legal question answering is essential for compliance, dispute resolution, and everyday HR decision-making, yet large language models may produce persuasive but incorrect legal statements when supporting evidence is incomplete. While Retrieval-Augmented Generation and graph-based retrieval can ground responses in statutes and structured relations, Vietnamese legal QA often lacks an explicit, automated quality-control step that scores an answer, decides whether it should be refined, and checks that citations are actually supported. In this paper, we propose a self-reflection mechanism that adds an iterative generate–evaluate–refine loop to a Graph-RAG pipeline for Vietnamese labor-law questions. Each draft is evaluated with a hybrid score that combines how closely the answer matches retrieved legal context with a model-derived confidence estimate, and the system iterates until it reaches a quality threshold or a stopping limit. On a Vietnamese Labor Law benchmark, the approach improves accuracy from 81.5% to 86.7% and reduces hallucination from 18.7% to 9.3%, with only a modest increase in end-to-end latency in typical use. We also examine component contributions and remaining failure cases, finding that pairing contextual alignment with confidence produces more stable answers than relying on a single signal. These results indicate that self-reflection can serve as a lightweight, deployment-friendly safety layer for high-stakes legal QA without requiring additional labeled data",
+      "label": "WEAK",
+      "note": "cùng hướng self-reflection cho VN legal QA, nhưng abstract không nói tới ngưỡng từ chối trả lời hay kiểm soát độ trễ"
+    },
+    {
+      "card_source_id": "3d73ca7e-2a54-42fa-aafd-08b190fffdcf",
+      "claim_title": "No evaluation metric isolates logic-error detection performance",
+      "claim_body": "None of these metrics distinguish logic errors from other defect types; a high score can mask logic error misses because most review comments concern style or documentation.",
+      "source_title": "BitsAI-CR: Automated Code Review via LLM in Practice",
+      "source_year": 2025,
+      "source_abstract": "Code review remains a critical yet resource-intensive process in software development, particularly challenging in large-scale industrial environments. While Large Language Models (LLMs) show promise for automating code review, existing solutions face significant limitations in precision and practicality. This paper presents BitsAI-CR, an innovative framework that enhances code review through a two-stage approach combining RuleChecker for initial issue detection and ReviewFilter for precision verification. The system is built upon a comprehensive taxonomy of review rules and implements a data flywheel mechanism that enables continuous performance improvement through structured feedback and evaluation metrics. Our approach introduces an Outdated Rate metric that can reflect developers' actual adoption of review comments, enabling automated evaluation and systematic optimization at scale. Empirical evaluation demonstrates BitsAI-CR's effectiveness, achieving 75.0% precision in review comment generation. For the Go language which has predominant usage at ByteDance, we maintain an Outdated Rate of 26.7%. The system has been successfully deployed at ByteDance, serving over 12,000 Weekly Active Users (WAU). Our work provides valuable insights into the practical application of automated code review and offers a blueprint for organizations seeking to implement automated code reviews at scale.",
+      "label": "WEAK",
+      "note": "trùng cặp [22]"
+    },
+    {
+      "card_source_id": "4bcc9f98-5679-4be7-b68d-a1d9ac091685",
+      "claim_title": "A benchmark results set comparing LLM configurations and baselines for logic-error detection",
+      "claim_body": "Benchmark results comparing fine-tuned and prompted LLMs (with and without taxonomy guidance, with and without issue context) against static analysis, RNN logic error detection, and existing review models on the logic-error detection benchmark.",
+      "source_title": "Fine-Tuning Large Language Models to Improve Accuracy and Comprehensibility of Automated Code Review",
+      "source_year": 2024,
+      "source_abstract": "As code review is a tedious and costly software quality practice, researchers have proposed several machine learning-based methods to automate the process. The primary focus has been on accuracy, that is, how accurately the algorithms are able to detect issues in the code under review. However, human intervention still remains inevitable since results produced by automated code review are not 100% correct. To assist human reviewers in making their final decisions on automatically generated review comments, the comprehensibility of the comments underpinned by accurate localization and relevant explanations for the detected issues with repair suggestions is paramount. However, this has largely been neglected in the existing research. Large language models (LLMs) have the potential to generate code review comments that are more readable and comprehensible by humans, thanks to their remarkable processing and reasoning capabilities. However, even mainstream LLMs perform poorly in detecting the presence of code issues because they have not been specifically trained for this binary classification task required in code review. In this article, we contribute Comprehensibility of Automated Code Review using Large Language Models (Carllm), a novel fine-tuned LLM that has the ability to improve not only the accuracy but, more importantly, the comprehensibility of automated code review, as compared to state-of-the-art pre-trained models and general LLMs.",
+      "label": "WEAK",
+      "note": "trùng cặp [26]"
+    }
+  ]
+}
