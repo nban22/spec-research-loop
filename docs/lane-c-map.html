@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Làn C — Trực quan &amp; Chi phí · bản đồ việc đã làm</title>
+<title>Làn C — Trực quan &amp; Chi phí · bản đồ cài đặt</title>
 <style>
   :root{
     --bg:#f5f7fa; --panel:#ffffff; --panel-2:#ffffff; --line:#dfe4ec;
@@ -110,7 +110,7 @@
 
 <header>
   <h1>Làn C — Trực quan &amp; Chi phí</h1>
-  <span class="hint">Bản đồ việc đã làm · click một ô để xem quyết định thiết kế, techstack và lý do</span>
+  <span class="hint">Bản cài đặt sau cùng · giao diện sản phẩm là tiếng Anh, tài liệu này tiếng Việt · click một ô để xem quyết định thiết kế, techstack và lý do</span>
   <div class="tabs" id="tabs"></div>
 </header>
 
@@ -121,14 +121,14 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
-   Bản đồ làn C (epic #23) — trích từ source thật và từ PR đã merge.
+   Bản đồ làn C (epic #23) — mô tả bản cài đặt sau cùng, trích từ source thật.
    Anh em với `product-flow-map.html`: cùng ngôn ngữ thị giác, khác góc nhìn.
    File kia trả lời "sản phẩm chạy thế nào"; file này trả lời
    "làn C đã thêm gì, vì sao làm thế, và dựng bằng gì".
    ═══════════════════════════════════════════════════════════════════ */
 
 const TABS = [
-  {id:'work',  label:'Việc đã làm',   hint:'7 issue được giao + 3 việc ngoài issue. Mỗi ô là một sản phẩm giao được.'},
+  {id:'work',  label:'Tính năng',   hint:'Chín phần việc của làn C, nhóm theo bước của đề. Mỗi ô là một sản phẩm giao được.'},
   {id:'flow',  label:'Luồng dữ liệu', hint:'Một màn hình của làn C lấy số từ đâu. Điểm mấu chốt: gần như toàn bộ là ĐỌC.'},
   {id:'ux',    label:'Sáng tạo UI/UX',hint:'Từng thay đổi: trước thế nào, sau thế nào, và vì sao đáng đổi.'},
   {id:'stack', label:'Techstack',     hint:'Mỗi công nghệ: nó làm gì ở đây, chọn vì sao, và đã loại cái gì.'},
@@ -138,7 +138,7 @@ const TABS = [
 const WORK = [
  {zone:'Bước 1–2 của đề · hiểu và phân rã ý tưởng', cls:'z-screen', items:[
 
-  {id:'c1', nm:'#14 · Concept map', sb:'Bước 1 · PR #34', badge:'ok', badgeText:'đã merge',
+  {id:'c1', nm:'#14 · Concept map', sb:'Bước 1 · nhúng trong wizard',
    step:'Bước 1 — "Sơ đồ · Concept map · Danh sách thành phần" · Bước 2 — "Biểu diễn các thẻ thành graph", "Dùng màu thể hiện trạng thái"',
    what:'Bản đồ khái niệm ở bước 1: 8 loại thẻ × 6 trạng thái vẽ thành đồ thị toả tròn, bấm một thẻ là sửa tại chỗ.',
    why:'Bảng thẻ trả lời được câu "hệ thống hiểu ý tưởng tôi thế nào" nhưng phải đọc từng dòng. Đồ thị trả lời trong một cái liếc, và giữ nguyên đường đọc-văn-bản ở tab thứ hai chứ không thay thế nó.',
@@ -149,7 +149,7 @@ const WORK = [
    tech:['Next.js App Router','React 19','SVG viết tay','TanStack Query','Tailwind v4'],
    files:['frontend/src/components/concept-map.tsx','frontend/src/components/steps/step-1.tsx']},
 
-  {id:'c2', nm:'#15 · Bản đồ claim–evidence kéo thả', sb:'Bước 2 · PR #38 + #39', badge:'ok', badgeText:'điểm nhấn demo',
+  {id:'c2', nm:'#15 · Bản đồ claim–evidence kéo thả', sb:'Bước 2 · /claim-map', badge:'ok', badgeText:'điểm nhấn demo',
    step:'Bước 2 — "Cho phép kéo thả để liên kết claim với evidence"',
    what:'Màn <code>/claim-map</code>: cột trái là nguồn, cột phải là claim. Kéo nguồn thả vào claim để nối, kéo liên kết sang claim khác để chuyển, kéo xuống vùng gỡ để tháo.',
    why:'Câu hỏi nó trả lời trong một giây: <b>claim nào đang treo, không nguồn nào đỡ</b>. Đó chính là chỗ verifier sẽ gắn UNSUPPORTED rồi chặn xuất bản.',
@@ -165,9 +165,9 @@ const WORK = [
 
  {zone:'Bước 3 của đề · nghiên cứu công trình liên quan', cls:'z-screen', items:[
 
-  {id:'c3', nm:'#16 · Timeline · Similarity map · Citation graph', sb:'Bước 3 · PR #35 + #42', badge:'ok', badgeText:'đã merge',
+  {id:'c3', nm:'#16 · Timeline · Similarity map · Citation graph', sb:'Bước 3 · /map',
    step:'Bước 3 — "Citation graph · Timeline nghiên cứu · Similarity map giữa các paper"',
-   what:'Màn <code>/map</code> ba tab: dòng thời gian theo năm, bản đồ chủ đề, và đồ thị trích dẫn.',
+   what:'Màn <code>/map</code> ba tab — <em>Topic map</em> · <em>Timeline</em> · <em>Citations</em>: bản đồ chủ đề, dòng thời gian theo năm, và đồ thị trích dẫn.',
    why:'Vùng thưa trên bản đồ chủ đề là <b>gợi ý research gap bằng hình</b> — §8 của đề hỏi "cách phát hiện research gap", đây là một câu trả lời nhìn được.',
    decisions:[
     'Tự viết TF-IDF thay vì gọi <code>EmbedderService</code> của làn A — ràng buộc độc lập của issue. Thứ bản đồ cần là khoảng cách <i>tương đối</i> giữa vài chục paper cùng lĩnh vực; trùng từ khoá đủ tách cụm.',
@@ -181,7 +181,7 @@ const WORK = [
 
  {zone:'Bước 6–7 của đề · thí nghiệm và tài nguyên', cls:'z-api', items:[
 
-  {id:'c4', nm:'#17 · Bảng token · thời gian · chi phí thật', sb:'Bước 7 · PR #30', badge:'ok', badgeText:'làm đầu tiên',
+  {id:'c4', nm:'#17 · Bảng token · thời gian · chi phí thật', sb:'Bước 7 · /cost',
    step:'Bước 7 — "Dashboard theo dõi thời gian và chi phí thực tế"',
    what:'Màn <code>/cost</code>: gom <code>LlmCall</code> theo bước, theo prompt, theo model. Tỉ lệ ăn cache prefix, tỉ lệ phải thử lại, và <code>estimate_vs_actual</code>.',
    why:'<code>LlmCall</code> đã ghi đủ token, cache và độ trễ cho <b>mọi</b> lời gọi từ ngày đầu mà chưa màn hình nào đọc. Issue này chỉ là mở mắt cho dữ liệu đã nằm sẵn đó.',
@@ -191,7 +191,7 @@ const WORK = [
    tech:['NestJS service chỉ đọc','Prisma aggregate','TanStack Query'],
    files:['backend/src/analytics/analytics.service.ts','frontend/src/app/(app)/projects/[id]/cost/page.tsx']},
 
-  {id:'c5', nm:'#18 · Mô phỏng chi phí + đường Pareto', sb:'Bước 6 + 7 · PR #36', badge:'ok', badgeText:'đã merge',
+  {id:'c5', nm:'#18 · Mô phỏng chi phí + đường Pareto', sb:'Bước 6 + 7 · /simulate',
    step:'Bước 6 — "Pareto frontier giữa chất lượng và chi phí" · Bước 7 — "Cost simulator"',
    what:'Màn <code>/simulate</code>: 5 thanh trượt, số cập nhật theo thời gian thực. Biểu đồ X = chi phí, Y = VRAM, vạch 24 GB vẽ thẳng lên trục kèm vùng tô đỏ.',
    why:'Đề đòi "quá vạch là thấy ngay, không phải đọc chữ". Trục tung là VRAM nên vạch 24 GB là một đường thật trên một trục thật.',
@@ -202,7 +202,7 @@ const WORK = [
    tech:['input[type=range] gốc','motion (chấm trượt)','SVG viết tay','useQueries'],
    files:['frontend/src/components/cost-simulator.tsx','frontend/src/lib/use-debounced.ts']},
 
-  {id:'c6', nm:'#19 · Phân tích lỗi trực quan', sb:'Bước 6 · PR #33', badge:'ok', badgeText:'đã merge',
+  {id:'c6', nm:'#19 · Phân tích lỗi trực quan', sb:'Bước 6 · /errors',
    step:'Bước 6 — "Error analysis trực quan"',
    what:'Màn <code>/errors</code>: ngưỡng và <code>label_counts</code> theo từng <code>VerifierRun</code>, tỉ lệ xuống tầng L4, ma trận cờ×loại thẻ và nhãn×loại thẻ.',
    why:'Trả lời "verifier sai ở đâu, theo kiểu nào" thay vì chỉ một con số tổng.',
@@ -215,7 +215,7 @@ const WORK = [
 
  {zone:'Bàn giao và đo đạc', cls:'z-infra', items:[
 
-  {id:'c7', nm:'#20 · Bộ tài liệu bàn giao', sb:'§6 của đề · PR #41', badge:'warn', badgeText:'thiếu video',
+  {id:'c7', nm:'#20 · Bộ tài liệu bàn giao', sb:'§6 của đề · docs/handover.md',
    step:'§6 Sản phẩm bàn giao — "Video demo", "Một research spec hoàn chỉnh do hệ thống tạo"',
    what:'<code>docs/handover.md</code>: đối chiếu 10 sản phẩm bàn giao, kịch bản video 14 cảnh, bản đồ tài liệu cho người chấm.',
    why:'Đọc rời từng dòng thì tưởng còn 5 việc. Đối chiếu xong mới thấy <b>4 trong 5 dòng ⚠️ chặn bởi cùng một thứ</b>: chưa chạy batch đầy đủ. Đó là một lần chạy máy, không phải bốn hạng mục.',
@@ -226,7 +226,7 @@ const WORK = [
    tech:['Markdown'],
    files:['docs/handover.md']},
 
-  {id:'x1', nm:'Đo chi phí ablation', sb:'ngoài issue · PR #40', badge:'warn', badgeText:'chờ batch',
+  {id:'x1', nm:'Đo chi phí ablation', sb:'§6 · deliverable #8',
    step:'§6 — "Báo cáo đánh giá hệ thống" (deliverable #8)',
    what:'Hàm thuần <code>eval-cost.ts</code> + script <code>eval/cost-report.ts</code>: chi phí mỗi bậc kiến trúc của ablation 4 arm. Phụ lục C của báo cáo.',
    why:'Ablation đã đo <b>chất lượng</b>. Chưa ai đo <b>cái giá</b>. Câu hỏi: ngân sách token đi đâu, và mỗi bậc mua được gì với giá bao nhiêu.',
@@ -238,7 +238,7 @@ const WORK = [
    tech:['Hàm thuần + jest','Bootstrap CI (LCG seed)','Prisma findMany'],
    files:['backend/src/analytics/eval-cost.ts','backend/eval/cost-report.ts','backend/eval/pricing.json']},
 
-  {id:'x2', nm:'Đối chiếu chéo mô hình', sb:'ngoài issue · PR #47', badge:'warn', badgeText:'không phải human validation',
+  {id:'x2', nm:'Đối chiếu chéo mô hình', sb:'§6 · deliverable #4 và #6', badge:'warn', badgeText:'không phải human validation',
    step:'§6 — deliverable #4 và #6',
    what:'<code>eval/label-sample.ts</code> xuất mẫu mù rồi nạp lại. 30 cặp claim–nguồn được một mô hình <b>khác nhà cung cấp</b> chấm mù.',
    why:'§5.5 của báo cáo ghi "Auditor không đổi được nhà cung cấp. MVP chỉ có DeepSeek". Đây là lần đầu có một mô hình ngoài chấm trên chính dữ liệu hệ thống.',
@@ -326,14 +326,14 @@ const FLOW = [
 const UX = [
  {zone:'Chuyển động mang thông tin', cls:'z-screen', items:[
 
-  {id:'u1', nm:'Chuyển bước có đường ra', sb:'PR #37',
+  {id:'u1', nm:'Chuyển bước có đường ra', sb:'wizard 5 bước',
    before:'CSS keyframe: bước cũ biến mất tức thì, rồi bước mới mới trượt vào. Mắt thấy một khoảng trắng nháy ở giữa.',
    after:'<code>AnimatePresence mode="wait"</code> giữ bước cũ sống đủ lâu để nó trượt ra trước. Lò xo nhận vận tốc đang có nếu người dùng bấm nhanh hai bước liền.',
    why:'CSS làm tốt phần <b>vào</b> nhưng không có hoạt cảnh <b>ra</b>. Đó là toàn bộ khác biệt giữa "có animation" và "mượt".',
    tech:['motion v13','AnimatePresence','spring'],
    files:['frontend/src/components/step-transition.tsx']},
 
-  {id:'u2', nm:'Chấm Pareto trượt thay vì nhảy', sb:'PR #37 · thắng lớn nhất',
+  {id:'u2', nm:'Chấm Pareto trượt thay vì nhảy', sb:'/simulate · thắng lớn nhất',
    before:'Kéo thanh trượt là cả lưới 36 cấu hình nhảy sang toạ độ mới trong một khung hình.',
    after:'Mỗi chấm trượt tới vị trí mới bằng lò xo.',
    why:'Nhảy tức thì thì <b>mất dấu điểm đang theo dõi</b> và không đọc được nó dịch theo hướng nào. Đây là chỗ chuyển động mang thông tin rõ nhất trong cả sản phẩm.',
@@ -341,7 +341,7 @@ const UX = [
    tech:['motion.circle','spring','AnimatePresence (crossfade)'],
    files:['frontend/src/components/cost-simulator.tsx']},
 
-  {id:'u3', nm:'Hộp chi tiết mở bằng chiều cao', sb:'PR #37',
+  {id:'u3', nm:'Hộp chi tiết mở bằng chiều cao', sb:'/map',
    before:'Bấm sang nguồn khác thì hộp chi tiết hiện tức thì, đẩy cả trang nhảy một nhịp.',
    after:'Mở bằng <code>height: auto</code> có hoạt cảnh, nội dung dưới nó trôi xuống mượt.',
    why:'Mờ dần <b>không đủ</b> khi phần tử đẩy nội dung khác — thứ gây khó chịu là cú giật bố cục, không phải độ trong suốt.',
@@ -358,7 +358,7 @@ const UX = [
 
  {zone:'Hình mang thông tin', cls:'z-screen', items:[
 
-  {id:'u5', nm:'Animation luồng nghiên cứu', sb:'PR #42 · Bước 1 của đề',
+  {id:'u5', nm:'Animation luồng nghiên cứu', sb:'Bước 1 của đề · trang chủ',
    before:'Trang chủ giải thích quy trình bằng hai câu chữ. Ai chưa dùng thì đọc xong vẫn không hình dung được có bao nhiêu bước.',
    after:'Sáu chặng tự chạy, <b>mỗi chặng vẽ đúng thứ chặng đó sinh ra</b>: vệt chữ mờ → sáu thẻ nảy ra → chấm nguồn → đường nối kèm một claim treo → năm huy hiệu judge → khối tài liệu.',
    why:'Không phải sáu ô chữ nhật đổi màu. Hình phải mang thông tin, nếu không thì một danh sách gạch đầu dòng đã đủ và rẻ hơn.',
@@ -366,21 +366,21 @@ const UX = [
    tech:['motion','SVG viết tay'],
    files:['frontend/src/components/research-flow.tsx']},
 
-  {id:'u6', nm:'Vùng thưa tô ba mức, không gradient', sb:'#16',
+  {id:'u6', nm:'Vùng thưa tô ba mức, không gradient', sb:'/map',
    before:'—',
    after:'Độ thưa quanh mỗi nguồn tô <b>ba mức màu rời</b>, không phải dải liên tục.',
    why:'Mắt không đọc được sắc độ liên tục. Ba mức thì phân biệt được ngay, và đó là thứ cần: "chỗ này thưa" chứ không phải "thưa 0,63".',
    tech:['Token màu theo vai'],
    files:['frontend/src/components/source-map.tsx']},
 
-  {id:'u7', nm:'Vạch 24 GB là đường thật trên trục thật', sb:'#18',
+  {id:'u7', nm:'Vạch 24 GB là đường thật trên trục thật', sb:'/simulate',
    before:'Đề xuất giảm quy mô chỉ là một dòng chữ trong bảng ước lượng.',
    after:'Trục tung là VRAM, vạch 24 GB kẻ ngang kèm <b>vùng tô đỏ phía trên</b>. Cấu hình hệ thống đề xuất vẽ thành chấm xanh lá bấm được.',
    why:'Đề đòi "quá vạch là thấy ngay, không phải đọc chữ". Trục tung luôn chứa vạch kể cả khi mọi cấu hình đều nhẹ — vạch biến mất thì người dùng tưởng nó không tồn tại.',
    tech:['SVG','motion'],
    files:['frontend/src/components/cost-simulator.tsx']},
 
-  {id:'u8', nm:'Claim treo nhìn ra trong một giây', sb:'#15',
+  {id:'u8', nm:'Claim treo nhìn ra trong một giây', sb:'/claim-map',
    before:'Bảng related-work trả lời được "claim nào thiếu nguồn" nhưng phải đọc từng dòng.',
    after:'Claim rỗng vẽ <b>viền cảnh báo</b> và nói thẳng bằng chữ. Nguồn chưa ai dùng vẽ viền đứt.',
    why:'Đó chính là chỗ verifier sẽ gắn <code>UNSUPPORTED</code> rồi chặn xuất bản — thứ đáng nhìn nhất màn hình.',
@@ -390,15 +390,15 @@ const UX = [
 
  {zone:'Tiếp cận được — không phải mục tô điểm', cls:'z-api', items:[
 
-  {id:'u9', nm:'Kéo thả không phải đường duy nhất', sb:'#15',
+  {id:'u9', nm:'Kéo thả không phải đường duy nhất', sb:'/claim-map',
    before:'—',
-   after:'Mỗi nguồn có nút "Nối vào…", mỗi liên kết có nút gỡ, mỗi thẻ có nút xoá — đều là <code>&lt;button&gt;</code> thật có <code>aria-label</code>.',
+   after:'Mỗi nguồn có nút "Link to…", mỗi liên kết có nút gỡ, mỗi thẻ có nút xoá — đều là <code>&lt;button&gt;</code> thật có <code>aria-label</code>.',
    why:'Một tính năng chỉ dùng được bằng cách kéo là <b>tính năng không dùng được</b> bằng ngón tay run, trackpad tệ, hay bàn phím.',
    note:'<code>activationConstraint</code> 6px cho <code>PointerSensor</code>: thiếu nó thì mọi cú bấm vào nút bên trong thẻ bị nuốt thành thao tác kéo, và nút gỡ không bao giờ bấm được. Loại lỗi chỉ lộ ra khi thử tay.',
    tech:['@dnd-kit KeyboardSensor','aria-label'],
    files:['frontend/src/components/claim-evidence-map.tsx']},
 
-  {id:'u10', nm:'Chấm SVG là nút thật', sb:'#14 · #16 · #18',
+  {id:'u10', nm:'Chấm SVG là nút thật', sb:'concept map · /map · /simulate',
    before:'<code>&lt;circle onClick&gt;</code> — chuột bấm được, bàn phím thì không, trình đọc màn hình không thấy gì.',
    after:'<code>&lt;g role="button" tabIndex={0}&gt;</code> có <code>aria-label</code> và xử lý Enter/Space.',
    why:'Phần tử bấm được phải tới được bằng bàn phím và có tên. Phát hiện lúc viết test: icon của lucide cũng render <code>&lt;circle&gt;</code>, nên test quét theo thẻ bắt nhầm icon — đổi sang tra theo <i>vai trò và tên</i> vừa sửa test vừa sửa cả khả năng tiếp cận.',
@@ -412,7 +412,15 @@ const UX = [
    tech:['—'],
    files:['frontend/src/components/source-map.tsx']},
 
-  {id:'u12', nm:'Nhãn lạ không làm trắng trang', sb:'PR #34 hotfix',
+  {id:'u13', nm:'Form tự nhập ước lượng dùng lại component của /simulate', sb:'bước 3',
+   before:'Kế hoạch có phần tính toán mà tham số mô hình trả về hỏng ⇒ cột khả thi treo skeleton vĩnh viễn, không có đường ra nào.',
+   after:'Khi <code>estimate_status = INVALID_PARAMS</code> thì mời người dùng tự nhập bảy tham số, dùng lại <code>SliderRow</code> và <code>QuantPicker</code> viết cho màn mô phỏng chi phí.',
+   why:'Endpoint <code>POST /projects/:id/estimate</code> <b>đã có sẵn từ lâu và chưa nơi nào gọi</b>. Không thêm endpoint, và không dựng bộ input thứ hai — hai bộ input cho cùng bảy tham số là mời chúng trôi xa nhau.',
+   note:'Khác hẳn <code>NOT_APPLICABLE</code>: ở đó con số <b>không tồn tại</b> nên mời nhập là vô nghĩa; ở đây nó tồn tại và chỉ là chưa lấy được.',
+   tech:['SliderRow · QuantPicker (dùng lại)','TanStack Query mutation'],
+   files:['frontend/src/components/estimate-form.tsx','frontend/src/components/cost-simulator.tsx']},
+
+  {id:'u12', nm:'Nhãn lạ không làm trắng trang', sb:'bốn component nhãn',
    before:'<code>CARD_STATUS_STYLE[status].label</code> — backend thêm một trạng thái thứ bảy là <code>undefined.label</code> làm trắng cả trang.',
    after:'<code>styleOr()</code> trả fallback <b>hiện nguyên văn giá trị lạ</b>, áp cho cả bốn component nhãn.',
    why:'Nuốt thành "Không rõ" là biến một lỗi ồn ào thành một lỗi im lặng. Hiện nguyên văn thì người dùng thấy có gì chưa khớp, lập trình viên đọc ra ngay giá trị nào gây chuyện.',
@@ -431,13 +439,13 @@ const STACK = [
    why:'Chọn sẵn từ trước làn C. Điều làn C dùng tới: <code>rewrites()</code> để frontend và API cùng origin, và <code>PageProps&lt;route&gt;</code> — type của route <b>do Next sinh lúc build</b>, nên thêm route mới mà chưa build thì <code>tsc</code> báo đỏ. Đã vấp đúng chỗ này hai lần.',
    tech:[],files:[]},
 
-  {id:'t2', nm:'motion v13 (Framer Motion)', sb:'thêm ở PR #37',
+  {id:'t2', nm:'motion v13 (Framer Motion)', sb:'chuyển động',
    what:'Hoạt cảnh ra/vào, animation layout, lò xo.',
    why:'CSS làm được phần <b>vào</b>. <code>motion</code> để dành đúng ba việc CSS không làm được: hoạt cảnh <b>ra</b> (<code>AnimatePresence</code>), animation <b>layout</b>, và lò xo nhận được vận tốc đang có khi bị ngắt giữa chừng.',
    note:'Việc thêm nó <b>đảo một quyết định trong tài liệu</b>: STACK §5 và frontend/CLAUDE.md §7 đang ghi "không animation phức tạp". Đã sửa cả hai kèm lý do và ba ràng buộc, vì để nguyên thì luật mâu thuẫn với code và người sau sẽ revert.',
    tech:[],files:['docs/STACK.md §5']},
 
-  {id:'t3', nm:'@dnd-kit', sb:'thêm ở PR #39',
+  {id:'t3', nm:'@dnd-kit', sb:'kéo thả claim–evidence',
    what:'Kéo thả cho bản đồ claim–evidence.',
    why:'HTML5 Drag and Drop API <b>không chạy trên cảm ứng</b> và không có đường đi bằng bàn phím. <code>KeyboardSensor</code> của dnd-kit là thứ duy nhất làm kéo thả dùng được với trình đọc màn hình.',
    tech:[],files:[]},
