@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { z } from 'zod';
 
 /**
  * Bước 7 của đề: ước lượng tài nguyên và **đề xuất giảm quy mô nếu vượt RTX 3090**.
@@ -11,16 +10,13 @@ import { z } from 'zod';
  * (kim-chỉ-nam §5) — module này là một calculator, không cần GPU nào cả.
  */
 
-export const estimatorInputSchema = z.object({
-  model_params_b: z.number().positive().max(2000),
-  quantization: z.enum(['fp16', 'int8', 'int4']),
-  candidates: z.number().int().positive().max(10_000),
-  rounds: z.number().int().positive().max(1_000),
-  eval_samples: z.number().int().positive().max(1_000_000),
-  avg_prompt_tokens: z.number().int().positive().max(200_000),
-  avg_output_tokens: z.number().int().positive().max(200_000),
-});
-export type EstimatorInput = z.infer<typeof estimatorInputSchema>;
+/* Schema chuyển sang `contracts/estimator.ts` — ba nơi cùng dùng nó, và trước đây tồn tại một
+   bản chép tay lỏng hơn trong schema output của LLM. Re-export để nơi gọi cũ không phải đổi. */
+export {
+  estimatorInputSchema,
+  type EstimatorInput,
+} from '../contracts/estimator';
+import type { EstimatorInput } from '../contracts/estimator';
 
 export type DownscaleSuggestion = {
   field: keyof EstimatorInput;
@@ -97,16 +93,16 @@ export class EstimatorService {
           value: `${input.model_params_b}B × ${BYTES_PER_PARAM[input.quantization]} byte/param × ${OVERHEAD_FACTOR} overhead`,
         },
         {
-          label: 'Số lời gọi',
-          value: `${input.candidates} candidate × ${input.rounds} vòng × ${input.eval_samples} mẫu = ${calls.toLocaleString('vi-VN')}`,
+          label: 'Calls',
+          value: `${input.candidates} candidates × ${input.rounds} rounds × ${input.eval_samples} samples = ${calls.toLocaleString('en-US')}`,
         },
         {
           label: 'Token',
           value: `${calls.toLocaleString('vi-VN')} × (${input.avg_prompt_tokens} + ${input.avg_output_tokens})`,
         },
         {
-          label: 'Thời gian',
-          value: `${SECONDS_PER_CALL_MIN}–${SECONDS_PER_CALL_MAX}s mỗi lời gọi`,
+          label: 'Time',
+          value: `${SECONDS_PER_CALL_MIN}–${SECONDS_PER_CALL_MAX}s per call`,
         },
       ],
     };
@@ -129,14 +125,14 @@ export class EstimatorService {
           field: 'quantization',
           from: 'fp16',
           to: 'int8',
-          reason: `VRAM ước tính ${vram_gb} GB vượt 24 GB của RTX 3090; lượng tử hoá int8 giảm còn khoảng ${round(vram_gb / 2, 2)} GB.`,
+          reason: `Estimated VRAM of ${vram_gb} GB exceeds the 24 GB of an RTX 3090; int8 quantisation brings it down to roughly ${round(vram_gb / 2, 2)} GB.`,
         });
       } else if (input.quantization === 'int8') {
         out.push({
           field: 'quantization',
           from: 'int8',
           to: 'int4',
-          reason: `VRAM ước tính ${vram_gb} GB vẫn vượt 24 GB; int4 giảm còn khoảng ${round(vram_gb / 2, 2)} GB.`,
+          reason: `Estimated VRAM of ${vram_gb} GB still exceeds 24 GB; int4 brings it down to roughly ${round(vram_gb / 2, 2)} GB.`,
         });
       } else {
         const maxParams = round(
@@ -148,7 +144,7 @@ export class EstimatorService {
           field: 'model_params_b',
           from: input.model_params_b,
           to: maxParams,
-          reason: `Đã ở int4 mà vẫn vượt 24 GB; model tối đa vừa RTX 3090 là khoảng ${maxParams}B tham số.`,
+          reason: `Already at int4 and still over 24 GB; the largest model that fits an RTX 3090 is around ${maxParams}B parameters.`,
         });
       }
     }
@@ -161,7 +157,7 @@ export class EstimatorService {
           field: 'candidates',
           from: input.candidates,
           to,
-          reason: `Thời gian tối đa ${hours_max} giờ; giảm candidate ${input.candidates}→${to} cắt gần một nửa khối lượng.`,
+          reason: `Up to ${hours_max} hours; cutting candidates ${input.candidates}→${to} nearly halves the workload.`,
         });
       } else if (input.eval_samples > 100) {
         const to = Math.max(100, Math.floor(input.eval_samples / 2));
@@ -169,14 +165,14 @@ export class EstimatorService {
           field: 'eval_samples',
           from: input.eval_samples,
           to,
-          reason: `Thời gian tối đa ${hours_max} giờ; giảm số mẫu đánh giá ${input.eval_samples}→${to} và báo cáo khoảng tin cậy rộng hơn.`,
+          reason: `Up to ${hours_max} hours; cut evaluation samples ${input.eval_samples}→${to} and report a wider confidence interval.`,
         });
       } else if (input.rounds > 1) {
         out.push({
           field: 'rounds',
           from: input.rounds,
           to: Math.max(1, input.rounds - 1),
-          reason: `Thời gian tối đa ${hours_max} giờ; bớt một vòng lặp.`,
+          reason: `Up to ${hours_max} hours; drop one round.`,
         });
       }
     }

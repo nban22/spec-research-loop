@@ -3,9 +3,9 @@ import { CREDIBILITY_STYLE } from '@/lib/status-style';
 import type { CredibilityTier } from '@/lib/types';
 
 /**
- * `styleOr` không dùng được ở đây: nó trả về `StatusStyle` (có `icon`), mà mức tin cậy cố ý
- * **không có icon** — xem docblock dưới. Lối thoát riêng, cùng nguyên tắc: hiện nguyên văn giá
- * trị lạ thay vì nuốt thành "Không rõ".
+ * `styleOr` does not fit here: it returns a `StatusStyle` (which carries an `icon`), while the
+ * credibility tier deliberately has **no icon** — see the docblock below. A dedicated escape
+ * hatch, same principle: show the unknown value verbatim instead of swallowing it into "Unknown".
  */
 const FALLBACK = {
   label: '',
@@ -13,13 +13,13 @@ const FALLBACK = {
 };
 
 /**
- * Mức tin cậy của một nguồn (#1) — **pill nhạt, có nền**, cố ý khác hình dạng `SupportTag`
- * (tag rỗng ruột, viền dày). Hai thứ này hay đứng cạnh nhau và nói hai chuyện khác hẳn:
- * `SupportTag` nói *nguồn này có chống lưng khẳng định không*, còn cái này nói *bản thân nguồn
- * đáng tin tới đâu*. Cùng hình dạng thì người đọc gộp chúng làm một.
+ * The credibility tier of a source (#1) — a **pale filled pill**, deliberately a different shape
+ * from `SupportTag` (hollow tag, thick border). The two often sit side by side and say very
+ * different things: `SupportTag` says *does this source back the claim*, while this one says
+ * *how trustworthy the source itself is*. Same shape and the reader merges them into one.
  *
- * `reason` là câu backend sinh sẵn bằng luật. **Không bao giờ hiện điểm số** — tiêu chí hoàn thành
- * của #1 là "mỗi mức hiển thị kèm lý do đọc được bằng tiếng Việt, không phải số thô".
+ * `reason` is a sentence the backend generates from rules. **Never show the score** — the
+ * acceptance criterion of #1 is "every tier is shown with a readable reason, not a raw number".
  */
 export function CredibilityTag({
   tier,
@@ -43,7 +43,7 @@ export function CredibilityTag({
       >
         {style.label}
       </span>
-      {/* Lý do hiện bằng CHỮ, không giấu trong tooltip — cảm ứng không có hover (§6.7 luật 1). */}
+      {/* The reason is shown as TEXT, never hidden in a tooltip — touch has no hover (§6.7 rule 1). */}
       {reason && <span className="text-ink-3 text-xs">{reason}</span>}
     </span>
   );

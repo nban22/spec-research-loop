@@ -6,15 +6,16 @@ import type { ApiEstimate } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 /**
- * **Mô phỏng chi phí + đường Pareto** — issue #18 (làn C).
+ * **Cost simulation + the Pareto frontier** — issue #18 (lane C).
  *
- * Ghép hai gợi ý của đề: *cost simulator* (Bước 7) và *Pareto frontier giữa chất lượng và chi
- * phí* (Bước 6). Toàn bộ số liệu lấy từ `GET /projects/:id/estimate/preview` đang có —
- * **không thêm endpoint mới**, và không chép lại công thức của `EstimatorService` sang đây.
- * Chép công thức thì hai bên sẽ lệch nhau ngay lần đầu ai đó sửa đơn giá.
+ * It joins two suggestions from the brief: the *cost simulator* (Step 7) and the *Pareto frontier
+ * between quality and cost* (Step 6). Every number comes from the existing
+ * `GET /projects/:id/estimate/preview` — **no new endpoint**, and no copy of the
+ * `EstimatorService` formulas into this file. Copying them would put the two out of step the first
+ * time somebody edits a unit price.
  *
- * Phần vẽ do file này lo; phần gọi API do trang chứa nó lo, nên component này test được mà không
- * cần mạng.
+ * This file owns the drawing; the page around it owns the API calls, so the component is testable
+ * without a network.
  */
 
 export type SimInput = {
@@ -27,10 +28,10 @@ export type SimInput = {
   avg_output_tokens: number;
 };
 
-/** Một điểm trên lưới: cấu hình cộng kết quả ước lượng mà server trả về cho đúng cấu hình đó. */
+/** One point on the grid: a config plus the estimate the server returned for exactly that config. */
 export type GridPoint = { input: SimInput; estimate: ApiEstimate };
 
-/** Ngưỡng VRAM của RTX 3090 — con số này là **nội dung của đề bài**, không phải cấu hình hạ tầng. */
+/** The RTX 3090 VRAM limit — this number comes **from the brief**, it is not infrastructure config. */
 const RTX3090_GB = 24;
 
 const W = 640;
@@ -38,21 +39,20 @@ const H = 360;
 const PAD = { top: 18, right: 16, bottom: 34, left: 44 };
 
 /**
- * **Điểm chất lượng ở đây là một ước lượng thay thế, không phải số đo.**
+ * **The quality score here is a proxy, not a measurement.**
  *
- * Hệ thống chưa có chỉ số chất lượng thật cho một cấu hình — muốn có thì phải chạy eval, mà chạy
- * eval là chuyện của deliverable #7 chứ không phải của một màn hình mô phỏng. Nên trục tung dùng
- * hai thứ tương quan mạnh với chất lượng và **đã biết trước khi chạy**: cỡ model và ngân sách tìm
- * kiếm. Lấy `log2` vì cả hai đều lợi ích giảm dần — 70B không giỏi gấp mười 7B.
+ * The system has no real quality metric for a config — getting one means running an eval, and
+ * running evals is deliverable #7's business, not a simulation screen's. So the vertical axis uses
+ * two things strongly correlated with quality and **known before any run**: model size and search
+ * budget. `log2` because both have diminishing returns — 70B is not ten times better than 7B.
  *
- * Lượng tử hoá **phải** trừ điểm, dù ít. Bỏ qua nó thì int4 và fp16 cùng cỡ model bị coi là chất
- * lượng bằng nhau trong khi int4 nhẹ VRAM hơn hẳn — hệ quả là cả hai cùng trụ trên frontier và
- * đường Pareto zigzag dọc tại cùng một mức chi phí. Trừ 0.5/1.0 bậc `log2` là con số quy ước, đủ
- * để phá thế hoà; nó không phải số đo mất mát thật của lượng tử hoá.
+ * Quantisation **must** cost points, however few. Ignoring it would rate int4 and fp16 at the same
+ * model size as equal quality while int4 needs far less VRAM — so both would sit on the frontier
+ * and the Pareto line would zigzag vertically at one cost level. Subtracting 0.5/1.0 `log2` steps
+ * is a convention chosen to break that tie; it is not a measurement of quantisation loss.
  *
- * Con số này chỉ dùng để **xếp thứ tự** các cấu hình, không dự đoán độ chính xác. Đường Pareto vẽ
- * ra vì thế là "không có cấu hình nào vừa rẻ hơn vừa nhiều tài nguyên hơn", chứ không phải một
- * lời hứa về kết quả.
+ * This number only **orders** configs, it does not predict accuracy. The resulting Pareto line
+ * therefore says "no config is both cheaper and better resourced", not anything about outcomes.
  */
 const QUANT_PENALTY: Record<SimInput['quantization'], number> = { fp16: 0, int8: 0.5, int4: 1 };
 
@@ -65,9 +65,9 @@ export function qualityProxy(input: SimInput): number {
 }
 
 /**
- * Đường Pareto: giữ lại điểm **không bị điểm nào khác lấn cả hai chiều** (rẻ hơn *và* chất lượng
- * cao hơn). Bằng nhau ở một chiều thì chưa gọi là lấn — hai cấu hình cùng giá cùng điểm đều nằm
- * lại, và người dùng tự chọn theo tiêu chí khác.
+ * The Pareto frontier: keep the points **no other point dominates on both axes** (cheaper *and*
+ * higher quality). A tie on one axis is not domination — two configs at the same price and score
+ * both survive, and the user picks between them on other grounds.
  */
 export function paretoFront(points: GridPoint[]): GridPoint[] {
   return points.filter((p) => {
@@ -82,10 +82,10 @@ export function paretoFront(points: GridPoint[]): GridPoint[] {
 }
 
 /**
- * Bảng số của cấu hình đang chọn cộng biểu đồ Pareto.
+ * The numbers for the selected config plus the Pareto chart.
  *
- * `current` có thể là `null` trong lúc đang gọi lại — khi đó giữ nguyên biểu đồ và chỉ làm mờ
- * phần số, để kéo thanh trượt không làm cả màn hình nhấp nháy.
+ * `current` can be `null` while a refetch is in flight — the chart stays put and only the numbers
+ * dim, so dragging a slider does not make the whole screen flicker.
  */
 export function ParetoChart({
   points,
@@ -95,7 +95,7 @@ export function ParetoChart({
 }: {
   points: GridPoint[];
   current: GridPoint | null;
-  /** Cấu hình mà hệ thống đề xuất khi vượt RTX 3090 (`downscale_suggestion`), nếu có. */
+  /** The config the system suggests when the RTX 3090 limit is exceeded (`downscale_suggestion`), if any. */
   suggested: GridPoint | null;
   onPick: (input: SimInput) => void;
 }) {
@@ -107,7 +107,7 @@ export function ParetoChart({
   if (points.length === 0) {
     return (
       <p className="text-ink-3 border-hairline rounded-lg border px-3 py-6 text-center text-xs">
-        Đang dựng lưới cấu hình…
+        Building the config grid…
       </p>
     );
   }
@@ -115,8 +115,8 @@ export function ParetoChart({
   const costs = points.map((p) => p.estimate.cost_usd);
   const vrams = points.map((p) => p.estimate.vram_gb);
   const maxCost = Math.max(...costs, 0.0001);
-  // Trục tung luôn chứa vạch 24 GB kể cả khi mọi cấu hình đều nhẹ — vạch biến mất thì người dùng
-  // tưởng nó không tồn tại, chứ không hiểu là "đang ở rất xa ngưỡng".
+  // The vertical axis always includes the 24 GB line even when every config is light — a missing
+  // line reads as "it does not exist", not as "we are far below the limit".
   const maxVram = Math.max(...vrams, RTX3090_GB * 1.15);
 
   const px = (cost: number) =>
@@ -124,7 +124,7 @@ export function ParetoChart({
   const py = (gb: number) => H - PAD.bottom - (gb / maxVram) * (H - PAD.top - PAD.bottom);
 
   const front3090 = py(RTX3090_GB);
-  /** Đổi khi **tập** cấu hình trên frontier đổi — dùng để biết lúc nào phải hoà mờ sang đường mới. */
+  /** Changes when the **set** of frontier configs changes — the cue to cross-fade to a new line. */
   const frontKey = front.map((p) => `${p.input.model_params_b}${p.input.quantization}`).join('|');
   const key = (p: GridPoint) =>
     `${p.input.model_params_b}-${p.input.quantization}-${p.input.candidates}-${p.input.rounds}-${p.input.eval_samples}`;
@@ -136,9 +136,9 @@ export function ParetoChart({
           viewBox={`0 0 ${W} ${H}`}
           className="h-auto w-full min-w-[520px]"
           role="img"
-          aria-label={`Biểu đồ ${points.length} cấu hình: chi phí so với VRAM, kèm vạch 24 GB của RTX 3090`}
+          aria-label={`Chart of ${points.length} configs: cost against VRAM, with the RTX 3090 24 GB line`}
         >
-          {/* Vùng quá ngưỡng tô nền trước, để "quá vạch" đọc được bằng mắt chứ không phải bằng chữ. */}
+          {/* The over-limit region is filled first, so "over the line" reads visually, not in words. */}
           <rect
             x={PAD.left}
             y={PAD.top}
@@ -159,7 +159,7 @@ export function ParetoChart({
             24 GB · RTX 3090
           </text>
 
-          {/* Trục */}
+          {/* Axes */}
           <line
             x1={PAD.left}
             y1={H - PAD.bottom}
@@ -175,7 +175,7 @@ export function ParetoChart({
             className="stroke-hairline"
           />
           <text x={W - PAD.right} y={H - 10} textAnchor="end" className="fill-ink-3 text-[10px]">
-            chi phí ước tính (USD) →
+            estimated cost (USD) →
           </text>
           <text
             x={10}
@@ -187,11 +187,11 @@ export function ParetoChart({
             ← VRAM (GB)
           </text>
 
-          {/* Đường Pareto vẽ trước để chấm nằm đè lên nó.
-              Không tween được thuộc tính `points` — số đỉnh của frontier đổi theo lưới, mà
-              `motion` chỉ nội suy được khi hai bên cùng số điểm. Nên chuyển bằng **hoà mờ**:
-              đường cũ mờ đi, đường mới hiện lên. Không đúng bằng trượt, nhưng thà hoà mờ còn
-              hơn một đường thẳng giật sang hình khác trong một khung hình. */}
+          {/* The Pareto line is drawn first so the dots sit on top of it.
+              The `points` attribute cannot be tweened — the number of frontier vertices changes
+              with the grid, and `motion` can only interpolate when both sides have the same count.
+              So transitions are a **cross-fade**: the old line fades out, the new one fades in.
+              Less faithful than sliding, but better than a line snapping to another shape in one frame. */}
           <AnimatePresence mode="wait" initial={false}>
             {front.length > 1 && (
               <motion.polyline
@@ -214,13 +214,13 @@ export function ParetoChart({
             const onFront = front.includes(p);
             const isCurrent = current !== null && key(current) === key(p);
             const isSuggested = suggested !== null && key(suggested) === key(p);
-            const label = `${p.input.model_params_b}B ${p.input.quantization}, ${p.input.candidates} ứng viên × ${p.input.rounds} vòng: ${p.estimate.vram_gb} GB, $${p.estimate.cost_usd.toFixed(4)}`;
+            const label = `${p.input.model_params_b}B ${p.input.quantization}, ${p.input.candidates} candidates × ${p.input.rounds} rounds: ${p.estimate.vram_gb} GB, $${p.estimate.cost_usd.toFixed(4)}`;
             return (
               <g
                 key={key(p)}
                 role="button"
                 tabIndex={0}
-                aria-label={`Chọn cấu hình ${label}`}
+                aria-label={`Select config ${label}`}
                 aria-pressed={isCurrent}
                 className="cursor-pointer"
                 onClick={() => onPick(p.input)}
@@ -231,9 +231,9 @@ export function ParetoChart({
                   }
                 }}
               >
-                {/* Chấm **trượt** tới vị trí mới thay vì nhảy. Đây là chỗ ăn thua của cả màn
-                    hình: kéo thanh trượt là cả lưới đổi toạ độ, mà nhảy tức thì thì mắt mất dấu
-                    điểm mình đang theo dõi và không đọc được nó dịch theo hướng nào. */}
+                {/* Dots **slide** to their new position rather than jumping. This is what makes the
+                    screen work: dragging a slider moves the whole grid, and an instant jump loses
+                    the point the eye was tracking along with the direction it moved. */}
                 <motion.circle
                   cx={px(p.estimate.cost_usd)}
                   cy={py(p.estimate.vram_gb)}
@@ -268,26 +268,26 @@ export function ParetoChart({
       <ul className="text-ink-3 text-2xs flex flex-wrap items-center gap-x-4 gap-y-1">
         <li className="flex items-center gap-1.5">
           <span className="bg-brand-ink inline-block size-2.5 rounded-full" aria-hidden />
-          cấu hình đang chọn
+          selected config
         </li>
         <li className="flex items-center gap-1.5">
           <span className="bg-ok-ink inline-block size-2.5 rounded-full" aria-hidden />
-          hệ thống đề xuất
+          system suggestion
         </li>
         <li className="flex items-center gap-1.5">
           <span className="bg-brand-line inline-block size-2.5 rounded-full" aria-hidden />
-          nằm trên đường Pareto
+          on the Pareto frontier
         </li>
         <li className="flex items-center gap-1.5">
           <span className="bg-danger-soft inline-block size-2.5 rounded-sm" aria-hidden />
-          vượt 24 GB
+          over 24 GB
         </li>
       </ul>
     </div>
   );
 }
 
-/** Một thanh trượt có nhãn thật gắn `htmlFor` (frontend/CLAUDE.md §7). */
+/** One slider with a real `htmlFor` label (frontend/CLAUDE.md §7). */
 export function SliderRow({
   id,
   label,
@@ -313,7 +313,7 @@ export function SliderRow({
         <label htmlFor={id} className="text-ink-2 text-xs font-medium">
           {label}
         </label>
-        <span className="text-ink-1 text-xs tabular-nums">{value.toLocaleString('vi-VN')}</span>
+        <span className="text-ink-1 text-xs tabular-nums">{value.toLocaleString('en-US')}</span>
       </div>
       <input
         id={id}
@@ -330,7 +330,7 @@ export function SliderRow({
   );
 }
 
-/** Nhóm nút chọn mức lượng tử hoá — ba giá trị rời rạc, thanh trượt không hợp. */
+/** The quantisation picker — three discrete values, where a slider would be the wrong control. */
 export function QuantPicker({
   value,
   onChange,
@@ -341,7 +341,7 @@ export function QuantPicker({
   const opts: SimInput['quantization'][] = ['fp16', 'int8', 'int4'];
   return (
     <div className="space-y-1">
-      <p className="text-ink-2 text-xs font-medium">Lượng tử hoá</p>
+      <p className="text-ink-2 text-xs font-medium">Quantisation</p>
       <div className="border-hairline inline-flex rounded-md border p-0.5">
         {opts.map((o) => (
           <button
@@ -359,13 +359,13 @@ export function QuantPicker({
         ))}
       </div>
       <p className="text-ink-4 text-2xs">
-        int8 giảm khoảng một nửa VRAM so với fp16, int4 giảm tiếp một nửa nữa.
+        int8 roughly halves the VRAM of fp16, and int4 halves it again.
       </p>
     </div>
   );
 }
 
-/** Bảng số của cấu hình đang chọn. Làm mờ khi đang gọi lại thay vì thay bằng skeleton. */
+/** The numbers for the selected config. Dimmed during a refetch rather than replaced by a skeleton. */
 export function EstimatePanel({
   estimate,
   stale,
@@ -374,13 +374,13 @@ export function EstimatePanel({
   stale: boolean;
 }) {
   if (!estimate) {
-    return <p className="text-ink-3 text-xs">Đang tính…</p>;
+    return <p className="text-ink-3 text-xs">Calculating…</p>;
   }
   const rows = [
     { label: 'VRAM', value: `${estimate.vram_gb} GB` },
-    { label: 'Chi phí ước tính', value: `$${estimate.cost_usd.toFixed(4)}` },
-    { label: 'Thời gian', value: `${estimate.hours_min}–${estimate.hours_max} giờ` },
-    { label: 'Token ước tính', value: estimate.tokens_est.toLocaleString('vi-VN') },
+    { label: 'Estimated cost', value: `$${estimate.cost_usd.toFixed(4)}` },
+    { label: 'Time', value: `${estimate.hours_min}–${estimate.hours_max} hours` },
+    { label: 'Estimated tokens', value: estimate.tokens_est.toLocaleString('en-US') },
   ];
 
   return (
@@ -402,8 +402,8 @@ export function EstimatePanel({
         )}
       >
         {estimate.fits_rtx3090
-          ? `Vừa RTX 3090 (${estimate.vram_gb}/24 GB).`
-          : `Vượt RTX 3090: cần ${estimate.vram_gb} GB, card chỉ có 24 GB.`}
+          ? `Fits an RTX 3090 (${estimate.vram_gb}/24 GB).`
+          : `Over the RTX 3090: needs ${estimate.vram_gb} GB, the card has 24 GB.`}
       </p>
     </div>
   );

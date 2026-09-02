@@ -98,7 +98,7 @@ export type VerificationPair = {
   card: { id: string; title: string; type: string; status: string };
   source: { id: string; title: string; year: number | null; doi: string | null };
   support_label: SupportLabel;
-  /** `false` ⇒ chưa kiểm chứng lần nào; `support_label` chỉ là mặc định của schema. */
+  /** `false` ⇒ never verified; `support_label` is only the schema default. */
   verified: boolean;
   similarity: number | null;
   entailment: string | null;
@@ -112,7 +112,7 @@ export function useVerification(versionId: string | undefined) {
     queryFn: () =>
       api.get<{
         pairs: VerificationPair[];
-        /** Chỉ đếm cặp đã kiểm chứng. */
+        /** Counts verified pairs only. */
         summary: Record<SupportLabel, number>;
         unverified: number;
       }>(`/spec-versions/${versionId}/verification`),
@@ -139,8 +139,9 @@ export function useGate(versionId: string | undefined) {
 }
 
 /**
- * Bốn đường ra khi verifier gate chặn một cặp (khẳng định, nguồn) — ARCHITECTURE §6.6.
- * Lấy từ backend chứ **không** khai lại ở đây: nhãn dài, khai hai chỗ là lệch âm thầm.
+ * The four exits when the verifier gate blocks a (claim, source) pair — ARCHITECTURE §6.6.
+ * Fetched from the backend rather than **re-declared** here: the labels are long, and declaring
+ * them twice drifts silently.
  */
 export function useGateOptions(cardSourceId: string | undefined) {
   return useQuery({
@@ -153,7 +154,7 @@ export function useGateOptions(cardSourceId: string | undefined) {
   });
 }
 
-/** Ghi lựa chọn xử lý trích dẫn không được hỗ trợ. Trả `preview` khi có thay đổi spec. */
+/** Records how an unsupported citation is resolved. Returns `preview` when the spec changes. */
 export function useGateDecision(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -174,47 +175,48 @@ export function useGateDecision(projectId: string) {
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa lưu được lựa chọn của bạn. Vui lòng thử lại.',
+          : 'Your choice could not be saved. Please try again.',
       );
     },
   });
 }
 
 /**
- * Khởi động một job nền và theo dõi nó. Dùng chung cho analyze / search / related-work /
- * gap / contributions / experiment-plan / judge / verify — mọi endpoint gọi LLM đều trả
- * `{ jobId }` (ARCHITECTURE §5).
+ * Start a background job and track it. Shared by analyze / search / related-work / gap /
+ * contributions / experiment-plan / judge / verify — every LLM endpoint returns `{ jobId }`
+ * (ARCHITECTURE §5).
  */
 export function useJobAction(projectId: string) {
   const queryClient = useQueryClient();
   const [jobId, setJobId] = useState<string | null>(null);
 
   /**
-   * Job về đích ⇒ báo cho người dùng, rồi mới làm mới dữ liệu.
+   * Job finished ⇒ tell the user first, then refresh the data.
    *
-   * `JobProgress` nằm **trên cùng** cột giữa, còn thứ vừa đổi thường nằm dưới màn hình — ví dụ
-   * ba cột nhận xét của bảng nghiên cứu liên quan. Xong việc mà không có gì báo thì người dùng
-   * phải tự cuộn đi tìm xem có gì khác không (#28).
+   * `JobProgress` sits at the **top** of the middle column, while what just changed is usually
+   * further down the screen — the three comment columns of the related-work table, for example.
+   * Finishing with no announcement forces the user to scroll around hunting for a difference (#28).
    *
-   * Dùng thẳng `job.message` vì backend đã viết sẵn câu riêng cho từng hành động, **kèm số
-   * lượng**: "Đã dựng 12 dòng nghiên cứu liên quan." Con số đó cũng vá luôn một đường hỏng im
-   * lặng — `relatedWork()` lọc `source_id` theo whitelist, model trả `source_id` bịa thì bảng
-   * còn ít dòng hơn trước mà job vẫn `DONE`; giờ nó hiện thành "Đã dựng 0 dòng…".
+   * `job.message` is used verbatim because the backend already writes a sentence per action,
+   * **with a count**: "Built 12 related-work rows." That number also patches a silent failure —
+   * `relatedWork()` filters `source_id` against a whitelist, so if the model invents a
+   * `source_id` the table ends up with fewer rows than before while the job still says `DONE`;
+   * now it reads "Built 0 rows…".
    */
   const onSettled = useCallback(
     (job: ApiJob) => {
       if (job.status === 'FAILED') {
-        // Ánh xạ `error_code`, **không** phân nhánh bằng `message` (STACK §3.1 luật 3).
+        // Map `error_code`, **never** branch on `message` (STACK §3.1 rule 3).
         toast.error(
           messageOf(
             job.error_code ?? undefined,
-            'Tiến trình đã dừng vì lỗi. Bạn vui lòng thử lại.',
+            'The job stopped with an error. Please try again.',
           ),
         );
         return;
       }
-      toast.success(job.message ?? 'Đã xong.');
-      // Đổi dữ liệu xong thì invalidate đúng nhánh, không gọi `invalidateQueries()` trống.
+      toast.success(job.message ?? 'Done.');
+      // After a mutation, invalidate the exact branch — never call `invalidateQueries()` empty.
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
     },
@@ -231,7 +233,7 @@ export function useJobAction(projectId: string) {
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa khởi động được tiến trình. Bạn vui lòng thử lại.',
+          : 'The job could not be started. Please try again.',
       );
     },
   });
@@ -246,14 +248,14 @@ export function useJobAction(projectId: string) {
     busy: start.isPending || view.isRunning,
     run: (path: string, body?: unknown) => start.mutate({ path, body }),
     /**
-     * Theo dõi một job do endpoint **khác** mở ra — `POST /decisions/:id/apply` trả kèm
-     * `verifyJobId` cho lần kiểm lại chứng cứ ngay sau khi áp dụng.
+     * Track a job opened by a **different** endpoint — `POST /decisions/:id/apply` returns a
+     * `verifyJobId` for the evidence re-check that runs right after the decision is applied.
      */
     attach: (id: string | null) => setJobId(id),
   };
 }
 
-/** Trả lời một câu hỏi đang chờ, hoặc tạo mới rồi trả lời luôn. */
+/** Answer a pending question, or create one and answer it in the same call. */
 export function useAnswerDecision(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -269,7 +271,7 @@ export function useAnswerDecision(projectId: string) {
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa lưu được lựa chọn của bạn. Vui lòng thử lại.',
+          : 'Your choice could not be saved. Please try again.',
       );
     },
   });
@@ -294,41 +296,42 @@ export function useApplyDecision(projectId: string) {
     mutationFn: (decisionId: string) =>
       api.post<{
         version: { id: string; version_no: number };
-        /** Job kiểm lại chứng cứ do backend mở ngay sau khi áp dụng; `null` nếu không mở được. */
+        /** The evidence re-check job the backend opens right after applying; `null` if it could not start. */
         verifyJobId: string | null;
       }>(`/decisions/${decisionId}/apply`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['spec-versions'] });
       toast.success(
-        'Đã tạo phiên bản mới. Hệ thống đang kiểm lại chứng cứ ở phần bạn vừa sửa…',
+        'New version created. Re-checking the evidence in the part you just changed…',
       );
     },
     onError: (err) => {
       if (err instanceof ApiError && err.code === 'DECISION_ALREADY_APPLIED') {
-        // Với người dùng đây không phải lỗi — chỉ là "thứ bạn muốn đã có rồi" (C4 · F.7).
-        toast.info('Quyết định này đã được áp dụng trước đó.');
+        // To the user this is not an error — it just means "what you wanted is already there" (C4 · F.7).
+        toast.info('This decision has already been applied.');
         void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
         return;
       }
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa áp dụng được quyết định. Bạn vui lòng thử lại.',
+          : 'The decision could not be applied. Please try again.',
       );
     },
   });
 }
 
-/* ─────────────────────────────── làn A · bằng chứng & nguồn ───────────────────────────────
-   Thêm dòng vào cuối file, không sửa hook của ai. Type của payload khai ngay tại đây theo đúng
-   khuôn làn C đã dùng cho các màn hình đọc — `lib/types.ts` giữ cho enum dùng chung. */
+/* ─────────────────────────────── Lane A · evidence & sources ──────────────────────────────
+   Append at the end of the file; never edit anybody else's hook. Payload types are declared
+   right here, following the pattern lane C used for the read-only screens — `lib/types.ts` is
+   reserved for the shared enums. */
 
 export type ApiCredibilitySource = {
   source_id: string;
   tier: CredibilityTier;
   reason: string;
-  /** Chỉ để **sắp xếp**. Giao diện không hiện con số này (tiêu chí #1). */
+  /** For **sorting** only. The UI never shows this number (acceptance criterion #1). */
   total: number;
 };
 
@@ -393,14 +396,14 @@ export type ApiEvidencePair = {
     venue: string | null;
   };
   support_label: SupportLabel;
-  /** `false` ⇒ chưa kiểm chứng lần nào; `support_label` chỉ là mặc định của schema. */
+  /** `false` ⇒ never verified; `support_label` is only the schema default. */
   verified: boolean;
   similarity: number | null;
   entailment: string | null;
   confidence: number | null;
   evidence_sentence: string | null;
   flags: VerifierFlag[];
-  /** `null` khi `verified === false` — không tầng nào từng chạm vào cặp này. */
+  /** `null` when `verified === false` — no layer has ever touched this pair. */
   layer: string | null;
   layer_why: string;
   credibility: { tier: CredibilityTier; reason: string } | null;
@@ -414,7 +417,7 @@ export type ApiEvidencePair = {
 };
 
 export type ApiEvidenceTrace = {
-  /** Ngưỡng của **chính lần chạy đó**, không phải hằng số hiện tại (yêu cầu của #5). */
+  /** The thresholds of **that particular run**, not today's constants (requirement of #5). */
   thresholds: {
     tau_low: number;
     tau_high: number;
@@ -429,9 +432,9 @@ export type ApiEvidenceTrace = {
     units_total: number;
     units_l4: number;
   } | null;
-  /** **Chỉ đếm cặp đã kiểm chứng** — cặp chưa kiểm nằm ở `unverified`. */
+  /** **Counts verified pairs only** — unverified pairs are in `unverified`. */
   summary: Record<SupportLabel, number>;
-  /** Số cặp chưa từng đi qua verifier. `summary` + `unverified` = `pairs.length`. */
+  /** How many pairs have never been through the verifier. `summary` + `unverified` = `pairs.length`. */
   unverified: number;
   pairs: ApiEvidencePair[];
 };
@@ -466,7 +469,7 @@ export function useLabelQueue(versionId: string | undefined) {
   return useQuery({
     queryKey: qk.labelQueue(versionId ?? ''),
     enabled: Boolean(versionId),
-    // Hàng đợi đổi sau **mỗi** lần gán ⇒ không giữ cache cũ.
+    // The queue changes after **every** label ⇒ never serve a stale cache.
     staleTime: 0,
     queryFn: () =>
       api.get<ApiLabelQueue>(`/spec-versions/${versionId}/label-queue`),
@@ -474,8 +477,8 @@ export function useLabelQueue(versionId: string | undefined) {
 }
 
 /**
- * Ghi nhãn người. Response chỉ trả `match` — client **không** gửi và **không** biết nhãn máy
- * trước đó, đó là cả điểm của việc chấm mù (#4).
+ * Record a human label. The response only returns `match` — the client **neither sends nor
+ * knows** the machine label beforehand, which is the whole point of blind labelling (#4).
  */
 export function useRecordHumanCheck(versionId: string | undefined) {
   const queryClient = useQueryClient();
@@ -494,7 +497,7 @@ export function useRecordHumanCheck(versionId: string | undefined) {
       toast.error(
         err instanceof ApiError
           ? err.message
-          : 'Hệ thống chưa ghi được nhãn. Bạn vui lòng thử lại.',
+          : 'The label could not be recorded. Please try again.',
       );
     },
   });

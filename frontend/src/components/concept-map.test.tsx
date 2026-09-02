@@ -9,8 +9,8 @@ const card = (over: Partial<ApiCard> = {}): ApiCard => ({
   id: 'c1',
   type: 'PROBLEM' as CardType,
   status: 'PROPOSED' as CardStatus,
-  title: 'Prompt thủ công không ổn định',
-  body: 'Nội dung thẻ',
+  title: 'Hand-written prompts are unstable',
+  body: 'Card body',
   payload: null,
   order_index: 0,
   origin: 'GENERATOR',
@@ -26,22 +26,22 @@ function wrap(ui: ReactNode) {
 }
 
 describe('ConceptMap', () => {
-  it('mỗi thẻ một nút bấm được, có nhãn cho trình đọc màn hình', () => {
+  it('renders one clickable button per card, each named for screen readers', () => {
     wrap(
       <ConceptMap
         projectId="p-1"
         meta={null}
         cards={[
-          card({ id: 'c1', title: 'Thẻ một' }),
-          card({ id: 'c2', title: 'Thẻ hai', type: 'CLAIM' }),
+          card({ id: 'c1', title: 'Card one' }),
+          card({ id: 'c2', title: 'Card two', type: 'CLAIM' }),
         ]}
       />,
     );
-    expect(screen.getByLabelText('Sửa thẻ Thẻ một')).toBeInTheDocument();
-    expect(screen.getByLabelText('Sửa thẻ Thẻ hai')).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit card Card one')).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit card Card two')).toBeInTheDocument();
   });
 
-  it('chỉ vẽ nhóm cho loại thẻ THỰC SỰ có mặt, không vẽ đủ 8 nhóm rỗng', () => {
+  it('only draws groups for card types ACTUALLY present, never all 8 empty ones', () => {
     const { container } = wrap(
       <ConceptMap
         projectId="p-1"
@@ -49,18 +49,19 @@ describe('ConceptMap', () => {
         cards={[card({ id: 'c1' }), card({ id: 'c2' }), card({ id: 'c3', type: 'GAP' })]}
       />,
     );
-    // Hai loại có mặt (PROBLEM, GAP) ⇒ hai nhãn nhóm.
-    expect(screen.getByText('Vấn đề')).toBeInTheDocument();
-    expect(screen.getByText('Khoảng trống nghiên cứu')).toBeInTheDocument();
-    expect(screen.queryByText('Câu hỏi mở')).toBeNull();
+    // Two types present (PROBLEM, GAP) ⇒ two group labels.
+    expect(screen.getByText('Problem')).toBeInTheDocument();
+    expect(screen.getByText('Research gap')).toBeInTheDocument();
+    expect(screen.queryByText('Open question')).toBeNull();
     expect(container.querySelector('svg')).toBeTruthy();
   });
 
   /**
-   * Bố cục phải là **hàm thuần của dữ liệu**: cùng thẻ thì cùng toạ độ. Đây là lý do không dùng
-   * thuật toán lực — người dùng cần nhớ được vị trí thẻ giữa hai lần mở.
+   * The layout must be a **pure function of the data**: the same cards give the same coordinates.
+   * That is why no force-directed algorithm is used — users need to remember where a card sat
+   * between two visits.
    */
-  it('bố cục tất định — render hai lần cho ra cùng toạ độ', () => {
+  it('is deterministic — two renders produce the same coordinates', () => {
     const cards = [
       card({ id: 'c1' }),
       card({ id: 'c2', type: 'CLAIM' }),
@@ -74,51 +75,51 @@ describe('ConceptMap', () => {
     expect(second).toEqual(first);
   });
 
-  it('bấm một nút mở hộp sửa với đúng nội dung thẻ đó', () => {
+  it('opens the editor with that card content when a button is clicked', () => {
     wrap(
       <ConceptMap
         projectId="p-1"
         meta={null}
-        cards={[card({ id: 'c1', title: 'Thẻ cần sửa', body: 'Thân thẻ ban đầu' })]}
+        cards={[card({ id: 'c1', title: 'Card to edit', body: 'Original card body' })]}
       />,
     );
-    fireEvent.click(screen.getByLabelText('Sửa thẻ Thẻ cần sửa'));
-    expect(screen.getByText('Sửa thẻ')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Thẻ cần sửa')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Thân thẻ ban đầu')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Edit card Card to edit'));
+    expect(screen.getByText('Edit card')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Card to edit')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Original card body')).toBeInTheDocument();
   });
 
   /**
-   * `status` đến từ API lúc chạy, không từ trình biên dịch. Backend thêm một trạng thái thứ bảy
-   * trước khi frontend kịp đồng bộ enum là bảng tra trả `undefined` — và bản đồ vẽ **mọi** thẻ
-   * ngay lập tức nên nó chạm vào chỗ đó trước `CardBoard` (thẻ trong accordion đang đóng thì
-   * Radix chưa mount). Đây chính là lỗi làm trắng trang ở CI của PR này.
+   * `status` comes from the API at runtime, not from the compiler. If the backend adds a seventh
+   * status before the frontend syncs its enum, the lookup returns `undefined` — and the map draws
+   * **every** card immediately, so it hits that before `CardBoard` does (a card inside a closed
+   * accordion is never mounted by Radix). This is exactly the blank-page bug that hit CI on this PR.
    */
-  it('trạng thái lạ ngoài 6 giá trị thì hiện nguyên văn, không làm trắng trang', () => {
-    const weird = { ...card({ id: 'cx', title: 'Thẻ lạ' }), status: 'UNVERIFIED' as CardStatus };
+  it('renders an unknown status verbatim instead of blanking the page', () => {
+    const weird = { ...card({ id: 'cx', title: 'Odd card' }), status: 'PARTIAL' as CardStatus };
     expect(() => wrap(<ConceptMap projectId="p-1" meta={null} cards={[weird]} />)).not.toThrow();
-    expect(screen.getByText('UNVERIFIED')).toBeInTheDocument();
-    expect(screen.getByLabelText('Sửa thẻ Thẻ lạ')).toBeInTheDocument();
+    expect(screen.getByText('PARTIAL')).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit card Odd card')).toBeInTheDocument();
   });
 
-  it('không có thẻ nào thì nói rõ, không vẽ hình rỗng', () => {
+  it('says so plainly when there are no cards instead of drawing an empty figure', () => {
     const { container } = wrap(<ConceptMap projectId="p-1" meta={null} cards={[]} />);
-    expect(screen.getByText('Chưa có thẻ nào để dựng bản đồ.')).toBeInTheDocument();
+    expect(screen.getByText('No cards yet to build a map from.')).toBeInTheDocument();
     expect(container.querySelector('svg')).toBeNull();
   });
 });
 
 describe('ViewToggle', () => {
-  it('nút đang chọn được đánh dấu bằng aria-pressed, không chỉ bằng màu', () => {
+  it('marks the selected button with aria-pressed, not colour alone', () => {
     render(<ViewToggle view="map" onChange={() => {}} />);
-    expect(screen.getByText('Bản đồ')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('Bảng thẻ')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Map')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Card board')).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('bấm nút kia thì gọi onChange với đúng chế độ', () => {
+  it('calls onChange with the right mode when the other button is clicked', () => {
     const calls: string[] = [];
     render(<ViewToggle view="map" onChange={(v) => calls.push(v)} />);
-    fireEvent.click(screen.getByText('Bảng thẻ'));
+    fireEvent.click(screen.getByText('Card board'));
     expect(calls).toEqual(['board']);
   });
 });

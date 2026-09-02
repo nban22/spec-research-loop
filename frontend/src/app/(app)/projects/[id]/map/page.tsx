@@ -12,14 +12,16 @@ import { StatTileGrid } from '@/components/spec-views';
 import { api, qk } from '@/lib/api';
 
 /**
- * **Bản đồ nguồn** — issue #16 (làn C): dòng thời gian nghiên cứu và bản đồ chủ đề.
+ * **The source map** — issue #16 (lane C): the research timeline and the topic map.
  *
- * Trang riêng chứ không nhét vào bước 2 vì hai lý do: bước 2 đã ba cột kín chỗ, và bản đồ này là
- * thứ người ta mở ra ngắm rồi quay lại, không phải thứ thao tác trong luồng. Cùng khuôn với
- * `/cost` (#17) và `/errors` (#19) — cả ba đều là màn hình **chỉ đọc** treo ngoài wizard.
+ * Its own page rather than folded into step 2, for two reasons: step 2's three columns are already
+ * full, and this map is something you open to look at and then leave, not something you operate
+ * inside the flow. Same shape as `/cost` (#17) and `/errors` (#19) — all three are **read-only**
+ * screens hanging off the wizard.
  *
- * Citation graph chưa có: nó cần trường `references` mà `sources/source.client.ts` không xin, và
- * file đó nằm ngoài phạm vi sửa của #16. Hai bản đồ dưới không phụ thuộc vào nó.
+ * The citation graph is not here yet: it needs the `references` field that
+ * `sources/source.client.ts` does not request, and that file is outside #16's editable scope. The
+ * two maps below do not depend on it.
  */
 export default function SourceMapPage({ params }: PageProps<'/projects/[id]/map'>) {
   const { id } = use(params);
@@ -41,8 +43,8 @@ export default function SourceMapPage({ params }: PageProps<'/projects/[id]/map'
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4">
         <EmptyState
           icon={MapIcon}
-          title="Chưa đọc được bản đồ nguồn"
-          description="Hệ thống chưa lấy được dữ liệu của dự án này. Bạn vui lòng tải lại trang."
+          title="The source map could not be read"
+          description="The data for this project could not be fetched. Please reload the page."
         />
       </div>
     );
@@ -55,38 +57,38 @@ export default function SourceMapPage({ params }: PageProps<'/projects/[id]/map'
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-3 px-3 py-4 md:px-4">
       <header className="space-y-1">
-        <h1 className="text-ink-1 text-lg font-semibold md:text-xl">Bản đồ nguồn</h1>
+        <h1 className="text-ink-1 text-lg font-semibold md:text-xl">Source map</h1>
         <p className="text-ink-3 text-xs md:text-sm">
-          Dòng thời gian và bản đồ chủ đề của {data.nodes.length} nguồn ·{' '}
+          Timeline and topic map of {data.nodes.length} sources ·{' '}
           <Link
             href={`/projects/${id}/step/2`}
             className="text-brand-strong underline underline-offset-2"
           >
-            quay lại bước 2
+            back to step 2
           </Link>
         </p>
       </header>
 
-      <Panel accent="brand" icon={Sparkles} title="Tổng quan">
+      <Panel accent="brand" icon={Sparkles} title="Overview">
         <StatTileGrid
           items={[
-            { label: 'Số nguồn', value: String(data.nodes.length) },
-            { label: 'Đang được trích', value: `${cited}/${data.nodes.length}` },
-            { label: 'Nằm vùng thưa', value: String(sparse) },
+            { label: 'Sources', value: String(data.nodes.length) },
+            { label: 'Currently cited', value: `${cited}/${data.nodes.length}` },
+            { label: 'In sparse regions', value: String(sparse) },
             {
-              label: 'Trải năm',
+              label: 'Year span',
               value: years.length === 0 ? '—' : `${Math.min(...years)}–${Math.max(...years)}`,
             },
           ]}
         />
         <HintBox tone="info">
-          Chấm nằm xa mọi chấm khác nghĩa là chủ đề đó ít paper vây quanh. Đó là <strong>gợi ý</strong> chỗ nên
-          soi kỹ khi tìm research gap, không phải kết luận — bạn vẫn cần đọc để xác nhận là khoảng
-          trống thật chứ không phải do từ khoá tìm chưa trúng.
+          A dot far from every other means few papers surround that topic. That is a{' '}
+          <strong>hint</strong> about where to look closely for a research gap, not a conclusion —
+          you still have to read and confirm it is a real gap rather than a keyword that missed.
         </HintBox>
       </Panel>
 
-      <Panel accent="neutral" icon={MapIcon} title="Bản đồ">
+      <Panel accent="neutral" icon={MapIcon} title="Maps">
         <SourceMapView data={data} />
       </Panel>
     </div>

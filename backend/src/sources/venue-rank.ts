@@ -161,7 +161,7 @@ const VENUE_RULES: VenueRule[] = [
   {
     pattern: /\barxiv\b|\bcorr\b|\bpreprint\b|\bbiorxiv\b|\bssrn\b/i,
     score: PREPRINT_SCORE,
-    label: 'bản tiền ấn',
+    label: 'preprint',
   },
 ];
 

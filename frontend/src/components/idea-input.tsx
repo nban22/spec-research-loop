@@ -10,7 +10,7 @@ import { ApiError, api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ErrorState } from './states';
 
-/** Chip chủ đề **chỉ đọc** — khác `KeywordChipInput` (sửa được, dùng ở B2). Đừng gộp hai thứ. */
+/** **Read-only** topic chips — different from `KeywordChipInput` (editable, used in B2). Do not merge the two. */
 export function TopicChipList({ topics }: { topics: string[] }) {
   if (topics.length === 0) return null;
   return (
@@ -28,9 +28,9 @@ export function TopicChipList({ topics }: { topics: string[] }) {
 }
 
 /**
- * Ô nhập ý tưởng thô — **điểm vào của toàn app** (chức năng 1).
- * Vùng văn bản kiểu trích dẫn, nút bút chì để chuyển sang chế độ sửa, nút chính chiếm trọn
- * bề rộng (DESIGN_SYSTEM §5.3).
+ * The raw-idea input — **the entry point of the whole app** (feature 1).
+ * A quote-styled text area, a pencil button to switch into edit mode, and a full-width primary
+ * button (DESIGN_SYSTEM §5.3).
  */
 export function IdeaInput({
   value,
@@ -64,8 +64,8 @@ export function IdeaInput({
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={variant === 'create' ? 5 : 4}
-          placeholder="Ví dụ: Tôi muốn cải thiện RAG cho tài liệu pháp luật tiếng Việt, đặc biệt với các điều luật có tham chiếu chéo."
-          aria-label="Ý tưởng nghiên cứu"
+          placeholder="For example: I want to improve RAG over Vietnamese legal documents, especially for statutes with cross-references."
+          aria-label="Research idea"
         />
       ) : (
         <div
@@ -80,7 +80,7 @@ export function IdeaInput({
               type="button"
               onClick={() => setEditing(true)}
               className="border-brand-line bg-surface text-brand-strong hover:bg-brand-line absolute top-1.5 right-1.5 cursor-pointer rounded-md border p-1.5 shadow-xs"
-              aria-label="Sửa ý tưởng"
+              aria-label="Edit idea"
             >
               <Pencil className="size-3.5" aria-hidden />
             </button>
@@ -89,13 +89,13 @@ export function IdeaInput({
       )}
 
       {tooShort && editing && text.length > 0 && (
-        <p className="text-ink-3 text-xs">Cần ít nhất 20 ký tự để phân tích được.</p>
+        <p className="text-ink-3 text-xs">At least 20 characters are needed to analyse this.</p>
       )}
 
       {create.isError && (
         <ErrorState
           message={
-            create.error instanceof ApiError ? create.error.message : 'Không tạo được dự án.'
+            create.error instanceof ApiError ? create.error.message : 'The project could not be created.'
           }
         />
       )}
@@ -113,7 +113,7 @@ export function IdeaInput({
         }}
       >
         <Sparkles className="size-4" aria-hidden />
-        {create.isPending || analyzing ? 'Đang phân tích…' : 'Phân tích ý tưởng'}
+        {create.isPending || analyzing ? 'Analysing…' : 'Analyse idea'}
       </Button>
     </div>
   );

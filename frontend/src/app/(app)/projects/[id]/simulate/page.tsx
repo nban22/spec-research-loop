@@ -19,21 +19,21 @@ import type { ApiEstimate } from '@/lib/types';
 import { useDebounced } from '@/lib/use-debounced';
 
 /**
- * **Mô phỏng chi phí và đường Pareto** — issue #18 (làn C).
+ * **Cost simulation and the Pareto frontier** — issue #18 (lane C).
  *
- * Mọi con số đến từ `GET /projects/:id/estimate/preview` đang có. **Không thêm endpoint**, và
- * không chép công thức của `EstimatorService` sang frontend — chép thì hai bên lệch nhau ngay
- * lần đầu ai đó sửa đơn giá, mà cái sai đó sẽ không ai phát hiện vì cả hai đều "có vẻ đúng".
+ * Every number comes from the existing `GET /projects/:id/estimate/preview`. **No new endpoint**,
+ * and no copy of the `EstimatorService` formulas into the frontend — a copy drifts the first time
+ * somebody edits a unit price, and nobody would notice because both sides would "look right".
  *
- * Cái giá phải trả: mỗi cấu hình là một lời gọi. Chấp nhận được vì endpoint này là **hàm thuần
- * 0 I/O**, và TanStack Query cache theo cấu hình với `staleTime: Infinity` — kết quả của một hàm
- * thuần thì không bao giờ cũ, nên kéo thanh trượt qua lại chỉ tốn mạng đúng lần đầu.
+ * The cost: one call per configuration. Acceptable because this endpoint is a **pure function with
+ * zero I/O**, and TanStack Query caches per configuration with `staleTime: Infinity` — the result
+ * of a pure function never goes stale, so dragging a slider back and forth only hits the network once.
  */
 
-/** Bậc thang lưới. Cỡ model theo các mốc thật hay gặp, không phải chia đều cho đẹp. */
+/** The grid ladders. Model sizes follow the real-world sizes, not an evenly spaced series. */
 const MODEL_LADDER = [7, 13, 32, 70];
 const QUANT_LADDER: SimInput['quantization'][] = ['fp16', 'int8', 'int4'];
-/** Ngân sách tìm kiếm: chi phí **chỉ** đổi theo nhóm này, nên thiếu nó thì lưới thành một cột dọc. */
+/** Search budget: cost **only** varies with this group, so without it the grid collapses to one column. */
 const BUDGET_LADDER = [
   { candidates: 4, rounds: 2 },
   { candidates: 8, rounds: 3 },
@@ -63,10 +63,11 @@ function toQuery(input: SimInput): string {
 }
 
 /**
- * Áp `downscale_suggestion` của hệ thống lên cấu hình đang chọn để biết nó **trỏ tới điểm nào**.
+ * Apply the system's `downscale_suggestion` to the current configuration to find **which point it
+ * points at**.
  *
- * Trả `null` khi hệ thống không đề xuất gì, hoặc khi đề xuất đụng trường mà màn hình này không
- * mô phỏng — thà không vẽ còn hơn vẽ một điểm không đúng thứ hệ thống nói.
+ * Returns `null` when the system suggests nothing, or when the suggestion touches a field this
+ * screen does not simulate — better to draw nothing than a point that is not what the system said.
  */
 function applySuggestion(input: SimInput, estimate: ApiEstimate | null): SimInput | null {
   const steps = estimate?.downscale_suggestion;
@@ -95,7 +96,7 @@ function applySuggestion(input: SimInput, estimate: ApiEstimate | null): SimInpu
 export default function SimulatePage({ params }: PageProps<'/projects/[id]/simulate'>) {
   const { id } = use(params);
   const [input, setInput] = useState<SimInput>(DEFAULTS);
-  // Kéo thanh trượt bắn ra hàng chục sự kiện; chỉ giá trị dừng lại mới đáng một lời gọi.
+  // Dragging a slider fires dozens of events; only the value it settles on deserves a call.
   const settled = useDebounced(input, 200);
 
   const preview = (cfg: SimInput) => ({
@@ -135,8 +136,8 @@ export default function SimulatePage({ params }: PageProps<'/projects/[id]/simul
       seen.add(k);
       out.push({ input: cfg, estimate: est });
     };
-    // Cấu hình đang chọn và cấu hình được đề xuất đẩy lên trước: nếu trùng một điểm của lưới thì
-    // giữ bản của chúng, để chấm được tô đúng vai chứ không lẫn vào đám chấm xám.
+    // The selected and suggested configurations are pushed first: if either coincides with a grid
+    // point, their copy wins so the dot is painted in its role rather than lost among the grey ones.
     push(settled, current.data?.estimate);
     push(suggestedInput, suggested.data?.estimate);
     gridInputs.forEach((cfg, i) => push(cfg, grid[i]?.data?.estimate));
@@ -152,24 +153,24 @@ export default function SimulatePage({ params }: PageProps<'/projects/[id]/simul
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-3 px-3 py-4 md:px-4">
       <header className="space-y-1">
-        <h1 className="text-ink-1 text-lg font-semibold md:text-xl">Mô phỏng chi phí</h1>
+        <h1 className="text-ink-1 text-lg font-semibold md:text-xl">Cost simulation</h1>
         <p className="text-ink-3 text-xs md:text-sm">
-          Kéo thanh trượt để xem VRAM, chi phí và thời gian đổi theo ·{' '}
+          Drag the sliders to watch VRAM, cost and time move ·{' '}
           <Link
             href={`/projects/${id}/step/3`}
             className="text-brand-strong underline underline-offset-2"
           >
-            quay lại bước 3
+            back to step 3
           </Link>
         </p>
       </header>
 
       <div className="grid gap-3 md:grid-cols-[320px_1fr]">
-        <Panel accent="brand" icon={SlidersHorizontal} title="Cấu hình">
+        <Panel accent="brand" icon={SlidersHorizontal} title="Configuration">
           <div className="space-y-3">
             <SliderRow
               id="sim-params"
-              label="Cỡ model (tỉ tham số)"
+              label="Model size (billion parameters)"
               value={input.model_params_b}
               min={1}
               max={180}
@@ -181,7 +182,7 @@ export default function SimulatePage({ params }: PageProps<'/projects/[id]/simul
             />
             <SliderRow
               id="sim-candidates"
-              label="Số ứng viên"
+              label="Candidates"
               value={input.candidates}
               min={1}
               max={64}
@@ -189,7 +190,7 @@ export default function SimulatePage({ params }: PageProps<'/projects/[id]/simul
             />
             <SliderRow
               id="sim-rounds"
-              label="Số vòng"
+              label="Rounds"
               value={input.rounds}
               min={1}
               max={12}
@@ -197,7 +198,7 @@ export default function SimulatePage({ params }: PageProps<'/projects/[id]/simul
             />
             <SliderRow
               id="sim-eval"
-              label="Số mẫu đánh giá"
+              label="Evaluation samples"
               value={input.eval_samples}
               min={10}
               max={2000}
@@ -206,17 +207,17 @@ export default function SimulatePage({ params }: PageProps<'/projects/[id]/simul
             />
             <SliderRow
               id="sim-prompt-tokens"
-              label="Token vào trung bình"
+              label="Average input tokens"
               value={input.avg_prompt_tokens}
               min={200}
               max={8000}
               step={100}
-              hint="Ảnh hưởng thẳng tới chi phí, không ảnh hưởng VRAM."
+              hint="Affects cost directly, not VRAM."
               onChange={(v) => setInput((s) => ({ ...s, avg_prompt_tokens: v }))}
             />
             <SliderRow
               id="sim-output-tokens"
-              label="Token ra trung bình"
+              label="Average output tokens"
               value={input.avg_output_tokens}
               min={100}
               max={4000}
@@ -227,14 +228,14 @@ export default function SimulatePage({ params }: PageProps<'/projects/[id]/simul
         </Panel>
 
         <div className="space-y-3">
-          <Panel accent="neutral" icon={Gauge} title="Cấu hình đang chọn">
+          <Panel accent="neutral" icon={Gauge} title="Selected configuration">
             <EstimatePanel
               estimate={current.data?.estimate ?? null}
               stale={current.isFetching || input !== settled}
             />
           </Panel>
 
-          <Panel accent="brand" icon={TrendingDown} title="Đường Pareto">
+          <Panel accent="brand" icon={TrendingDown} title="Pareto frontier">
             <ParetoChart
               points={points}
               current={currentPoint}
@@ -242,16 +243,17 @@ export default function SimulatePage({ params }: PageProps<'/projects/[id]/simul
               onPick={setInput}
             />
             <HintBox tone="warn">
-              Trục tung là VRAM nên <strong>vạch 24 GB là ngưỡng cứng</strong>: chấm nằm trong vùng tô đỏ thì
-              RTX 3090 không chạy nổi, dù chi phí có rẻ đến đâu. Đường Pareto nối những cấu hình
-              mà không cấu hình nào khác vừa rẻ hơn vừa nhiều tài nguyên hơn — chọn ngoài đường đó
-              là bạn đang trả thêm tiền mà không nhận thêm gì.
+              The vertical axis is VRAM, so <strong>the 24 GB line is a hard limit</strong>: a dot
+              inside the red band cannot run on an RTX 3090 no matter how cheap it is. The Pareto
+              line joins the configurations no other configuration beats on both cheapness and
+              resources — choosing off that line means paying more for nothing extra.
             </HintBox>
             {suggestedPoint && (
               <HintBox tone="info">
-                Chấm xanh lá là cấu hình hệ thống đề xuất khi thấy vượt RTX 3090:{' '}
-                {suggestedPoint.input.model_params_b}B · {suggestedPoint.input.quantization} ·{' '}
-                {suggestedPoint.estimate.vram_gb} GB. Bạn bấm vào nó để chuyển thanh trượt sang đó.
+                The green dot is the configuration the system suggests once the RTX 3090 limit is
+                exceeded: {suggestedPoint.input.model_params_b}B ·{' '}
+                {suggestedPoint.input.quantization} · {suggestedPoint.estimate.vram_gb} GB. Click it
+                to move the sliders there.
               </HintBox>
             )}
           </Panel>

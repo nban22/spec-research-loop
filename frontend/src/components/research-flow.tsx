@@ -6,22 +6,23 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * **Animation mô tả luồng nghiên cứu** — Bước 1 của đề, mục *Khuyến khích sáng tạo*:
- * *"Sơ đồ · Concept map · Danh sách thành phần · Animation mô tả luồng nghiên cứu"*.
+ * **The research-flow animation** — Step 1 of the brief, the *encourage creativity* section:
+ * *"Diagram · concept map · component list · animation of the research flow"*.
  *
- * Câu hỏi nó trả lời trong 20 giây: **một ý tưởng mơ hồ biến thành bản đặc tả có nguồn bằng cách
- * nào.** Trang chủ trước đây trả lời câu đó bằng hai câu chữ; ai chưa dùng hệ thống thì đọc xong
- * vẫn không hình dung được có bao nhiêu bước và bước nào làm gì.
+ * The question it answers in 20 seconds: **how a vague idea becomes a sourced specification.** The
+ * home page used to answer that with two sentences; a first-time reader still had no idea how many
+ * steps there were or what each one did.
  *
- * ## Ba quyết định
+ * ## Three decisions
  *
- * 1. **Tự chạy, nhưng dừng được và tua tay được.** Animation tự chạy mà không tắt được là quảng
- *    cáo; đứng yên chờ bấm thì không ai bấm. Có nút dừng thật và sáu nút nhảy thẳng tới từng chặng.
- * 2. **Mỗi chặng vẽ đúng thứ chặng đó làm ra** — thẻ, chấm nguồn, đường nối, huy hiệu judge — chứ
- *    không phải sáu ô chữ nhật đổi màu. Hình phải mang thông tin, nếu không thì một danh sách gạch
- *    đầu dòng đã đủ và rẻ hơn.
- * 3. **`prefers-reduced-motion` thì KHÔNG tự chạy.** Chuyển động tự động là thứ khó chịu nhất với
- *    người nhạy cảm tiền đình. Khi đó nó thành một sơ đồ tĩnh, tua bằng nút.
+ * 1. **It plays itself, but can be stopped and scrubbed.** An animation that plays and cannot be
+ *    stopped is an advert; one that waits for a click never gets clicked. So there is a real pause
+ *    button and six buttons that jump straight to a stage.
+ * 2. **Each stage draws what that stage actually produces** — cards, source dots, links, judge
+ *    badges — not six rectangles changing colour. The picture has to carry information, otherwise a
+ *    bullet list would do the job and cost less.
+ * 3. **With `prefers-reduced-motion` it does NOT autoplay.** Automatic motion is the most hostile
+ *    thing for a vestibular-sensitive reader. It then becomes a static diagram, scrubbed by button.
  */
 
 type Stage = {
@@ -29,62 +30,62 @@ type Stage = {
   step: string;
   title: string;
   detail: string;
-  /** Vẽ gì ở khung bên phải — mỗi chặng một hình riêng. */
+  /** What to draw in the right-hand frame — one figure per stage. */
   art: 'idea' | 'cards' | 'sources' | 'links' | 'judges' | 'spec';
 };
 
 const STAGES: Stage[] = [
   {
     key: 'idea',
-    step: 'B1',
-    title: 'Ý tưởng còn mơ hồ',
-    detail: 'Bạn viết một câu. Hệ thống diễn giải lại rồi hỏi ngược: tôi hiểu đúng chưa?',
+    step: 'S1',
+    title: 'A still-vague idea',
+    detail: 'You write one sentence. The system paraphrases it back and asks: did I get this right?',
     art: 'idea',
   },
   {
     key: 'cards',
-    step: 'B1',
-    title: 'Phân rã thành thẻ',
-    detail: 'Problem · research question · gap · contribution · claim · evidence — mỗi thứ một thẻ, mỗi thẻ một trạng thái.',
+    step: 'S1',
+    title: 'Decomposed into cards',
+    detail: 'Problem · research question · gap · contribution · claim · evidence — one card each, one status each.',
     art: 'cards',
   },
   {
     key: 'sources',
-    step: 'B2',
-    title: 'Đi tìm tài liệu thật',
-    detail: 'Nguồn lấy từ Semantic Scholar và OpenAlex, đối chiếu DOI. Không để mô hình tự nhớ paper.',
+    step: 'S2',
+    title: 'Searching for real literature',
+    detail: 'Sources come from Semantic Scholar and OpenAlex, with DOIs checked. The model is never asked to recall papers.',
     art: 'sources',
   },
   {
     key: 'links',
-    step: 'B3',
-    title: 'Nối claim với bằng chứng',
-    detail: 'Mỗi phát biểu phải chỉ ra được câu nào trong paper nào đỡ cho nó. Claim không nối được là claim treo.',
+    step: 'S3',
+    title: 'Linking claims to evidence',
+    detail: 'Every statement must point to a sentence in a paper that backs it. A claim that cannot be linked is a dangling claim.',
     art: 'links',
   },
   {
     key: 'judges',
-    step: 'B4',
-    title: 'Năm judge phản biện',
-    detail: 'Năm phạm vi tách rời, chấm độc lập trước khi thấy nhận xét của nhau. Bạn là người quyết sửa gì.',
+    step: 'S4',
+    title: 'Five judges push back',
+    detail: 'Five disjoint remits, scored independently before any of them sees another judge. You decide what to change.',
     art: 'judges',
   },
   {
     key: 'spec',
-    step: 'B5',
-    title: 'Bản đặc tả 14 mục',
-    detail: 'Còn claim chưa có nguồn thì hệ thống chặn xuất bản. Không phải cảnh báo — chặn thật.',
+    step: 'S5',
+    title: 'The 14-section specification',
+    detail: 'While any claim lacks a source, publishing is blocked. Not a warning — an actual block.',
     art: 'spec',
   },
 ];
 
-/** Nhịp tự chạy. 3,4 giây đủ đọc hết một dòng mô tả mà không thành sốt ruột. */
+/** The autoplay tempo. 3.4 seconds is enough to read one description line without getting impatient. */
 const DWELL_MS = 3400;
 
 export function ResearchFlowAnimation() {
   const reduced = useReducedMotion();
   const [active, setActive] = useState(0);
-  // Người đã tắt hiệu ứng thì mặc định KHÔNG tự chạy — xem quyết định 3 ở đầu file.
+  // Someone who turned motion off gets NO autoplay by default — see decision 3 at the top of the file.
   const [playing, setPlaying] = useState(!reduced);
 
   useEffect(() => {
@@ -95,7 +96,7 @@ export function ResearchFlowAnimation() {
 
   const stage = STAGES[active];
 
-  /** Bấm tay là dừng tự chạy — nếu không thì vừa chọn xong 2 giây sau nó nhảy đi mất. */
+  /** A manual pick stops autoplay — otherwise the stage you just chose jumps away two seconds later. */
   const pick = (i: number) => {
     setActive(i);
     setPlaying(false);
@@ -103,19 +104,19 @@ export function ResearchFlowAnimation() {
 
   return (
     <section
-      aria-label="Luồng nghiên cứu qua năm bước"
+      aria-label="The research flow across five steps"
       className="border-hairline bg-surface space-y-3 rounded-lg border px-3 py-3 md:px-4"
     >
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-ink-1 text-sm font-medium">Một vòng làm việc trông thế nào</h2>
+        <h2 className="text-ink-1 text-sm font-medium">What one working loop looks like</h2>
         <button
           type="button"
           onClick={() => setPlaying((v) => !v)}
-          aria-label={playing ? 'Dừng minh hoạ' : 'Chạy minh hoạ'}
+          aria-label={playing ? 'Pause the walkthrough' : 'Play the walkthrough'}
           className="border-hairline text-ink-3 hover:text-brand-strong ease-out-quart flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors duration-150"
         >
           {playing ? <Pause className="size-3.5" aria-hidden /> : <Play className="size-3.5" aria-hidden />}
-          {playing ? 'Dừng' : 'Chạy'}
+          {playing ? 'Pause' : 'Play'}
         </button>
       </div>
 
@@ -123,10 +124,10 @@ export function ResearchFlowAnimation() {
 
       <div className="grid gap-3 md:grid-cols-[1fr_240px] md:items-center">
         <div className="min-h-24">
-          {/* Không bọc `AnimatePresence`: hoạt cảnh **ra** ở đây không đáng giá bằng cái nó
-              đánh đổi — nội dung mới phải chờ nội dung cũ chạy xong mới được gắn, nên trình đọc
-              màn hình và test đều thấy khoảng trống ở giữa. Đổi `key` là React thay ngay, và
-              phần fade vào mới là thứ mắt thật sự đọc được. */}
+          {/* No `AnimatePresence` wrapper: an **exit** animation here is not worth what it costs —
+              the new content could only mount after the old one finished, so screen readers and
+              tests would both see a gap in between. Changing `key` swaps immediately, and the
+              fade-in is the part the eye actually reads. */}
           <div>
             <motion.div
               key={stage.key}
@@ -136,7 +137,7 @@ export function ResearchFlowAnimation() {
               className="space-y-1"
             >
               <p className="text-brand-strong text-2xs font-medium">
-                {stage.step} · bước {active + 1}/{STAGES.length}
+                {stage.step} · stage {active + 1}/{STAGES.length}
               </p>
               <p className="text-ink-1 text-sm font-medium">{stage.title}</p>
               <p className="text-ink-3 text-xs leading-relaxed">{stage.detail}</p>
@@ -151,8 +152,8 @@ export function ResearchFlowAnimation() {
 }
 
 /**
- * Thanh sáu chặng. Là **nút thật**, không phải chấm trang trí — người dùng nhảy thẳng tới chặng
- * muốn xem, và bàn phím đi qua được (frontend/CLAUDE.md §7).
+ * The six-stage rail. These are **real buttons**, not decorative dots — the user jumps straight to
+ * the stage they want, and the keyboard can reach them (frontend/CLAUDE.md §7).
  */
 function StageRail({ active, onPick }: { active: number; onPick: (i: number) => void }) {
   return (
@@ -166,7 +167,7 @@ function StageRail({ active, onPick }: { active: number; onPick: (i: number) => 
               type="button"
               onClick={() => onPick(i)}
               aria-current={on ? 'step' : undefined}
-              aria-label={`Chặng ${i + 1}: ${s.title}`}
+              aria-label={`Stage ${i + 1}: ${s.title}`}
               className={cn(
                 'ease-out-quart h-1.5 flex-1 cursor-pointer rounded-full transition-colors duration-300',
                 on ? 'bg-brand-ink' : done ? 'bg-brand-line' : 'bg-neutral-line',
@@ -182,7 +183,7 @@ function StageRail({ active, onPick }: { active: number; onPick: (i: number) => 
 const ART_W = 240;
 const ART_H = 132;
 
-/** Khung hình của từng chặng. Mỗi `art` một hình riêng — xem quyết định 2 ở đầu file. */
+/** The figure for each stage. One drawing per `art` value — see decision 2 at the top of the file. */
 function StageArt({ art, reduced }: { art: Stage['art']; reduced: boolean }) {
   const spring = reduced
     ? { duration: 0 }
@@ -194,7 +195,7 @@ function StageArt({ art, reduced }: { art: Stage['art']; reduced: boolean }) {
         viewBox={`0 0 ${ART_W} ${ART_H}`}
         className="h-auto w-full"
         role="img"
-        aria-label={`Minh hoạ chặng ${art}`}
+        aria-label={`Illustration of the ${art} stage`}
       >
         <motion.g
           key={art}
@@ -204,7 +205,7 @@ function StageArt({ art, reduced }: { art: Stage['art']; reduced: boolean }) {
         >
             {art === 'idea' && (
               <>
-                {/* Ý tưởng thô: mấy vệt chữ mờ, không hình thù rõ ràng. */}
+                {/* The raw idea: a few faint strokes of text with no clear shape. */}
                 {[0, 1, 2].map((i) => (
                   <motion.rect
                     key={i}
@@ -223,7 +224,7 @@ function StageArt({ art, reduced }: { art: Stage['art']; reduced: boolean }) {
 
             {art === 'cards' && (
               <>
-                {/* Sáu thẻ nảy ra theo thứ tự — đúng cái mà bước phân rã sinh ra. */}
+                {/* Six cards popping in order — exactly what the decomposition step produces. */}
                 {Array.from({ length: 6 }, (_, i) => (
                   <motion.rect
                     key={i}
@@ -273,7 +274,7 @@ function StageArt({ art, reduced }: { art: Stage['art']; reduced: boolean }) {
 
             {art === 'links' && (
               <>
-                {/* Ba claim bên trái, ba nguồn bên phải. Đường nối vẽ dần ra. */}
+                {/* Three claims on the left, three sources on the right. The links draw themselves in. */}
                 {[0, 1, 2].map((i) => (
                   <rect
                     key={`c${i}`}
@@ -306,7 +307,7 @@ function StageArt({ art, reduced }: { art: Stage['art']; reduced: boolean }) {
                     transition={{ duration: reduced ? 0 : 0.5, delay: reduced ? 0 : 0.15 + i * 0.18 }}
                   />
                 ))}
-                {/* Claim thứ ba không nối được — claim treo, tô cảnh báo. */}
+                {/* The third claim cannot be linked — a dangling claim, painted as a warning. */}
                 <motion.rect
                   x={20}
                   y={90}
@@ -358,7 +359,7 @@ function StageArt({ art, reduced }: { art: Stage['art']; reduced: boolean }) {
                   animate={{ opacity: 1 }}
                   transition={{ duration: reduced ? 0 : 0.3, delay: reduced ? 0 : 0.5 }}
                 >
-                  chấm độc lập, không thấy nhận xét của nhau
+                  scored independently, blind to each other
                 </motion.text>
               </>
             )}

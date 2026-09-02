@@ -295,7 +295,7 @@ export function assessOverclaim(
       level: 'CRITICAL',
       needsLlm: false,
       matchedTerms: matched,
-      rationale: `Claim khai phạm vi phổ quát (${declared.scopeTerms.join(', ')}) nhưng kế hoạch thí nghiệm chỉ chứng minh được ${actual.counts.domains} domain.`,
+      rationale: `The claim declares a universal scope (${declared.scopeTerms.join(', ')}) but the experiment plan can only prove ${actual.counts.domains} domain(s).`,
       suggestedNarrowing: narrowing,
     };
   }
@@ -309,7 +309,7 @@ export function assessOverclaim(
         level: 'MAJOR',
         needsLlm: false,
         matchedTerms: matched,
-        rationale: `Claim nói ${want} ${dim.label}, kế hoạch thí nghiệm chỉ có ${have}.`,
+        rationale: `The claim says ${want} ${dim.label}, but the experiment plan only has ${have}.`,
         suggestedNarrowing: narrowing,
       };
     }
@@ -325,7 +325,7 @@ export function assessOverclaim(
       level: 'MAJOR',
       needsLlm: false,
       matchedTerms: matched,
-      rationale: `Claim khai mức cải thiện (${declared.magnitudeTerms.join(', ')}) nhưng kế hoạch thí nghiệm không có baseline lẫn metric nào để đo.`,
+      rationale: `The claim declares a magnitude of improvement (${declared.magnitudeTerms.join(', ')}) but the experiment plan has neither a baseline nor a metric to measure it.`,
       suggestedNarrowing: '',
     };
   }
@@ -338,7 +338,7 @@ export function assessOverclaim(
       needsLlm: true,
       matchedTerms: matched,
       rationale:
-        'Có từ chỉ phạm vi hoặc chỉ mức, nhưng kế hoạch thí nghiệm cũng có bằng chứng tương ứng — cần đọc kỹ nội dung mới kết luận được.',
+        'Scope or magnitude wording is present, but the experiment plan carries matching evidence — a close read of the content is needed to conclude.',
       suggestedNarrowing: '',
     };
   }
@@ -348,7 +348,7 @@ export function assessOverclaim(
     level: 'NONE',
     needsLlm: false,
     matchedTerms: [],
-    rationale: 'Không tìm thấy từ chỉ phạm vi hay chỉ mức nào trong claim.',
+    rationale: 'No scope or magnitude wording was found in the claim.',
     suggestedNarrowing: '',
   };
 }

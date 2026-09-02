@@ -96,23 +96,24 @@ function buildQuestionCore(
             cardId,
             cardTitle,
             finding,
-            question: `Khẳng định "${short}" đang so với cái gì?`,
+            question: `What is the claim "${short}" being compared against?`,
             options: [
               {
                 key: 'A',
-                label: 'So với phương pháp tốt nhất hiện có',
-                explain:
-                  'Bạn nêu tên một phương pháp cụ thể đã công bố để đối chiếu.',
+                label: 'Against the best published method',
+                explain: 'Name a specific published method to compare against.',
                 example:
-                  'Ví dụ: so với BM25, so với dense retrieval của paper X.',
+                  'For example: against BM25, or against the dense retriever from paper X.',
                 recommended: true,
               },
               {
                 key: 'B',
-                label: 'So với chính hệ thống này khi bỏ thành phần đề xuất',
+                label:
+                  'Against this same system with the proposed component removed',
                 explain:
-                  'Ablation — giữ nguyên mọi thứ, chỉ tắt phần bạn đóng góp.',
-                example: 'Ví dụ: cùng pipeline nhưng không có bước rerank.',
+                  'An ablation — keep everything, switch off only your contribution.',
+                example:
+                  'For example: the same pipeline without the rerank step.',
               },
             ],
           }
@@ -120,20 +121,22 @@ function buildQuestionCore(
             cardId,
             cardTitle,
             finding,
-            question: `Đo khẳng định "${short}" bằng đại lượng nào?`,
+            question: `Which quantity measures the claim "${short}"?`,
             options: [
               {
                 key: 'A',
-                label: 'Chất lượng đầu ra',
-                explain: 'Một metric có công thức rõ ràng, tính lại được.',
-                example: 'Ví dụ: accuracy, F1, nDCG@10, recall@50.',
+                label: 'Output quality',
+                explain:
+                  'A metric with a clear formula that can be recomputed.',
+                example: 'For example: accuracy, F1, nDCG@10, recall@50.',
                 recommended: true,
               },
               {
                 key: 'B',
-                label: 'Chi phí vận hành',
-                explain: 'Đại lượng về tài nguyên, cũng đo được bằng số.',
-                example: 'Ví dụ: độ trễ mỗi truy vấn, VRAM, số token tiêu thụ.',
+                label: 'Operating cost',
+                explain: 'A resource quantity, also measurable as a number.',
+                example:
+                  'For example: latency per query, VRAM, tokens consumed.',
               },
             ],
           };
@@ -144,22 +147,24 @@ function buildQuestionCore(
             cardId,
             cardTitle,
             finding,
-            question: `Thí nghiệm nào kiểm được khoảng trống "${short}"?`,
+            question: `Which experiment would test the gap "${short}"?`,
             options: [
               {
                 key: 'A',
-                label: 'So sánh với prior work trên cùng một dataset',
+                label: 'Compare against prior work on the same dataset',
                 explain:
-                  'Chạy phương pháp cũ và phương pháp của bạn trên cùng dữ liệu, cùng metric.',
-                example: 'Ví dụ: chạy cả hai trên ZaloLegal, báo nDCG@10.',
+                  'Run the old method and yours on the same data, with the same metric.',
+                example:
+                  'For example: run both on ZaloLegal and report nDCG@10.',
                 recommended: true,
               },
               {
                 key: 'B',
-                label: 'Bỏ thành phần đề xuất rồi đo lại',
+                label: 'Remove the proposed component and measure again',
                 explain:
-                  'Ablation — chứng minh phần đóng góp thật sự có tác dụng.',
-                example: 'Ví dụ: tắt bước rerank, xem nDCG@10 tụt bao nhiêu.',
+                  'An ablation — proof that the contribution actually does something.',
+                example:
+                  'For example: switch off the rerank step and see how far nDCG@10 falls.',
               },
             ],
           }
@@ -167,20 +172,23 @@ function buildQuestionCore(
             cardId,
             cardTitle,
             finding,
-            question: `Trường \`${finding.field}\` của "${short}" còn chung chung. Bạn muốn làm rõ thế nào?`,
+            question: `The \`${finding.field}\` field of "${short}" is still generic. How do you want to sharpen it?`,
             options: [
               {
                 key: 'A',
-                label: 'Thay bằng một con số hoặc mốc đo được',
-                explain: 'Biến nhận định định tính thành thứ kiểm lại được.',
-                example: 'Ví dụ: "kém chính xác" → "recall@50 dưới 0.4".',
+                label: 'Replace it with a number or a measurable threshold',
+                explain:
+                  'Turn a qualitative statement into something checkable.',
+                example:
+                  'For example: "poor accuracy" → "recall@50 below 0.4".',
                 recommended: true,
               },
               {
                 key: 'B',
-                label: 'Nêu tên phương pháp hoặc dataset cụ thể',
-                explain: 'Neo câu chữ vào một đối tượng có thật, tra lại được.',
-                example: 'Ví dụ: "các phương pháp trước" → "BM25 và SBERT".',
+                label: 'Name a specific method or dataset',
+                explain:
+                  'Anchor the wording to a real object that can be looked up.',
+                example: 'For example: "prior methods" → "BM25 and SBERT".',
               },
             ],
           };
@@ -190,21 +198,22 @@ function buildQuestionCore(
         cardId,
         cardTitle,
         finding,
-        question: `Câu mở đầu của thẻ "${short}" dùng đại từ không rõ. "Nó" ở đây là gì?`,
+        question: `The opening sentence of "${short}" uses an unclear pronoun. What does "it" refer to?`,
         options: [
           {
             key: 'A',
-            label: 'Phương pháp tôi đề xuất',
-            explain: 'Câu đang nói về đóng góp của bạn.',
+            label: 'The method I am proposing',
+            explain: 'The sentence is about your contribution.',
             example:
-              'Ví dụ: "It improves…" → "The hybrid retriever improves…".',
+              'For example: "It improves…" → "The hybrid retriever improves…".',
             recommended: true,
           },
           {
             key: 'B',
-            label: 'Vấn đề hoặc hiện tượng đang mô tả',
-            explain: 'Câu đang nói về bối cảnh, không phải về phương pháp.',
-            example: 'Ví dụ: "It degrades…" → "Retrieval quality degrades…".',
+            label: 'The problem or phenomenon being described',
+            explain: 'The sentence is about the context, not about the method.',
+            example:
+              'For example: "It degrades…" → "Retrieval quality degrades…".',
           },
         ],
       };
@@ -215,21 +224,24 @@ function buildQuestionCore(
         cardId,
         cardTitle,
         finding,
-        question: `Thẻ "${short}" dùng từ định tính (${finding.terms.join(', ')}). Bạn muốn xử lý thế nào?`,
+        question: `Card "${short}" uses qualitative wording (${finding.terms.join(', ')}). How do you want to handle it?`,
         options: [
           {
             key: 'A',
-            label: 'Thay bằng một đại lượng đo được',
-            explain: 'Từ định tính trở thành thứ thí nghiệm kiểm được.',
-            example: 'Ví dụ: "hiệu quả hơn" → "nDCG@10 cao hơn 3 điểm".',
+            label: 'Replace it with a measurable quantity',
+            explain:
+              'The qualitative wording becomes something an experiment can test.',
+            example:
+              'For example: "more effective" → "nDCG@10 higher by 3 points".',
             recommended: true,
           },
           {
             key: 'B',
-            label: 'Giữ nguyên — đây chỉ là mô tả, không phải khẳng định',
+            label: 'Leave it — this is description, not a claim',
             explain:
-              'Câu này không hứa hẹn gì cần chứng minh, nên không cần đo.',
-            example: 'Ví dụ: câu dẫn nhập mô tả bối cảnh chung.',
+              'This sentence promises nothing that needs proving, so it needs no measurement.',
+            example:
+              'For example: an introductory sentence describing general context.',
           },
         ],
       };

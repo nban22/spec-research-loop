@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { DisagreementNote, IssueTable } from './judge';
 import type { ApiIssueGroup, ApiSource } from '@/lib/types';
 
-/** Hai nguồn thật của kho; `id` 8 ký tự đầu là thứ judge viết trong `reason`. */
+/** Two real sources from the store; the first 8 characters of `id` are what judges write in `reason`. */
 const mockSources: ApiSource[] = [
   {
     id: '57eea209-1111-4000-8000-000000000001',
@@ -96,9 +96,9 @@ describe('IssueTable', () => {
     );
 
     // Table Headers
-    expect(screen.getByText('Mức độ')).toBeInTheDocument();
-    expect(screen.getByText('Vấn đề')).toBeInTheDocument();
-    expect(screen.getByText('Lý do')).toBeInTheDocument();
+    expect(screen.getByText('Severity')).toBeInTheDocument();
+    expect(screen.getByText('Issue')).toBeInTheDocument();
+    expect(screen.getByText('Reason')).toBeInTheDocument();
 
     // Row 1 (Short reason)
     expect(screen.getAllByText('Test issue title').length).toBeGreaterThan(0);
@@ -106,12 +106,12 @@ describe('IssueTable', () => {
       screen.getAllByText('Short reason text that should not trigger truncation.').length,
     ).toBeGreaterThan(0);
 
-    // Row 2 (Long reason triggers truncation and "Đọc thêm" button)
+    // Row 2 (Long reason triggers truncation and the "Read more" button)
     expect(screen.getAllByText('Long issue title').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Đọc thêm').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Read more').length).toBeGreaterThan(0);
   });
 
-  it('tra ngược source_id rút gọn trong reason thành chip nguồn bấm được', () => {
+  it('resolves the shortened source_id in reason into a clickable source chip', () => {
     const group: ApiIssueGroup = {
       ...baseGroup,
       issues: [
@@ -126,7 +126,7 @@ describe('IssueTable', () => {
       <IssueTable groups={[group]} sources={mockSources} onPick={vi.fn()} activeId={null} />,
     );
 
-    expect(screen.getAllByText('Nguồn judge đối chiếu:').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Sources the judge checked against:').length).toBeGreaterThan(0);
     expect(
       screen.getAllByText('PhoBERT-CNN for Vietnamese hate speech detection').length,
     ).toBeGreaterThan(0);
@@ -135,7 +135,7 @@ describe('IssueTable', () => {
     ).toBeGreaterThan(0);
   });
 
-  it('id không có trong kho nguồn thì báo thẳng ra thay vì hiện như thật', () => {
+  it('says so plainly when an id is not in the source store instead of showing it as real', () => {
     const group: ApiIssueGroup = {
       ...baseGroup,
       issues: [
@@ -147,11 +147,11 @@ describe('IssueTable', () => {
     );
 
     expect(
-      screen.getAllByText(/9f3a21bc · không có trong kho nguồn/).length,
+      screen.getAllByText(/9f3a21bc · not in the source store/).length,
     ).toBeGreaterThan(0);
   });
 
-  it('chuỗi 8 chữ số thuần (ngày tháng) không bị coi là source_id lạ', () => {
+  it('does not treat a run of 8 plain digits (a date) as an unknown source_id', () => {
     const group: ApiIssueGroup = {
       ...baseGroup,
       issues: [
@@ -162,36 +162,36 @@ describe('IssueTable', () => {
       <IssueTable groups={[group]} sources={mockSources} onPick={vi.fn()} activeId={null} />,
     );
 
-    expect(screen.queryByText('Nguồn judge đối chiếu:')).toBeNull();
+    expect(screen.queryByText('Sources the judge checked against:')).toBeNull();
   });
 });
 
 describe('DisagreementNote', () => {
-  it('dùng judges_completed làm mẫu số, không phải hằng số 5', () => {
-    render(
+  it('uses judges_completed as the denominator, not the constant 5', () => {
+    const { container } = render(
       <DisagreementNote
         group={{ ...baseGroup, judge_keys: ['J4'], agreement_count: 1, judges_completed: 4 }}
       />,
     );
-    // 4 − 1 = 3, không phải 5 − 1 = 4.
-    expect(screen.getByText(/3 judge/)).toBeInTheDocument();
+    // 4 − 1 = 3, not 5 − 1 = 4.
+    expect(container.textContent).toContain('The other 3 judges');
   });
 
-  it('nêu rõ phạm vi của judge thay vì kết luận bốn judge kia thấy ổn', () => {
+  it('states the judge remit instead of concluding the other four were satisfied', () => {
     const { container } = render(
       <DisagreementNote
         group={{ ...baseGroup, judge_keys: ['J4'], agreement_count: 1, judges_completed: 5 }}
       />,
     );
-    // Câu bị cắt qua nhiều `<span>` nên phải đọc `textContent` của cả khối.
+    // The sentence is split across several `<span>`s, so read the block's `textContent`.
     const text = container.textContent ?? '';
     expect(text).toContain('Evidence');
-    expect(text).toContain('citation có thật sự hỗ trợ nội dung đi kèm không');
-    expect(text).toContain('không có nghĩa là đã xem và thấy ổn');
-    expect(text).not.toContain('Cân nhắc trước khi sửa');
+    expect(text).toContain('does each citation really support the text next to it?');
+    expect(text).toContain('their silence does');
+    expect(text).toContain('mean they looked and were satisfied');
   });
 
-  it('ẩn hoàn toàn khi có từ 2 judge trở lên', () => {
+  it('hides completely once 2 or more judges agree', () => {
     const { container } = render(
       <DisagreementNote group={{ ...baseGroup, agreement_count: 2, judges_completed: 5 }} />,
     );

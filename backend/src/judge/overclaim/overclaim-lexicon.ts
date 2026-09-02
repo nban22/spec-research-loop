@@ -1,10 +1,9 @@
 /**
  * Từ điển của tầng luật B1 — **0 token**, không gọi LLM lần nào.
  *
- * Đề bài (#7) liệt kê ví dụ bằng tiếng Việt ("mọi", "tất cả", "đáng kể"). Nhưng `prompts/generator.md`
- * §"Language rule" bắt **mọi `title` / `body` / `payload` của card phải là tiếng Anh** — tiếng Việt
- * chỉ dùng cho câu hỏi hỏi người dùng. Nên từ điển chính là **tiếng Anh**; phần tiếng Việt giữ lại
- * cho card `origin = USER` do người dùng tự gõ, chỗ duy nhất luật ngôn ngữ không với tới.
+ * Đề bài (#7) liệt kê ví dụ bằng tiếng bản địa. Nhưng `prompts/generator.md` §"Language rule"
+ * bắt **mọi `title` / `body` / `payload` của card phải là tiếng Anh**, và giao diện cũng đã
+ * chuyển hẳn sang tiếng Anh — nên từ điển chỉ còn **tiếng Anh**, kể cả cho card `origin = USER`.
  */
 
 /** Một mục từ điển: regex bắt cụm, và cụm thay thế dùng khi dựng câu thu hẹp đề xuất. */
@@ -63,10 +62,6 @@ export const SCOPE_TERMS: LexEntry[] = [
   { pattern: /\bnever\s+fails?\b/gi, label: 'never fails' },
   { pattern: /\bregardless\s+of\b/gi, label: 'regardless of' },
   { pattern: /\bfor\s+any\b/gi, label: 'for any' },
-  // Card do người dùng tự gõ — luật ngôn ngữ của generator không áp được.
-  { pattern: /\b(?:mọi|tất cả)\b/gi, label: 'mọi / tất cả' },
-  { pattern: /\bluôn luôn\b/gi, label: 'luôn luôn' },
-  { pattern: /\b(?:tổng quát|nói chung)\b/gi, label: 'tổng quát / nói chung' },
 ];
 
 /**
@@ -94,10 +89,6 @@ export const MAGNITUDE_TERMS: LexEntry[] = [
   },
   { pattern: /\bsuperior\s+to\b/gi, label: 'superior to' },
   { pattern: /\borders?\s+of\s+magnitude\b/gi, label: 'orders of magnitude' },
-  {
-    pattern: /\b(?:đáng kể|vượt xa|vượt trội)\b/gi,
-    label: 'đáng kể / vượt xa / vượt trội',
-  },
 ];
 
 /** Bằng chứng trong `ExperimentPlan` cho thấy có so sánh thật — dùng để bác cờ "mức". */

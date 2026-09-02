@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { z } from 'zod';
+import { AppError } from '../common/app-error';
 import { UserId } from '../common/http.decorators';
 import { ZodBody } from '../common/zod-body.pipe';
 import { DecisionService } from '../decision/decision.service';
@@ -87,7 +88,7 @@ export class ProjectController {
     const jobId = await this.jobs.create('ANALYZE', {
       projectId: id,
       total: 1,
-      message: 'Đang phân tích ý tưởng…',
+      message: 'Analysing your idea…',
     });
     this.jobs.runInBackground(jobId, () =>
       this.generator.analyze(id, (d, t, m) =>
@@ -107,7 +108,7 @@ export class ProjectController {
     const jobId = await this.jobs.create('SEARCH', {
       projectId: id,
       total: body.queries.length,
-      message: 'Đang tìm nguồn thật…',
+      message: 'Searching for real sources…',
     });
     this.jobs.runInBackground(jobId, async () => {
       await this.sources.searchAndStore(id, body.queries, (d, t, m) =>
@@ -208,7 +209,10 @@ export class ProjectController {
 
   @Get(':id/estimate/preview')
   preview(@Query() query: Record<string, string>) {
-    const parsed = estimatorInputSchema.parse({
+    /* `safeParse` + `AppError`, không `parse`. Query xấu là **lỗi của người gọi**; `.parse` ném
+       `ZodError` mà `AllExceptionsFilter` không nhận ra, nên nó thoát ra thành 500
+       `INTERNAL_ERROR` — báo sai phía có lỗi, và giấu mất tham số nào hỏng. */
+    const parsed = estimatorInputSchema.safeParse({
       model_params_b: Number(query.model_params_b),
       quantization: query.quantization,
       candidates: Number(query.candidates),
@@ -217,7 +221,17 @@ export class ProjectController {
       avg_prompt_tokens: Number(query.avg_prompt_tokens),
       avg_output_tokens: Number(query.avg_output_tokens),
     });
-    return { estimate: this.estimator.estimate(parsed) };
+    if (!parsed.success) {
+      throw AppError.badRequest(
+        'VALIDATION_FAILED',
+        'The estimator parameters are not valid.',
+        parsed.error.issues.map((i) => ({
+          path: i.path.join('.'),
+          code: i.code,
+        })),
+      );
+    }
+    return { estimate: this.estimator.estimate(parsed.data) };
   }
 
   @Get(':id/versions')

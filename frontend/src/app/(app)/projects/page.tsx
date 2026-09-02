@@ -8,7 +8,7 @@ import { CardSkeleton, EmptyState } from '@/components/states';
 import { Lightbulb } from 'lucide-react';
 import { api, qk } from '@/lib/api';
 
-/** Lưới card: 1 cột mobile · 2 tablet · 3 desktop (DESIGN_SYSTEM §5.4). */
+/** Card grid: 1 column on mobile · 2 on tablet · 3 on desktop (DESIGN_SYSTEM §5.4). */
 export default function ProjectsPage() {
   const { data, isLoading } = useQuery({
     queryKey: qk.projects,
@@ -20,9 +20,9 @@ export default function ProjectsPage() {
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-3 px-3 py-4 md:px-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-ink-1 text-xl font-semibold">Dự án của tôi</h1>
+        <h1 className="text-ink-1 text-xl font-semibold">My projects</h1>
         <Button asChild size="sm">
-          <Link href="/">Dự án mới</Link>
+          <Link href="/">New project</Link>
         </Button>
       </div>
 
@@ -32,11 +32,11 @@ export default function ProjectsPage() {
         <EmptyState
           icon={Lightbulb}
           tone="brand"
-          title="Chưa có dự án nào"
-          description="Nhập một ý tưởng nghiên cứu ở trang chủ để bắt đầu. Ý tưởng càng mơ hồ thì hệ thống càng có việc để làm."
+          title="No projects yet"
+          description="Enter a research idea on the home page to begin. The vaguer the idea, the more the system has to work with."
           action={
             <Button asChild size="sm" className="mt-1">
-              <Link href="/">Nhập ý tưởng đầu tiên</Link>
+              <Link href="/">Enter your first idea</Link>
             </Button>
           }
         />

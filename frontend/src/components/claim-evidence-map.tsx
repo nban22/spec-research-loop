@@ -20,19 +20,19 @@ import type { ApiCard, ApiSource, SupportLabel, VerifierFlag } from '@/lib/types
 import { cn } from '@/lib/utils';
 
 /**
- * **Bản đồ claim–evidence kéo thả** — issue #15 (làn C).
+ * **The drag-and-drop claim-evidence map** — issue #15 (lane C).
  *
- * Câu hỏi mà màn hình này trả lời trong một giây: **claim nào đang treo, không có nguồn nào đỡ.**
- * Bảng related-work hiện có trả lời được, nhưng phải đọc từng dòng; ở đây một claim rỗng là một
- * ô trống nhìn thấy ngay.
+ * The question this screen answers in one second: **which claim is dangling with no source behind
+ * it.** The existing related-work table can answer it too, but only row by row; here an empty claim
+ * is an empty box you see immediately.
  *
- * Dùng `@dnd-kit` chứ không phải HTML5 Drag and Drop API: API gốc **không chạy trên cảm ứng**, và
- * không có đường đi bằng bàn phím. `@dnd-kit` cho cả hai, và `KeyboardSensor` là thứ duy nhất làm
- * kéo thả dùng được với trình đọc màn hình.
+ * It uses `@dnd-kit` rather than the HTML5 Drag and Drop API: the native API **does not work on
+ * touch** and offers no keyboard path. `@dnd-kit` gives both, and `KeyboardSensor` is the only
+ * thing that makes drag and drop usable with a screen reader.
  *
- * Kéo thả **không phải đường duy nhất**: mỗi liên kết có nút gỡ thật, mỗi nguồn có nút nối. Kéo
- * thả nhanh hơn cho chuột, nhưng một tính năng chỉ dùng được bằng cách kéo là một tính năng không
- * dùng được bằng ngón tay run, bằng trackpad tệ, hay bằng bàn phím.
+ * Dragging is **not the only path**: every link has a real unlink button and every source a link
+ * button. Dragging is faster with a mouse, but a feature reachable only by dragging is a feature
+ * unusable with shaky hands, a bad trackpad, or a keyboard.
  */
 
 export type ClaimCard = Pick<ApiCard, 'id' | 'title' | 'status' | 'type'> & {
@@ -46,7 +46,7 @@ export type ClaimCard = Pick<ApiCard, 'id' | 'title' | 'status' | 'type'> & {
 
 type DragData = { kind: 'source'; sourceId: string } | { kind: 'link'; cardSourceId: string; sourceId: string; fromCardId: string };
 
-/** Id của vùng thả "gỡ khỏi mọi thẻ" — tách hằng số để component và test không lệch chuỗi. */
+/** The id of the "detach from every card" drop zone — a constant so component and test cannot drift. */
 export const UNLINK_ZONE = 'unlink-zone';
 
 export function ClaimEvidenceMap({
@@ -67,8 +67,8 @@ export function ClaimEvidenceMap({
   const [dragging, setDragging] = useState<DragData | null>(null);
   const reduced = useReducedMotion();
 
-  /* `activationConstraint` 6px: không có nó thì mọi cú bấm vào nút bên trong thẻ đều bị nuốt
-     thành thao tác kéo, và nút gỡ không bao giờ bấm được. */
+  /* `activationConstraint` of 6px: without it every tap on a button inside a card is swallowed as
+     the start of a drag, and the unlink button can never be pressed. */
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor),
@@ -90,16 +90,17 @@ export function ClaimEvidenceMap({
     }
 
     const targetCardId = String(overId);
-    // Thả về đúng thẻ đang chứa nó thì không làm gì — đó là thao tác bị huỷ, không phải lệnh.
+    // Dropping back onto the card it already belongs to does nothing — that is a cancelled gesture, not a command.
     if (data.kind === 'link' && data.fromCardId === targetCardId) return;
     onLink(targetCardId, data.sourceId);
-    /* Chuyển thẻ = nối vào thẻ mới rồi gỡ khỏi thẻ cũ. Cố ý theo thứ tự đó: nối trước thì kể cả
-       khi lệnh gỡ hỏng, bằng chứng vẫn còn ở đâu đó — mất liên kết còn tệ hơn thừa liên kết. */
+    /* Moving a link = attach to the new card, then detach from the old one. That order is
+       deliberate: attaching first means that even if the detach fails, the evidence still exists
+       somewhere — a lost link is worse than a duplicated one. */
     if (data.kind === 'link') onUnlink(data.cardSourceId);
   };
 
   const draggingTitle =
-    dragging === null ? '' : (byId.get(dragging.sourceId)?.title ?? 'nguồn');
+    dragging === null ? '' : (byId.get(dragging.sourceId)?.title ?? 'source');
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -109,7 +110,7 @@ export function ClaimEvidenceMap({
         <div className="space-y-2">
           {claims.length === 0 ? (
             <p className="text-ink-3 border-hairline rounded-lg border px-3 py-6 text-center text-xs">
-              Chưa có claim nào. Bạn chạy bước 3 để sinh contribution và claim trước.
+              No claims yet. Run step 3 first to generate the contributions and claims.
             </p>
           ) : (
             claims.map((c) => (
@@ -126,8 +127,8 @@ export function ClaimEvidenceMap({
         </div>
       </div>
 
-      {/* `DragOverlay` vẽ vật đang kéo ở tầng trên cùng — không có nó thì thẻ bị `overflow`
-          của cột cắt mất giữa chừng khi kéo qua ranh giới hai cột. */}
+      {/* `DragOverlay` renders the dragged item on the top layer — without it the column's
+          `overflow` clips the chip halfway as it crosses the boundary between columns. */}
       <DragOverlay dropAnimation={reduced ? null : undefined}>
         {dragging && (
           <span className="border-brand-line bg-brand-soft text-brand-strong shadow-lift inline-flex max-w-64 items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
@@ -140,7 +141,7 @@ export function ClaimEvidenceMap({
   );
 }
 
-/** Cột trái: mọi nguồn của dự án. Nguồn chưa claim nào dùng được đánh dấu để nhìn ra ngay. */
+/** The left column: every source in the project. Unused sources are marked so they stand out. */
 function SourceRail({
   sources,
   claims,
@@ -160,14 +161,14 @@ function SourceRail({
   return (
     <div className="border-hairline bg-surface space-y-2 rounded-lg border px-3 py-3">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-ink-1 text-sm font-medium">Nguồn</h2>
+        <h2 className="text-ink-1 text-sm font-medium">Sources</h2>
         <span className="text-ink-4 text-2xs">
-          {used.size}/{sources.length} đang dùng
+          {used.size}/{sources.length} in use
         </span>
       </div>
 
       {sources.length === 0 ? (
-        <p className="text-ink-3 text-xs">Chưa có nguồn nào. Bạn chạy tìm nguồn ở bước 2.</p>
+        <p className="text-ink-3 text-xs">No sources yet. Run the source search at step 2.</p>
       ) : (
         <ul className="max-h-[560px] space-y-1.5 overflow-y-auto pr-1">
           {sources.map((s) => (
@@ -185,7 +186,7 @@ function SourceRail({
       )}
 
       <p className="text-ink-4 text-2xs">
-        Kéo một nguồn thả vào claim để nối. Không dùng chuột được thì bấm nút “Nối vào…”.
+        Drag a source onto a claim to link it. If a mouse is not an option, use the “Link to…” button.
       </p>
     </div>
   );
@@ -215,7 +216,7 @@ function SourceChip({
     <div
       className={cn(
         'border-hairline rounded-md border px-2 py-1.5',
-        // Nguồn chưa ai dùng: viền đứt. Cùng ngôn ngữ với "chưa claim nào trích" ở bản đồ nguồn.
+        // An unused source: dashed border. Same language as "no claim cites it yet" on the source map.
         unused && 'border-dashed',
         isDragging && 'opacity-40',
       )}
@@ -228,17 +229,17 @@ function SourceChip({
         className="w-full cursor-grab text-left active:cursor-grabbing"
       >
         <span className="text-ink-1 line-clamp-2 text-xs">{source.title}</span>
-        <span className="text-ink-4 text-2xs">{source.year ?? 'không rõ năm'}</span>
+        <span className="text-ink-4 text-2xs">{source.year ?? 'year unknown'}</span>
       </button>
 
-      {/* Đường đi thứ hai, cho cảm ứng và bàn phím. Kéo thả không được là đường duy nhất. */}
+      {/* The second path, for touch and keyboard. Dragging must never be the only way. */}
       <button
         type="button"
         onClick={() => setPicking((v) => !v)}
         aria-expanded={picking}
         className="text-brand-strong text-2xs mt-1 cursor-pointer underline underline-offset-2"
       >
-        Nối vào…
+        Link to…
       </button>
       {picking && (
         <ul className="mt-1 space-y-1">
@@ -263,7 +264,7 @@ function SourceChip({
   );
 }
 
-/** Một claim là một vùng thả. Claim rỗng vẽ khác hẳn — đó là thứ đáng nhìn nhất màn hình. */
+/** Each claim is a drop zone. An empty claim is drawn very differently — it is the point of the screen. */
 function ClaimZone({
   claim,
   busy,
@@ -288,7 +289,7 @@ function ClaimZone({
       className={cn(
         'rounded-lg border px-3 py-2.5 transition-colors duration-150',
         isOver ? 'border-brand-ink bg-brand-soft' : 'border-hairline bg-surface',
-        // Claim treo: viền cảnh báo, không phải chữ nhỏ ở góc.
+        // A dangling claim: a warning border, not small print in a corner.
         empty && !isOver && 'border-warn-line bg-warn-soft/40',
       )}
     >
@@ -298,7 +299,7 @@ function ClaimZone({
           type="button"
           disabled={busy}
           onClick={() => onDeleteCard(claim.id)}
-          aria-label={`Xoá thẻ ${claim.title}`}
+          aria-label={`Delete card ${claim.title}`}
           className="text-ink-4 hover:text-danger-strong shrink-0 cursor-pointer disabled:opacity-50"
         >
           <Trash2 className="size-3.5" aria-hidden />
@@ -307,7 +308,7 @@ function ClaimZone({
 
       {empty ? (
         <p className="text-warn-strong text-2xs mt-1">
-          Claim này chưa có nguồn nào đỡ. Bạn kéo một nguồn vào đây.
+          No source backs this claim yet. Drag one in here.
         </p>
       ) : (
         <ul className="mt-1.5 space-y-1.5">
@@ -375,7 +376,7 @@ function LinkChip({
         type="button"
         disabled={busy}
         onClick={() => onUnlink(link.id)}
-        aria-label={`Gỡ nguồn ${link.source.title} khỏi claim`}
+        aria-label={`Detach source ${link.source.title} from this claim`}
         className="text-ink-4 hover:text-danger-strong shrink-0 cursor-pointer disabled:opacity-50"
       >
         <Unlink className="size-3.5" aria-hidden />
@@ -385,8 +386,9 @@ function LinkChip({
 }
 
 /**
- * Vùng thả để gỡ. Chỉ hiện khi đang kéo **một liên kết** — hiện thường trực thì nó chiếm chỗ và
- * mời gọi thao tác phá, còn hiện lúc kéo một nguồn chưa nối thì nó vô nghĩa.
+ * The detach drop zone. It only appears while **a link** is being dragged — always on, it would
+ * take up space and invite destructive gestures; shown while dragging an unlinked source, it would
+ * mean nothing.
  */
 function UnlinkZone({ active }: { active: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: UNLINK_ZONE });
@@ -401,7 +403,7 @@ function UnlinkZone({ active }: { active: boolean }) {
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: reduced ? 'auto' : 0 }}
           transition={{ duration: reduced ? 0 : 0.16 }}
-          aria-label="Thả vào đây để gỡ liên kết"
+          aria-label="Drop here to remove the link"
           className={cn(
             'flex items-center justify-center gap-1.5 overflow-hidden rounded-lg border border-dashed py-3 text-xs',
             isOver
@@ -410,7 +412,7 @@ function UnlinkZone({ active }: { active: boolean }) {
           )}
         >
           <Unlink className="size-3.5" aria-hidden />
-          Thả vào đây để gỡ khỏi claim
+          Drop here to detach from the claim
         </motion.div>
       )}
     </AnimatePresence>

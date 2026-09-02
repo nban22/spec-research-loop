@@ -30,7 +30,7 @@ export class PromptLoaderService implements OnModuleInit {
   }
 
   onModuleInit(): void {
-    this.logger.log(`Thư mục prompt: ${this.dir}`);
+    this.logger.log(`Prompt directory: ${this.dir}`);
   }
 
   /** `prompts/` nằm ở gốc repo, tức là thư mục cha của `backend/`. */

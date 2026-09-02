@@ -61,7 +61,7 @@ describe('chấm độ tin cậy của nguồn', () => {
 
   it('nói rõ khi nguồn là bản tiền ấn', () => {
     const r = scoreSource(source({ venue: 'arXiv preprint' }), NOW);
-    expect(r.reason).toContain('bản tiền ấn');
+    expect(r.reason).toContain('preprint');
   });
 
   it('không đọc năm xuất bản thì không sập, chỉ mất điểm độ mới', () => {

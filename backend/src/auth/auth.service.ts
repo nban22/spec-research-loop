@@ -63,7 +63,7 @@ export class AuthService {
     if (existing) {
       throw AppError.conflict(
         'EMAIL_ALREADY_USED',
-        'Email này đã được đăng ký.',
+        'This email is already registered.',
       );
     }
     const user = await this.prisma.user.create({
@@ -95,7 +95,7 @@ export class AuthService {
     if (!user || !ok) {
       throw new AppError(
         'INVALID_CREDENTIALS',
-        'Email hoặc mật khẩu không đúng.',
+        'That email or password is not correct.',
         401,
       );
     }
@@ -109,7 +109,7 @@ export class AuthService {
     if (!token) {
       throw new AppError(
         'REFRESH_TOKEN_INVALID',
-        'Phiên đăng nhập đã hết hạn.',
+        'Your session has expired.',
         401,
       );
     }
@@ -120,7 +120,7 @@ export class AuthService {
     } catch {
       throw new AppError(
         'REFRESH_TOKEN_INVALID',
-        'Phiên đăng nhập đã hết hạn.',
+        'Your session has expired.',
         401,
       );
     }
@@ -132,7 +132,7 @@ export class AuthService {
     if (!record || record.expires_at.getTime() < Date.now()) {
       throw new AppError(
         'REFRESH_TOKEN_INVALID',
-        'Phiên đăng nhập đã hết hạn.',
+        'Your session has expired.',
         401,
       );
     }
@@ -158,7 +158,7 @@ export class AuthService {
       where: { id: userId },
       select: { id: true, email: true, display_name: true },
     });
-    if (!user) throw AppError.notFound('Không tìm thấy tài khoản.');
+    if (!user) throw AppError.notFound('Account not found.');
     return user;
   }
 

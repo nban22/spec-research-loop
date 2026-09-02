@@ -121,27 +121,27 @@ function providerScore(retrievedFrom: string): number {
 
 /** Câu giải thích cho **thành phần mạnh nhất** và **yếu nhất**, không phải cho cả sáu. */
 const PHRASE_STRONG: Record<ComponentKey, string> = {
-  citations_per_year: 'được trích dẫn đều đặn so với tuổi của nó',
-  doi_verified: 'DOI tra ra được ở registry',
-  venue_rank: 'công bố ở nơi có tên tuổi',
-  abstract_len: 'có tóm tắt đầy đủ để đối chiếu',
-  recency: 'còn mới',
-  provider: 'lấy từ chỉ mục học thuật',
+  citations_per_year: 'it is cited steadily for its age',
+  doi_verified: 'its DOI resolves in the registry',
+  venue_rank: 'it appeared at a well-known venue',
+  abstract_len: 'it has a full abstract to check against',
+  recency: 'it is recent',
+  provider: 'it comes from an academic index',
 };
 
 const PHRASE_WEAK: Record<ComponentKey, string> = {
-  citations_per_year: 'gần như chưa được ai trích dẫn',
-  doi_verified: 'DOI không tra ra ở registry nào',
-  venue_rank: 'nơi công bố không nằm trong danh sách hội nghị và tạp chí lớn',
-  abstract_len: 'tóm tắt quá ngắn để đối chiếu bằng chứng',
-  recency: 'đã cũ',
-  provider: 'không lấy từ chỉ mục học thuật quen thuộc',
+  citations_per_year: 'almost nobody has cited it',
+  doi_verified: 'its DOI does not resolve in any registry',
+  venue_rank: 'its venue is not on the list of major conferences and journals',
+  abstract_len: 'its abstract is too short to check evidence against',
+  recency: 'it is old',
+  provider: 'it does not come from a familiar academic index',
 };
 
 const TIER_OPENING: Record<CredibilityTier, string> = {
-  HIGH: 'Đáng tin',
-  MEDIUM: 'Trung bình',
-  REVIEW: 'Cần cân nhắc',
+  HIGH: 'Trusted',
+  MEDIUM: 'Medium',
+  REVIEW: 'Needs review',
 };
 
 function pickExtremes(components: Record<ComponentKey, number>): {
@@ -186,15 +186,15 @@ export function scoreSource(
   // cần phân biệt để biết có nên tự đi tra hay không.
   const venueNote =
     venue.score === PREPRINT_SCORE
-      ? ' Đây là bản tiền ấn, chưa qua phản biện.'
+      ? ' This is a preprint and has not been peer reviewed.'
       : venue.label === null && input.venue
-        ? ' Nơi công bố không tra được trong bảng hạng.'
+        ? ' The venue could not be found in the ranking table.'
         : '';
 
   const reason =
     strongest === weakest
       ? `${TIER_OPENING[tier]} — ${PHRASE_WEAK[weakest]}.${venueNote}`
-      : `${TIER_OPENING[tier]} — ${PHRASE_STRONG[strongest]}, nhưng ${PHRASE_WEAK[weakest]}.${venueNote}`;
+      : `${TIER_OPENING[tier]} — ${PHRASE_STRONG[strongest]}, but ${PHRASE_WEAK[weakest]}.${venueNote}`;
 
   return { total, tier, reason, components };
 }

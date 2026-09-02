@@ -17,23 +17,23 @@ type Mode = 'login' | 'register';
 
 type FormValues = { email: string; password: string; display_name: string };
 
-/** Một khuôn duy nhất cho cả hai chế độ — luật chặt hơn chỉ bật khi đăng ký. */
+/** One schema for both modes — the stricter rules only switch on for registration. */
 function schemaFor(mode: Mode) {
   const isRegister = mode === 'register';
   return z.object({
-    email: z.string().email('Email không hợp lệ'),
+    email: z.string().email('That email address is not valid'),
     password: isRegister
-      ? z.string().min(8, 'Mật khẩu tối thiểu 8 ký tự')
-      : z.string().min(1, 'Chưa nhập mật khẩu'),
+      ? z.string().min(8, 'Password must be at least 8 characters')
+      : z.string().min(1, 'Enter your password'),
     display_name: isRegister
-      ? z.string().min(1, 'Chưa nhập tên hiển thị')
+      ? z.string().min(1, 'Enter a display name')
       : z.string(),
   });
 }
 
 /**
- * `AuthCard` + `LoginForm`/`RegisterForm` — khung hẹp giữa canvas ở **mọi** bề rộng (§5.4).
- * Lỗi hiển thị bằng cách map `ErrorCode` sang tiếng Việt, không parse `message`.
+ * `AuthCard` + `LoginForm`/`RegisterForm` — a narrow frame centred on the canvas at **every**
+ * width (§5.4). Errors are shown by mapping `ErrorCode` to a message, never by parsing `message`.
  */
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
@@ -65,10 +65,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <Workflow className="size-5" aria-hidden />
           </span>
           <h1 className="text-ink-1 text-lg font-semibold">
-            {isRegister ? 'Tạo tài khoản' : 'Đăng nhập'}
+            {isRegister ? 'Create an account' : 'Sign in'}
           </h1>
           <p className="text-ink-3 text-xs">
-            SpecResearch Loop — biến ý tưởng mơ hồ thành đặc tả nghiên cứu có nguồn.
+            SpecResearch Loop — turn a vague idea into a sourced research specification.
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         >
           {isRegister && (
             <div className="space-y-1.5">
-              <Label htmlFor="display_name">Tên hiển thị</Label>
+              <Label htmlFor="display_name">Display name</Label>
               <Input id="display_name" autoComplete="name" {...form.register('display_name')} />
               {form.formState.errors.display_name && (
                 <p className="text-danger-strong text-xs">
@@ -100,7 +100,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password">Mật khẩu</Label>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -119,27 +119,27 @@ export function AuthForm({ mode }: { mode: Mode }) {
               message={
                 submit.error instanceof ApiError
                   ? submit.error.message
-                  : 'Không kết nối được máy chủ.'
+                  : 'Could not reach the server.'
               }
             />
           )}
 
           <Button type="submit" size="lg" className="w-full" disabled={submit.isPending}>
             {submit.isPending
-              ? 'Đang xử lý…'
+              ? 'Working…'
               : isRegister
-                ? 'Đăng ký'
-                : 'Đăng nhập'}
+                ? 'Create account'
+                : 'Sign in'}
           </Button>
         </form>
 
         <p className="text-ink-3 text-center text-xs">
-          {isRegister ? 'Đã có tài khoản? ' : 'Chưa có tài khoản? '}
+          {isRegister ? 'Already have an account? ' : 'No account yet? '}
           <Link
             href={isRegister ? '/login' : '/register'}
             className="text-brand-strong underline underline-offset-2"
           >
-            {isRegister ? 'Đăng nhập' : 'Đăng ký'}
+            {isRegister ? 'Sign in' : 'Create one'}
           </Link>
         </p>
       </div>

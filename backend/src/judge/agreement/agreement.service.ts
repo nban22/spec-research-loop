@@ -171,8 +171,8 @@ export class AgreementService {
     const report = await this.compute(specVersionId, round);
     await this.persist(specVersionId, round, report);
     this.logger.log(
-      `agreement ${specVersionId} vòng ${round}: κ=${report.kappa.kappa ?? report.kappa.reason} ` +
-        `(${report.kappa.raters} judge, ${report.kappa.items} thẻ)`,
+      `agreement ${specVersionId} round ${round}: κ=${report.kappa.kappa ?? report.kappa.reason} ` +
+        `(${report.kappa.raters} judges, ${report.kappa.items} cards)`,
     );
   }
 
@@ -344,7 +344,7 @@ export class AgreementService {
     const parsed = storedPatternsSchema.safeParse(row.patterns);
     if (!parsed.success) {
       this.logger.warn(
-        `JudgeAgreement.patterns lệch hình — số đo sẽ hiện thiếu. Chạy lại POST để sửa.`,
+        `JudgeAgreement.patterns is malformed — the metrics will render incomplete. Re-run the POST to fix it.`,
       );
     }
     const patterns = parsed.success ? parsed.data : null;

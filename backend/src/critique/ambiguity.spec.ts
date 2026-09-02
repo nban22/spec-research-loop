@@ -311,7 +311,7 @@ describe('câu hỏi sinh ra', () => {
       terms: [],
       reason: 'r',
     });
-    expect(q.question).toMatch(/so với cái gì/i);
+    expect(q.question).toMatch(/being compared against/i);
     expect(q.options).toHaveLength(2);
     expect(q.options.some((o) => o.recommended)).toBe(true);
   });
@@ -331,7 +331,7 @@ describe('câu hỏi sinh ra', () => {
     });
     expect(q.question).toContain(reason);
     // Và vẫn còn phần hỏi, không phải chỉ có lý do.
-    expect(q.question).toMatch(/so với cái gì/i);
+    expect(q.question).toMatch(/being compared against/i);
   });
 
   it('mọi loại cờ đều mang reason, không riêng CLAIM', () => {

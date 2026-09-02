@@ -15,14 +15,14 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * **B3 · Bất đồng giữa các judge** (#9) — nửa *bất đồng* của chức năng 13.
+ * **B3 · Disagreement between judges** (#9) — the *disagreement* half of feature 13.
  *
- * Cả panel là **thông tin để cân nhắc**, không phải lỗi ⇒ họ màu `neutral`, không `warn`
- * (`judge.tsx` đã chốt luật này cho `DisagreementNote`).
+ * The whole panel is **information to weigh**, not an error ⇒ the `neutral` colour family, not
+ * `warn` (`judge.tsx` already settled this rule for `DisagreementNote`).
  *
- * Ma trận vẽ bằng CSS grid `<div>`, không thư viện biểu đồ — dự án không có recharts/d3 và
- * `STACK.md` §5 giới hạn cài thêm. Nhiệt độ ô dùng thang rời rạc trên token sẵn có, không hex,
- * không `style={{color}}` (frontend/CLAUDE.md §4).
+ * The matrix is drawn with a CSS grid of `<div>`s, no charting library — the project has no
+ * recharts/d3 and `STACK.md` §5 limits new installs. Cell heat uses a discrete scale over existing
+ * tokens: no hex, no `style={{color}}` (frontend/CLAUDE.md §4).
  */
 export function JudgeAgreementPanel({
   versionId,
@@ -33,15 +33,15 @@ export function JudgeAgreementPanel({
   const a = data?.agreement ?? null;
 
   return (
-    <Panel accent="neutral" icon={Scale} title="Bất đồng giữa các judge">
+    <Panel accent="neutral" icon={Scale} title="Disagreement between judges">
       {isLoading ? (
-        <p className="text-ink-3 text-xs">Đang tải số đo…</p>
+        <p className="text-ink-3 text-xs">Loading the metrics…</p>
       ) : !a ? (
         <EmptyState
           icon={Scale}
           tone="neutral"
-          title="Chưa có số đo"
-          description="Chạy hội đồng Judge ở trên. Số đo được chốt ngay lúc chạy và không tính lại, nên hai lần mở màn hình luôn ra cùng một con số."
+          title="No metrics yet"
+          description="Run the judge panel above. The metrics are frozen at run time and never recomputed, so opening this screen twice always gives the same number."
         />
       ) : (
         <>
@@ -63,49 +63,49 @@ function KappaHeadline({ a }: { a: ApiAgreement }) {
     <div className="space-y-2">
       <div className="border-hairline bg-sunken rounded-md border px-2.5 py-2">
         <p className="text-ink-3 text-2xs font-medium tracking-wide uppercase">
-          Hệ số trùng lặp (Fleiss κ) · vòng {a.round}
+          Overlap coefficient (Fleiss κ) · round {a.round}
         </p>
         <p className="text-ink-1 text-lg font-semibold tabular-nums">
           {k.kappa === null ? "—" : k.kappa.toFixed(3)}
           <span className="text-ink-3 ml-2 text-xs font-normal">
-            {k.raters} judge · {k.items} thẻ
+            {k.raters} judges · {k.items} cards
           </span>
         </p>
       </div>
 
-      {/* Con số này rất dễ bị đọc sai, nên phần giải thích không phải trang trí. */}
-      <HintBox tone="info" title="Đọc con số này thế nào">
-        Năm judge dùng <span className="font-medium">năm prompt khác nhau</span>{" "}
-        và bị cấm lấn sang phần của nhau, nên đây{" "}
-        <span className="font-medium">không</span> phải &ldquo;độ tin cậy&rdquo;
-        như khi năm người cùng chấm một bài. Nó đo{" "}
-        <span className="font-medium">mức trùng lặp</span>: κ thấp nghĩa là năm
-        vai đang làm đúng việc riêng; κ cao nghĩa là bạn trả tiền cho năm judge
-        mà chỉ nhận về một.
+      {/* This number is very easy to misread, so the explanation is not decoration. */}
+      <HintBox tone="info" title="How to read this number">
+        The five judges run <span className="font-medium">five different prompts</span>{" "}
+        and are forbidden from straying into each other’s territory, so this is{" "}
+        <span className="font-medium">not</span> &ldquo;reliability&rdquo; in the
+        sense of five people grading the same paper. It measures{" "}
+        <span className="font-medium">overlap</span>: a low κ means the five roles
+        are each doing their own job; a high κ means you are paying for five judges
+        and getting one.
       </HintBox>
 
       {k.kappa === null && (
         <HintBox tone="warn">
-          {k.reason ? REASON_TEXT[k.reason] : "Chưa có thẻ nào để đo."}
+          {k.reason ? REASON_TEXT[k.reason] : "No cards to measure yet."}
         </HintBox>
       )}
 
       {k.degenerate === "IDENTICAL_ROWS" && (
         <HintBox tone="warn">
-          Mọi thẻ có cùng dạng phân bố phiếu, nên hệ số bằng đúng{" "}
+          Every card has the same vote distribution, so the coefficient is exactly{" "}
           <span className="tabular-nums">
             {(-1 / (k.raters - 1)).toFixed(2)}
           </span>{" "}
-          bất kể judge chấm thế nào —{" "}
-          <span className="font-medium">không có cấu trúc chồng lấn nào</span>{" "}
-          để đọc.
+          regardless of how the judges scored —{" "}
+          <span className="font-medium">there is no overlap structure</span>{" "}
+          to read here.
         </HintBox>
       )}
 
       {a.coverage !== null && a.coverage < 1 && (
         <p className="text-ink-3 text-xs">
-          {pct(a.coverage)} issue có gắn thẻ. Phần còn lại nằm ngoài phép đo —
-          và tỉ lệ đó tự nó là hành vi của judge.
+          {pct(a.coverage)} of issues are attached to a card. The rest fall outside
+          the measurement — and that ratio is itself judge behaviour.
         </p>
       )}
     </div>
@@ -113,33 +113,36 @@ function KappaHeadline({ a }: { a: ApiAgreement }) {
 }
 
 /**
- * Giải thích cho từng lý do κ không tính được.
+ * The explanation for each reason κ could not be computed.
  *
- * Là `Record<KappaReason, string>` **có chủ ý**, không phải chuỗi `? :`. Bản trước dùng chuỗi ba
- * nhánh rồi `else` trần, nên `MALFORMED_COUNTS` — lý do backend có sinh ra — rơi vào nhánh cuối và
- * hiện "Chưa có thẻ nào để đo": sai sự thật, và che đúng vấn đề toàn vẹn dữ liệu cần thấy nhất.
- * Với `Record`, thêm một giá trị vào `KappaReason` mà quên viết câu giải thích là **không biên
- * dịch được** — bản chép tay giữa hai package không tự gác được, nên phải bắt chỗ dùng gác hộ.
+ * It is a `Record<KappaReason, string>` **on purpose**, not a `? :` chain. An earlier version used
+ * a three-branch chain with a bare `else`, so `MALFORMED_COUNTS` — a reason the backend does emit —
+ * fell into the last branch and rendered "No cards to measure yet": false, and hiding exactly the
+ * data-integrity problem most in need of being seen. With a `Record`, adding a value to
+ * `KappaReason` without writing its explanation **does not compile** — a hand copy across two
+ * packages cannot guard itself, so the consumer has to guard it.
  */
 const REASON_TEXT: Record<KappaReason, string> = {
   NO_VARIANCE:
-    "Mọi judge cho cùng một nhãn trên mọi thẻ nên hệ số không xác định được. Đây là đồng thuận tuyệt đối, không phải lỗi.",
+    "Every judge gave the same label on every card, so the coefficient is undefined. That is perfect agreement, not an error.",
   INSUFFICIENT_ITEMS:
-    "Chỉ có một thẻ, nên hệ số luôn ra một hằng số bất kể dữ liệu — không mang thông tin gì.",
-  INSUFFICIENT_RATERS: "Dưới hai judge hoàn thành, không có gì để so.",
-  NO_ITEMS: "Chưa có thẻ nào để đo.",
+    "There is only one card, so the coefficient comes out a constant regardless of the data — it carries no information.",
+  INSUFFICIENT_RATERS: "Fewer than two judges finished, so there is nothing to compare.",
+  NO_ITEMS: "No cards to measure yet.",
   MALFORMED_COUNTS:
-    "Dữ liệu đếm nhãn bị lệch hình nên phép đo bị dừng — đây là lỗi dữ liệu, không phải kết quả. Chạy lại vòng judge hoặc bấm tính lại.",
+    "The label counts are malformed, so the measurement stopped — this is a data error, not a result. Re-run the judge round or recompute.",
 };
 
 /**
- * Thang nhiệt rời rạc trên token sẵn có. Không nội suy màu, không hex.
+ * A discrete heat scale over existing tokens. No colour interpolation, no hex.
  *
- * Đường chéo (`self`) **không đi qua thang này**: nó là judge so với chính mình nên luôn bằng 1.00
- * theo định nghĩa và không mang tin. Bản trước vẫn tô nó bậc đậm nhất, nên khi J1 và J2 trùng thật
- * thì màn hình hiện một khối 2×2 đậm và người đọc không phân biệt được ô nào có nghĩa — còn J3/J4
- * thì đường chéo lại bị **làm mờ** chỉ vì hai judge đó nêu ít nhóm hơn `MIN_UNION`. Tức là cùng một
- * ô-vô-nghĩa được vẽ bằng hai màu khác nhau tuỳ dữ liệu, kênh màu bị nhiễu ở đúng chỗ nó cần sạch.
+ * The diagonal (`self`) **does not go through this scale**: it compares a judge with itself, so it
+ * is 1.00 by definition and carries no information. An earlier version still painted it the
+ * darkest step, so when J1 and J2 genuinely overlapped the screen showed a dark 2×2 block and the
+ * reader could not tell which cell meant anything — while for J3/J4 the diagonal was **dimmed**
+ * merely because those two raised fewer groups than `MIN_UNION`. The same meaningless cell drawn
+ * in two different colours depending on the data: the colour channel gets noisy exactly where it
+ * needs to be clean.
  */
 function cellClass(cell: ApiJaccardCell, self = false): string {
   if (self) return "bg-canvas text-ink-4";
@@ -156,7 +159,7 @@ function JaccardGrid({ a }: { a: ApiAgreement }) {
   if (keys.length === 0) return null;
   return (
     <div className="space-y-1.5 pt-1">
-      <p className="text-ink-2 text-xs font-medium">Chồng lấn từng cặp</p>
+      <p className="text-ink-2 text-xs font-medium">Pairwise overlap</p>
       <div className="overflow-x-auto">
         <div
           className="grid gap-0.5 text-2xs"
@@ -192,7 +195,7 @@ function JaccardGrid({ a }: { a: ApiAgreement }) {
                       cellClass(cell, self),
                     )}
                   >
-                    {/* Số phải hiện trong ô, không chỉ trong title (DESIGN_SYSTEM §6.7). */}
+                    {/* The number must be in the cell, not only in the title (DESIGN_SYSTEM §6.7). */}
                     <span className="font-semibold">
                       {self || cell.value === null
                         ? "—"
@@ -209,12 +212,12 @@ function JaccardGrid({ a }: { a: ApiAgreement }) {
         </div>
       </div>
       <p className="text-ink-3 text-xs">
-        Tỉ lệ nhóm vấn đề mà <span className="font-medium">cả hai</span> judge
-        cùng nêu, trên số nhóm <span className="font-medium">ít nhất một</span>{" "}
-        nêu. <span className="tabular-nums">n</span> là cỡ mẫu; ô có{" "}
-        <span className="tabular-nums">n&nbsp;&lt;&nbsp;{MIN_UNION}</span> bị
-        làm mờ vì hai judge mỗi người nêu vài issue có thể trùng nhau hoàn toàn
-        do ngẫu nhiên.
+        The share of issue groups <span className="font-medium">both</span> judges
+        raised, over the groups <span className="font-medium">at least one</span>{" "}
+        raised. <span className="tabular-nums">n</span> is the sample size; cells with{" "}
+        <span className="tabular-nums">n&nbsp;&lt;&nbsp;{MIN_UNION}</span> are
+        dimmed, because two judges raising a handful of issues each can overlap
+        completely by chance.
       </p>
     </div>
   );
@@ -238,72 +241,73 @@ function Patterns({ a }: { a: ApiAgreement }) {
 
   const loner = a.solo.find((s) => s.rate !== null && s.rate > 0) ?? null;
 
-  // Hai dòng dưới **buộc tội một judge cụ thể**, nên chúng đi qua kiểm định null hoán vị.
+  // The two rows below **accuse a specific judge**, so they go through a permutation null test.
   //
-  // Không có nó thì cả hai luôn tìm ra một người: cực đại của năm số thực gần như chắc chắn dương.
-  // Đo thật dưới null năm judge thống kê giống nhau: "gây nhiễu nhất" bắn **100%** lượt,
-  // "chấm nặng tay nhất" **98.2%**. Panel khi đó luôn chỉ ra một kẻ có tội, và #8 dồn tài nguyên
-  // đắt vào đó kể cả khi không có ai đáng bị chỉ.
+  // Without it both always find someone: the maximum of five real numbers is almost surely
+  // positive. Measured under a null where the five judges are statistically identical, "most
+  // disruptive" fired on **100%** of draws and "harshest scorer" on **98.2%**. The panel would
+  // then always name a culprit, and #8 would pour expensive resources at them even when nobody
+  // deserves to be named.
   //
-  // `draws === 0` là bản ghi lưu **trước khi** có kiểm định ⇒ *chưa kiểm*, khác hẳn *đã kiểm và
-  // không đáng kể*. Cả hai đều không nêu tên, nhưng nói khác nhau.
+  // `draws === 0` is a record stored **before** the test existed ⇒ *not tested*, which is very
+  // different from *tested and not significant*. Neither names anyone, but they say different things.
   const nt = a.nullTest;
   const untested = nt.draws === 0;
   const harsh = nt.harsh?.significant ? nt.harsh : null;
   const disruptive = nt.disruptive?.significant ? nt.disruptive : null;
 
-  /** Vì sao dòng này không nêu tên ai. */
+  /** Why this row names nobody. */
   const why = (v: { p: number } | null | undefined) =>
     untested
-      ? "chưa kiểm định"
+      ? "not tested"
       : v
-        ? `không đáng kể (p = ${v.p.toFixed(3)})`
-        : "không có";
+        ? `not significant (p = ${v.p.toFixed(3)})`
+        : "none";
 
   return (
     <div className="space-y-1.5 pt-1">
-      <p className="text-ink-2 text-xs font-medium">Đáng chú ý</p>
+      <p className="text-ink-2 text-xs font-medium">Worth noting</p>
       <ul className="border-hairline divide-hairline divide-y rounded-md border">
         <Row
-          label="Cặp trùng nhau nhất"
+          label="Most overlapping pair"
           value={
             topPair
               ? `${topPair.pair} — ${pct(topPair.value)} (n=${topPair.union})`
-              : "chưa đủ mẫu"
+              : "sample too small"
           }
-          hint="Trùng cao thì một trong hai judge có thể là thừa. Nhưng J1/J3/J5 dùng model khác J2/J4, nên trùng cao trong cùng họ model có thể là hiệu ứng model chứ không phải hiệu ứng vai."
+          hint="High overlap can mean one of the two judges is redundant. But J1/J3/J5 use a different model from J2/J4, so high overlap inside the same model family may be a model effect rather than a role effect."
         />
         <Row
-          label="Hay đứng một mình"
+          label="Most often alone"
           value={
             loner
-              ? `${loner.judgeKey} — ${pct(loner.rate)} (${loner.solo}/${loner.raised} nhóm)`
-              : "không có"
+              ? `${loner.judgeKey} — ${pct(loner.rate)} (${loner.solo}/${loner.raised} groups)`
+              : "none"
           }
-          hint="Tính theo tỉ lệ trên số nhóm chính judge đó nêu, không theo số đếm thô — nếu không thì judge nêu nhiều nhất luôn đứng đầu."
+          hint="Computed as a rate over the groups that judge raised, not a raw count — otherwise whichever judge raises the most always tops the list."
         />
         <Row
-          label="Chấm nặng tay nhất"
+          label="Harshest scorer"
           value={
             harsh
-              ? `${harsh.judgeKey} — +${harsh.value.toFixed(2)} bậc (p = ${harsh.p.toFixed(3)})`
+              ? `${harsh.judgeKey} — +${harsh.value.toFixed(2)} severity steps (p = ${harsh.p.toFixed(3)})`
               : why(nt.harsh)
           }
-          hint="Chênh bậc mức độ so với các judge cùng nêu một nhóm. Dương là nặng tay hơn. Chỉ nêu tên khi p < 0.05 dưới null hoán vị nhãn judge — không thì cực đại của năm số luôn dương và dòng này luôn buộc tội một người."
+          hint="The severity offset against the other judges who raised the same group. Positive means harsher. A name only appears at p < 0.05 under a permutation null over judge labels — otherwise the maximum of five numbers is always positive and this row always accuses somebody."
         />
         <Row
-          label="Gây nhiễu nhất"
+          label="Most disruptive"
           value={
             disruptive
-              ? `${disruptive.judgeKey} — bỏ ra thì κ tăng ${disruptive.value.toFixed(3)} (p = ${disruptive.p.toFixed(3)})`
+              ? `${disruptive.judgeKey} — removing them raises κ by ${disruptive.value.toFixed(3)} (p = ${disruptive.p.toFixed(3)})`
               : why(nt.disruptive)
           }
-          hint="Bỏ từng judge ra rồi tính lại. Đây là con số B2 (#8) dùng để chọn judge nào cần chạy tự nhất quán — thay vì bật cho cả năm. Chỉ nêu tên khi p < 0.05: Δκ dương nhỏ là chuyện bình thường kể cả khi năm judge giống nhau hoàn toàn."
+          hint="Each judge is dropped in turn and the coefficient recomputed. This is the number B2 (#8) uses to pick which judge needs self-consistency runs — instead of enabling it for all five. A name only appears at p < 0.05: a small positive Δκ is normal even when the five judges are identical."
         />
         <Row
-          label="Nhóm cả hội đồng cùng nêu"
-          value={`${a.unanimousGroups} nhóm (trên ${a.kappa.raters} judge)`}
-          hint="Cả hội đồng cùng chỉ ra thì nên sửa trước. Con số này là cận dưới vì bước gộp nhóm bằng luật có thể bỏ sót cách diễn đạt khác nhau."
+          label="Groups the whole panel raised"
+          value={`${a.unanimousGroups} groups (out of ${a.kappa.raters} judges)`}
+          hint="What the whole panel points at is worth fixing first. This number is a lower bound, because rule-based grouping can miss differently worded duplicates."
         />
       </ul>
     </div>

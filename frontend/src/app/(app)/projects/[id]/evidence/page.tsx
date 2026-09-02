@@ -11,15 +11,16 @@ import { CardSkeleton, EmptyState } from '@/components/states';
 import { useEvidenceTrace, useProject } from '@/lib/use-project';
 
 /**
- * **Vì sao nhãn này** — issue #5 (làn A).
+ * **Why this label** — issue #5 (lane A).
  *
- * Verifier gán `SUPPORTED` / `WEAK` / `UNSUPPORTED` cho từng cặp khẳng định–nguồn, nhưng trước
- * trang này người dùng không thấy được **vì sao**. Toàn bộ dữ liệu để giải thích đã nằm sẵn trong
- * database từ đầu; thiếu duy nhất một chỗ để hiện nó ra.
+ * The verifier assigns `SUPPORTED` / `WEAK` / `UNSUPPORTED` to each claim-source pair, but before
+ * this page the user could not see **why**. All the data needed to explain it was already in the
+ * database from day one; the only thing missing was somewhere to show it.
  *
- * Đây không phải màn debug — nó là câu trả lời trực quan cho câu chắc chắn bị hỏi khi vấn đáp:
- * *"làm sao tin nhãn này đúng?"*. Cùng khuôn với `/cost`, `/map`, `/errors` của làn C: màn hình
- * **chỉ đọc** treo ngoài wizard, không thêm endpoint ghi, không thêm bảng.
+ * This is not a debug screen — it is the visual answer to the question that will certainly be asked
+ * at the defence: *"how do I know this label is right?"*. Same shape as lane C's `/cost`, `/map`
+ * and `/errors`: a **read-only** screen hanging off the wizard, with no write endpoint and no new
+ * table.
  */
 export default function EvidencePage({
   params,
@@ -42,8 +43,8 @@ export default function EvidencePage({
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4">
         <EmptyState
           icon={ShieldQuestion}
-          title="Chưa đọc được bằng chứng"
-          description="Dự án này chưa có phiên bản spec nào được kiểm chứng cứ. Chạy kiểm chứng cứ ở bước 5 trước đã."
+          title="The evidence could not be read"
+          description="This project has no verified spec version. Run evidence verification at step 5 first."
         />
       </div>
     );
@@ -60,44 +61,44 @@ export default function EvidencePage({
     <div className="mx-auto w-full max-w-[1400px] space-y-3 px-3 py-4 md:px-4">
       <header className="space-y-1">
         <h1 className="text-ink-1 text-lg font-semibold md:text-xl">
-          Vì sao nhãn này
+          Why this label
         </h1>
         <p className="text-ink-3 text-xs md:text-sm">
-          Đường đi của {total} cặp khẳng định–nguồn qua các tầng kiểm chứng ·{' '}
+          The path of {total} claim-source pairs through the verification layers ·{' '}
           <Link
             href={`/projects/${id}/step/5`}
             className="text-brand-strong underline underline-offset-2"
           >
-            quay lại bước 5
+            back to step 5
           </Link>
         </p>
       </header>
 
-      <Panel accent="brand" icon={ShieldQuestion} title="Tổng quan lần chạy">
+      <Panel accent="brand" icon={ShieldQuestion} title="Run overview">
         <StatTileGrid
           items={[
-            { label: 'Có nguồn hỗ trợ', value: String(data.summary.SUPPORTED) },
-            { label: 'Yếu', value: String(data.summary.WEAK) },
-            { label: 'Không hỗ trợ', value: String(data.summary.UNSUPPORTED) },
-            { label: 'Phải hỏi mô hình', value: l4Ratio },
-            { label: 'Đọc từ toàn văn', value: String(fromFullText) },
+            { label: 'Supported', value: String(data.summary.SUPPORTED) },
+            { label: 'Weak', value: String(data.summary.WEAK) },
+            { label: 'Unsupported', value: String(data.summary.UNSUPPORTED) },
+            { label: 'Needed the model', value: l4Ratio },
+            { label: 'Read from full text', value: String(fromFullText) },
           ]}
         />
-        <HintBox tone="info" title="Cách đọc trang này">
+        <HintBox tone="info" title="How to read this page">
           <p>
-            Bấm vào một dòng để xem tầng nào đã quyết định nhãn của nó. Ba tầng đầu chạy bằng luật
-            và không tốn token nào; chỉ những cặp nằm trong vùng xám mới được đưa lên mô hình.
+            Click a row to see which layer decided its label. The first three layers run on rules
+            and cost no tokens; only pairs in the grey zone are sent to the model.
           </p>
           <p className="mt-1">
-            Ngưỡng hiển thị ở đây là ngưỡng của <strong>chính lần chạy đó</strong> (tương đồng{' '}
-            {data.thresholds.tau_low}–{data.thresholds.tau_high}, độ chắc chắn tối thiểu{' '}
-            {data.thresholds.conf_min}), không phải ngưỡng hiện hành — nên nhãn cũ vẫn giải thích
-            được sau khi ngưỡng được hiệu chỉnh.
+            The thresholds shown here belong to <strong>that particular run</strong> (similarity{' '}
+            {data.thresholds.tau_low}–{data.thresholds.tau_high}, minimum confidence{' '}
+            {data.thresholds.conf_min}), not today’s — so an old label stays explainable after the
+            thresholds are recalibrated.
           </p>
         </HintBox>
       </Panel>
 
-      <Panel accent="neutral" icon={ShieldQuestion} title="Từng cặp một">
+      <Panel accent="neutral" icon={ShieldQuestion} title="Pair by pair">
         <EvidenceTraceView data={data} />
       </Panel>
     </div>

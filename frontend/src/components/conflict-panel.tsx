@@ -18,15 +18,15 @@ import {
 } from '@/lib/use-project';
 
 /**
- * Giao diện **đối chất hai cột** cho xung đột nguồn (#3).
+ * The **two-column confrontation** view for source conflicts (#3).
  *
- * Dùng lại nguyên bốn đường ra `GATE_OPTIONS` và cặp hook `useGateOptions`/`useGateDecision` mà
- * bước 5 đang dùng cho trích dẫn không có nguồn hỗ trợ — nên lựa chọn của người dùng tự thành một
- * dòng `Decision`, không phải dựng thêm một đường quyết định thứ hai.
+ * It reuses the four `GATE_OPTIONS` exits and the `useGateOptions`/`useGateDecision` pair that
+ * step 5 already uses for unsupported citations — so the user's choice becomes a `Decision` row on
+ * its own, instead of building a second decision path.
  *
- * Xử **từng xung đột một** và tự đẩy cái đã xử ra khỏi hàng đợi: cùng lý do đã ghi ở `step-5.tsx`,
- * phương án "tôi sẽ đi tìm nguồn khác" không đổi dữ liệu gì nên nếu không bỏ ra thì panel ghim
- * vĩnh viễn ở xung đột đầu tiên.
+ * Conflicts are handled **one at a time** and each resolved one is dropped from the queue: same
+ * reasoning as noted in `step-5.tsx` — the "I will look for another source" option changes no
+ * data, so without dropping it the panel would pin forever on the first conflict.
  */
 export function ConflictPanel({
   projectId,
@@ -42,8 +42,8 @@ export function ConflictPanel({
   const current = conflicts[0] ?? null;
 
   const gateDecision = useGateDecision(projectId);
-  /* Xung đột nào cũng có hai phía; đưa phía **A** vào cổng quyết định vì đó là cặp
-     claim–nguồn mà người dùng sẽ sửa nếu chọn "sửa khẳng định cho khớp nguồn". */
+  /* Every conflict has two sides; side **A** goes into the decision gate because that is the
+     claim-source pair the user would edit if they choose "narrow the claim to match the source". */
   const { data: options } = useGateOptions(current?.card_source_a_id);
 
   if (!data) return null;
@@ -51,9 +51,9 @@ export function ConflictPanel({
 
   if (!current) {
     return (
-      <HintBox tone="ok" title="Đã xử xong các mâu thuẫn">
+      <HintBox tone="ok" title="All conflicts resolved">
         <p>
-          Bạn đã chọn cách xử lý cho tất cả {data.conflicts.length} mâu thuẫn ở phiên bản này.
+          You have chosen how to handle all {data.conflicts.length} conflicts in this version.
         </p>
       </HintBox>
     );
@@ -63,23 +63,23 @@ export function ConflictPanel({
     <Panel
       accent="decide"
       icon={CircleAlert}
-      title={`Mâu thuẫn giữa các nguồn (${conflicts.length})`}
+      title={`Conflicts between sources (${conflicts.length})`}
     >
       <ConflictFace conflict={current} />
 
       <OptionList
-        /* Remount theo xung đột đang xử — `OptionList` giữ lựa chọn và ô lý do trong state cục
-           bộ, không remount thì lý do của xung đột trước bị gán cho xung đột sau. */
+        /* Remount per conflict — `OptionList` keeps the selection and the reason box in local
+           state, so without a remount the previous conflict's reason lands on the next one. */
         key={current.id}
         question={
           options?.question ??
-          'Hai nguồn này nói ngược nhau. Bạn muốn xử lý thế nào?'
+          'These two sources contradict each other. How do you want to handle it?'
         }
         options={options?.options ?? []}
         variant="stacked"
         disabled={!options}
         submitting={gateDecision.isPending}
-        submitLabel="Xác nhận cách xử lý"
+        submitLabel="Confirm how to handle it"
         onSubmit={(chosenKey, customText) =>
           gateDecision.mutate(
             {
@@ -91,7 +91,7 @@ export function ConflictPanel({
               onSuccess: () => {
                 setHandled((h) => [...h, current.id]);
                 toast.success(
-                  'Hệ thống đã ghi nhận lựa chọn của bạn cho mâu thuẫn này.',
+                  'Your choice for this conflict has been recorded.',
                 );
               },
             },
@@ -102,7 +102,7 @@ export function ConflictPanel({
   );
 }
 
-/** Hai cột đối chất — nguồn nói A bên trái, nguồn nói B bên phải, **kèm câu trích nguyên văn**. */
+/** The two confrontation columns — what source A says on the left, source B on the right, **each with a verbatim quote**. */
 function ConflictFace({ conflict }: { conflict: ApiConflict }) {
   return (
     <div className="space-y-3">
@@ -112,29 +112,29 @@ function ConflictFace({ conflict }: { conflict: ApiConflict }) {
           {CONFLICT_SCOPE_LABEL[conflict.scope] ?? conflict.scope} ·{' '}
           {CONFLICT_SIGNAL_LABEL[conflict.signal] ?? conflict.signal}
           {conflict.other_card_title
-            ? ` · thẻ đối diện: “${conflict.other_card_title}”`
+            ? ` · opposing card: “${conflict.other_card_title}”`
             : ''}
         </p>
       </div>
 
-      {/* Một cột dưới md, hai cột từ md — bố cục cấp trang chỉ dùng md: và xl: (DS §7.3). */}
+      {/* One column below md, two from md up — page-level layout only uses md: and xl: (DS §7.3). */}
       <div className="grid gap-2 md:grid-cols-2">
         <Side
           title={conflict.source_a_title}
           quote={conflict.evidence_a}
-          label="Nguồn thứ nhất nói"
+          label="The first source says"
         />
         <Side
           title={conflict.source_b_title}
           quote={conflict.evidence_b}
-          label="Nguồn thứ hai nói"
+          label="The second source says"
         />
       </div>
 
-      <HintBox tone="warn" title="Vì sao hệ thống báo mâu thuẫn">
+      <HintBox tone="warn" title="Why the system flagged a conflict">
         <p>{conflict.reason}</p>
         {conflict.terms.length > 0 && (
-          <p className="mt-1">Dấu hiệu: {conflict.terms.join(' · ')}</p>
+          <p className="mt-1">Signals: {conflict.terms.join(' · ')}</p>
         )}
       </HintBox>
     </div>
@@ -154,9 +154,9 @@ function Side({
     <div className="border-hairline bg-sunken rounded-md border p-3">
       <p className="text-ink-4 text-2xs tracking-wide uppercase">{label}</p>
       <p className="text-ink-2 mt-1 text-xs font-medium">{title}</p>
-      {/* Trích **nguyên văn** để người đọc tự đối chiếu, không phải tin máy. */}
+      {/* The quote is **verbatim** so the reader can check it themselves rather than trust the machine. */}
       <p className="text-ink-1 mt-2 text-sm leading-relaxed italic">
-        {quote ? `“${quote}”` : 'Nguồn này không có câu trích để đối chiếu.'}
+        {quote ? `“${quote}”` : 'This source has no quotable sentence to compare.'}
       </p>
     </div>
   );

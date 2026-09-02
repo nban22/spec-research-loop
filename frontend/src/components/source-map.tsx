@@ -7,15 +7,15 @@ import { EmptyState } from '@/components/states';
 import { cn } from '@/lib/utils';
 
 /**
- * **Timeline nghiên cứu** và **similarity map** — issue #16 (làn C).
+ * The **research timeline** and the **similarity map** — issue #16 (lane C).
  *
- * Cả hai vẽ bằng SVG viết tay, **không thêm thư viện biểu đồ**: hai hình này chỉ cần chấm tròn,
- * cột và nhãn; kéo cả `recharts` hay `d3` vào bundle để có bấy nhiêu đó là đắt hơn phần thu được
- * (STACK §8 — cấm thêm dependency khi tự viết được).
+ * Both are hand-written SVG, **with no charting library added**: these two figures need only dots,
+ * bars and labels; pulling `recharts` or `d3` into the bundle for that much costs more than it
+ * buys (STACK §8 — no new dependency for something we can write ourselves).
  *
- * Backend đã trả toạ độ đã chuẩn hoá trong hộp `[-1, 1]` và độ thưa đã ép về `[0, 1]`, nên ở đây
- * chỉ còn phép đổi sang toạ độ màn hình. Cố ý: phép chiếu phải **tất định** và giống nhau giữa
- * mọi client, nên nó thuộc về server chứ không phải chỗ này.
+ * The backend already returns coordinates normalised into the `[-1, 1]` box and sparsity squeezed
+ * into `[0, 1]`, so all that remains here is mapping to screen space. That is deliberate: the
+ * projection must be **deterministic** and identical across clients, so it belongs on the server.
  */
 
 export type SourceNode = {
@@ -38,7 +38,7 @@ export type SourceMapData = {
   weak_text_count: number;
   citations: {
     edges: { from: string; to: string }[];
-    /** Bao nhiêu nguồn **đọc được** dữ liệu trích dẫn. Thiếu con số này thì đồ thị nói dối. */
+    /** How many sources we could **read** citation data for. Without this number the graph lies. */
     coverage: { with_refs: number; total: number };
     most_cited: { id: string; title: string; in_degree: number }[];
   };
@@ -46,19 +46,19 @@ export type SourceMapData = {
 
 type Tab = 'similarity' | 'timeline' | 'citations';
 
-/** Khung vẽ cố định; SVG tự co theo `viewBox` nên không cần đo container. */
+/** A fixed drawing frame; the SVG scales via `viewBox`, so no container measuring is needed. */
 const W = 640;
 const H = 420;
 const PAD = 36;
 
-/** Cắt tiêu đề dài cho nhãn cạnh chấm. Tiêu đề paper là văn bản tự do — cắt được. */
+/** Truncate long titles for the label beside a dot. Paper titles are free text — safe to cut. */
 function short(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
 }
 
 /**
- * Bán kính chấm theo số lần trích dẫn, thang **căn bậc hai** để diện tích tỉ lệ với số đo —
- * thang tuyến tính làm paper 5000 trích dẫn nuốt hết phần còn lại của bản đồ.
+ * Dot radius follows the citation count on a **square-root** scale so area is proportional to the
+ * measure — a linear scale lets a 5000-citation paper swallow the rest of the map.
  */
 function radiusOf(citations: number | null): number {
   return 4 + Math.sqrt(Math.max(0, citations ?? 0)) * 0.55;
@@ -73,8 +73,8 @@ export function SourceMapView({ data }: { data: SourceMapData }) {
     return (
       <EmptyState
         icon={CircleDot}
-        title="Chưa có nguồn nào để vẽ"
-        description="Bạn hãy chạy tìm nguồn ở bước 2, rồi quay lại đây xem bản đồ."
+        title="No sources to plot yet"
+        description="Run the source search at step 2, then come back here to see the map."
       />
     );
   }
@@ -85,14 +85,14 @@ export function SourceMapView({ data }: { data: SourceMapData }) {
         <ViewToggle value={tab} onChange={setTab} />
         {data.weak_text_count > 0 && (
           <p className="text-ink-3 text-2xs">
-            {data.weak_text_count}/{data.nodes.length} nguồn thiếu abstract — vị trí của chúng
-            trên bản đồ chỉ dựa vào tiêu đề, bạn đọc với mức tin vừa phải.
+            {data.weak_text_count}/{data.nodes.length} sources have no abstract — their position on
+            the map rests on the title alone, so read it with moderate confidence.
           </p>
         )}
       </div>
 
-      {/* `mode="wait"` chứ không phải chồng hai view lên nhau: hai hình này cao khác nhau, cho
-          chúng cùng tồn tại một nhịp làm cả trang giật chiều cao. */}
+      {/* `mode="wait"` rather than overlapping the two views: the figures have different heights,
+          and letting both exist for a frame makes the whole page jump. */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={tab}
@@ -115,14 +115,14 @@ export function SourceMapView({ data }: { data: SourceMapData }) {
 }
 
 /**
- * Hai nút `aria-pressed` thay vì `Tabs` của shadcn: component đó đã bị gỡ trong đợt revamp và
- * `components/ui/**` nằm ngoài phạm vi được sửa của issue này.
+ * `aria-pressed` buttons instead of the shadcn `Tabs`: that component was removed in the revamp and
+ * `components/ui/**` is outside the scope this issue may edit.
  */
 function ViewToggle({ value, onChange }: { value: Tab; onChange: (v: Tab) => void }) {
   const opts = [
-    { key: 'similarity' as const, label: 'Bản đồ chủ đề', icon: CircleDot },
-    { key: 'timeline' as const, label: 'Dòng thời gian', icon: Clock },
-    { key: 'citations' as const, label: 'Trích dẫn', icon: Share2 },
+    { key: 'similarity' as const, label: 'Topic map', icon: CircleDot },
+    { key: 'timeline' as const, label: 'Timeline', icon: Clock },
+    { key: 'citations' as const, label: 'Citations', icon: Share2 },
   ];
   return (
     <div className="border-hairline inline-flex rounded-md border p-0.5">
@@ -150,11 +150,11 @@ function ViewToggle({ value, onChange }: { value: Tab; onChange: (v: Tab) => voi
 }
 
 /**
- * Similarity map: mỗi chấm là một nguồn, gần nhau = gần chủ đề.
+ * The similarity map: each dot is a source, and proximity means topical proximity.
  *
- * **Vùng thưa là thứ đáng nhìn nhất ở đây** (§8 của đề — cách phát hiện research gap). Nên độ
- * thưa được tô bằng màu chứ không giấu trong tooltip: cảm ứng không có hover, và thông tin chỉ
- * nằm trong hover thì trên điện thoại là không tồn tại (DS §6.7).
+ * **The sparse regions are the most interesting thing here** (§8 of the brief — how research gaps
+ * are spotted). So sparsity is painted in colour rather than hidden in a tooltip: touch has no
+ * hover, and information that lives only in hover does not exist on a phone (DS §6.7).
  */
 function SimilarityMap({
   nodes,
@@ -177,7 +177,7 @@ function SimilarityMap({
           viewBox={`0 0 ${W} ${H}`}
           className="h-auto w-full min-w-[520px]"
           role="img"
-          aria-label={`Bản đồ chủ đề của ${nodes.length} nguồn`}
+          aria-label={`Topic map of ${nodes.length} sources`}
         >
           {picked?.nearest && (
             <line
@@ -195,10 +195,10 @@ function SimilarityMap({
             const on = n.id === focus;
             const pick = () => onFocus(on ? null : n.id);
             return (
-              /* `<g role="button">` thay vì `<circle onClick>`: phần tử bấm được phải tới được
-                 bằng bàn phím và có tên (frontend/CLAUDE.md §7). Cùng khuôn với `concept-map`.
-                 Nở ra lệch pha theo thứ tự: bản đồ hiện dần cho mắt kịp bắt cụm, thay vì đổ ập
-                 vài chục chấm cùng lúc rồi phải quét lại từ đầu. */
+              /* `<g role="button">` instead of `<circle onClick>`: a clickable element must be
+                 keyboard reachable and have a name (frontend/CLAUDE.md §7). Same shape as
+                 `concept-map`. Staggered entry: the map appears progressively so the eye can catch
+                 the clusters, instead of dumping dozens of dots at once and forcing a rescan. */
               <motion.g
                 key={n.id}
                 initial={{ opacity: 0, scale: reduced ? 1 : 0.4 }}
@@ -211,7 +211,7 @@ function SimilarityMap({
                 style={{ transformOrigin: `${sx(n.x)}px ${sy(n.y)}px` }}
                 role="button"
                 tabIndex={0}
-                aria-label={`Xem chi tiết nguồn ${n.title}`}
+                aria-label={`View details for source ${n.title}`}
                 aria-pressed={on}
                 className="cursor-pointer"
                 onClick={pick}
@@ -227,14 +227,14 @@ function SimilarityMap({
                   cy={sy(n.y)}
                   r={radiusOf(n.citation_count)}
                   className={cn(
-                    // Thưa ⇒ ngả sang màu cảnh báo. Ba mức, không dùng gradient liên tục:
-                    // mắt không đọc được sắc độ liên tục, còn ba mức thì phân biệt được ngay.
+                    // Sparse ⇒ shifts toward the warning colour. Three steps, no continuous
+                    // gradient: the eye cannot read a continuous shade, three steps it can.
                     n.sparsity > 0.66
                       ? 'fill-warn-ink'
                       : n.sparsity > 0.33
                         ? 'fill-brand-line'
                         : 'fill-brand-ink',
-                    // Nguồn chưa claim nào trích: rỗng ruột, để "có nguồn mà chưa dùng" nhìn ra ngay.
+                    // A source no claim cites: hollow, so "fetched but unused" is obvious at a glance.
                     n.cited_by === 0 && 'fill-surface',
                   )}
                   stroke="currentColor"
@@ -256,9 +256,9 @@ function SimilarityMap({
 
       <Legend />
 
-      {/* Chi tiết hiện bằng CHỮ dưới bản đồ, không phải tooltip — xem chú thích của hàm này.
-          Hộp này **đẩy nội dung dưới nó xuống**, nên phải mở bằng chiều cao chứ không phải chỉ
-          mờ dần: hiện tức thì thì cả trang nhảy một nhịp mỗi lần bấm sang nguồn khác. */}
+      {/* Details appear as TEXT below the map, not in a tooltip — see this function's docblock.
+          This box **pushes the content below it down**, so it opens by height rather than merely
+          fading in: appearing instantly makes the whole page jump each time another source is picked. */}
       <AnimatePresence initial={false}>
         {picked && (
           <motion.div
@@ -271,15 +271,15 @@ function SimilarityMap({
           >
             <p className="text-ink-1 text-sm font-medium">{picked.title}</p>
           <p className="text-ink-3 text-xs">
-            {picked.year ?? 'không rõ năm'}
-            {picked.venue ? ` · ${picked.venue}` : ''} · {picked.citation_count ?? 0} trích dẫn ·{' '}
-            {picked.cited_by === 0 ? 'chưa claim nào dùng' : `${picked.cited_by} claim đang dùng`}
+            {picked.year ?? 'year unknown'}
+            {picked.venue ? ` · ${picked.venue}` : ''} · {picked.citation_count ?? 0} citations ·{' '}
+            {picked.cited_by === 0 ? 'no claim uses it yet' : `${picked.cited_by} claims use it`}
           </p>
           <p className="text-ink-3 text-xs">
-            Độ thưa {(picked.sparsity * 100).toFixed(0)}% ·{' '}
+            Sparsity {(picked.sparsity * 100).toFixed(0)}% ·{' '}
             {picked.nearest
-              ? `gần nhất: ${short(picked.nearest.title, 48)} (${(picked.nearest.score * 100).toFixed(0)}%)`
-              : 'không nguồn nào cùng từ khoá'}
+              ? `nearest: ${short(picked.nearest.title, 48)} (${(picked.nearest.score * 100).toFixed(0)}%)`
+              : 'no source shares its keywords'}
             </p>
           </motion.div>
         )}
@@ -289,15 +289,15 @@ function SimilarityMap({
 }
 
 /**
- * Đồ thị trích dẫn giữa **chính các nguồn của dự án**.
+ * The citation graph among **the project's own sources**.
  *
- * Dùng lại **đúng toạ độ MDS** của bản đồ chủ đề thay vì bố cục riêng: chuyển tab thì nút đứng
- * nguyên chỗ, nên người xem đọc được "hai paper gần nhau về chủ đề *và* có trích dẫn nhau" —
- * đó là thông tin mà hai hình vẽ rời nhau không bao giờ nói ra được.
+ * It reuses the **exact MDS coordinates** of the topic map instead of its own layout: switching
+ * tabs leaves every node in place, so the viewer can read "these two papers are topically close
+ * *and* cite each other" — information two independently laid-out figures could never convey.
  *
- * `coverage` hiện **ngay trên hình, không phải cuối trang**: chỉ nguồn lấy từ OpenAlex mới có dữ
- * liệu trích dẫn, nên một đồ thị thưa có thể là "các paper này ít trích nhau" **hoặc** "phần lớn
- * nguồn đến từ Semantic Scholar nên ta không biết gì". Hai kết luận đó trái ngược nhau.
+ * `coverage` is shown **on the figure, not at the bottom of the page**: only OpenAlex sources carry
+ * citation data, so a sparse graph may mean "these papers rarely cite each other" **or** "most
+ * sources came from Semantic Scholar so we know nothing". Those two conclusions are opposites.
  */
 function CitationGraph({
   nodes,
@@ -321,7 +321,7 @@ function CitationGraph({
           viewBox={`0 0 ${W} ${H}`}
           className="h-auto w-full min-w-[520px]"
           role="img"
-          aria-label={`Đồ thị trích dẫn: ${citations.edges.length} liên kết giữa ${total} nguồn`}
+          aria-label={`Citation graph: ${citations.edges.length} links between ${total} sources`}
         >
           <defs>
             <marker
@@ -368,8 +368,8 @@ function CitationGraph({
                 cy={sy(n.y)}
                 r={radiusOf(n.citation_count)}
                 className={cn(
-                  // Nút không có cạnh nào vẽ rỗng — nhưng chú thích nói rõ đó có thể là
-                  // "không trích ai" hoặc "ta không đọc được dữ liệu trích dẫn của nó".
+                  // A node with no edges is drawn hollow — but the caption spells out that this may
+                  // mean "cites nobody" or "we could not read its citation data".
                   linked.has(n.id) ? 'fill-brand-ink' : 'fill-surface',
                 )}
                 stroke="currentColor"
@@ -396,11 +396,11 @@ function CitationGraph({
             : 'border-warn-line bg-warn-soft text-warn-strong',
         )}
       >
-        Đọc được dữ liệu trích dẫn của <strong>{with_refs}/{total}</strong> nguồn.{' '}
+        Citation data was readable for <strong>{with_refs}/{total}</strong> sources.{' '}
         {with_refs < total && (
           <>
-            Phần còn lại lấy từ Semantic Scholar, vốn không trả danh sách tài liệu tham khảo — nút
-            rỗng ở đây nghĩa là <strong>chưa biết</strong>, không phải “không trích ai”.
+            The rest came from Semantic Scholar, which does not return a reference list — a hollow
+            node here means <strong>unknown</strong>, not “cites nobody”.
           </>
         )}
       </p>
@@ -408,7 +408,7 @@ function CitationGraph({
       {citations.most_cited.length > 0 && (
         <div className="border-hairline space-y-1 rounded-md border px-2.5 py-2">
           <p className="text-ink-2 text-xs font-medium">
-            Được trích nhiều nhất trong chính tập nguồn này
+            Most cited within this source set
           </p>
           <ul className="space-y-0.5">
             {citations.most_cited.map((m) => (
@@ -429,27 +429,27 @@ function Legend() {
     <ul className="text-ink-3 text-2xs flex flex-wrap items-center gap-x-4 gap-y-1">
       <li className="flex items-center gap-1.5">
         <span className="bg-brand-ink inline-block size-2.5 rounded-full" aria-hidden />
-        nằm giữa cụm
+        in the middle of a cluster
       </li>
       <li className="flex items-center gap-1.5">
         <span className="bg-warn-ink inline-block size-2.5 rounded-full" aria-hidden />
-        vùng thưa — chỗ đáng ngờ có gap
+        sparse region — a likely gap
       </li>
       <li className="flex items-center gap-1.5">
         <span
           className="border-ink-3 bg-surface inline-block size-2.5 rounded-full border"
           aria-hidden
         />
-        chưa claim nào trích
+        no claim cites it yet
       </li>
-      <li>chấm to = nhiều trích dẫn</li>
+      <li>bigger dot = more citations</li>
     </ul>
   );
 }
 
 /**
- * Timeline: mỗi cột một năm có nguồn. Phần đậm là số nguồn **đang được claim trích** — chênh
- * lệch giữa hai phần cho thấy nguồn tìm về rồi để đó.
+ * The timeline: one bar per year that has sources. The dark part is how many sources **a claim
+ * actually cites** — the gap between the two shows sources fetched and then left unused.
  */
 function Timeline({ rows }: { rows: SourceMapData['timeline'] }) {
   const max = Math.max(...rows.map((r) => r.count), 1);
@@ -461,8 +461,8 @@ function Timeline({ rows }: { rows: SourceMapData['timeline'] }) {
         {rows.map((r, i) => (
           <div key={String(r.year)} className="flex min-w-9 flex-1 flex-col items-center gap-1">
             <span className="text-ink-3 text-2xs">{r.count}</span>
-            {/* Cột mọc từ đáy lên, lệch pha theo thứ tự năm — mắt đọc được chiều của trục thời
-                gian ngay trong lúc hình đang dựng, thay vì thấy cả bảng hiện ra một lúc. */}
+            {/* Bars grow from the bottom, staggered by year — the eye reads the direction of the
+                time axis while the figure is still building, instead of seeing it all at once. */}
             <motion.div
               className="bg-brand-soft flex w-full flex-col justify-end overflow-hidden rounded-t"
               initial={{ height: reduced ? `${(r.count / max) * 120 + 4}px` : 4 }}
@@ -479,14 +479,14 @@ function Timeline({ rows }: { rows: SourceMapData['timeline'] }) {
               />
             </motion.div>
             <span className="text-ink-3 text-2xs whitespace-nowrap">
-              {r.year ?? 'không rõ'}
+              {r.year ?? 'unknown'}
             </span>
           </div>
         ))}
       </div>
       <p className="text-ink-3 text-2xs">
-        Cột nhạt là toàn bộ nguồn của năm đó; phần đậm là số nguồn đang được claim trích. Năm
-        không có nguồn nào thì không có cột — khoảng trống trên trục là khoảng trống thật.
+        The pale bar is every source from that year; the dark part is how many a claim cites. A year
+        with no sources gets no bar — a gap on the axis is a real gap.
       </p>
     </div>
   );

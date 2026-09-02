@@ -33,7 +33,7 @@ async function bootstrap(): Promise<void> {
     config.get('NODE_ENV', { infer: true }) === 'production'
   ) {
     new Logger('Bootstrap').warn(
-      'CORS_ORIGINS đang để trống ở production — API nhận cookie từ mọi origin. Hãy khai báo danh sách origin.',
+      'CORS_ORIGINS is empty in production — the API accepts cookies from any origin. Declare the origin list.',
     );
   }
 

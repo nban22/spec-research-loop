@@ -9,7 +9,7 @@ import { ProjectCard, type ProjectSummary } from '@/components/project-card';
 import { ResearchFlowAnimation } from '@/components/research-flow';
 import { api, qk } from '@/lib/api';
 
-/** Trang chủ: `IdeaInput` cỡ lớn để mở dự án mới + vài dự án gần đây (DESIGN_SYSTEM §5.4). */
+/** Home page: a large `IdeaInput` to open a new project + a few recent projects (DESIGN_SYSTEM §5.4). */
 export default function HomePage() {
   const { data } = useQuery({
     queryKey: qk.projects,
@@ -21,28 +21,28 @@ export default function HomePage() {
     <div className="mx-auto w-full max-w-3xl space-y-4 px-3 py-5 md:px-4 md:py-8">
       <header className="space-y-1.5 text-center">
         <h1 className="text-ink-1 text-xl font-semibold md:text-2xl">
-          Bắt đầu từ một ý tưởng còn mơ hồ
+          Start from an idea that is still vague
         </h1>
         <p className="text-ink-3 text-sm">
-          Hệ thống sẽ diễn giải lại, đi tìm tài liệu thật, và cho 5 Judge phản biện — bạn là
-          người quyết định ở từng bước.
+          The system paraphrases it back, searches for real literature, and puts it through 5
+          independent judges — you make the call at every step.
         </p>
       </header>
 
-      <Panel accent="brand" icon={Lightbulb} title="Ý tưởng nghiên cứu của bạn">
+      <Panel accent="brand" icon={Lightbulb} title="Your research idea">
         <IdeaInput variant="create" />
       </Panel>
 
-      {/* Đặt NGAY DƯỚI ô nhập, không phải cuối trang: người chưa từng dùng hệ thống cần biết
-          bấm xong thì chuyện gì xảy ra, trước khi họ quyết định có gõ gì vào ô trên hay không. */}
+      {/* Placed RIGHT UNDER the input, not at the bottom of the page: a first-time user needs to
+          know what happens after they press the button, before deciding whether to type at all. */}
       <ResearchFlowAnimation />
 
       {recent.length > 0 && (
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-ink-1 text-sm font-semibold">Dự án gần đây</h2>
+            <h2 className="text-ink-1 text-sm font-semibold">Recent projects</h2>
             <Link href="/projects" className="text-brand-strong text-xs underline">
-              Xem tất cả
+              View all
             </Link>
           </div>
           <ul className="grid gap-2 sm:grid-cols-2">

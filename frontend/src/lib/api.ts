@@ -1,27 +1,28 @@
 import { messageOf } from './error-code';
 
 /**
- * Gốc của API — **thích ứng theo môi trường**, quyết định lúc build.
+ * The API origin — **environment adaptive**, decided at build time.
  *
- * - Để trống (mặc định, và là cấu hình local): dùng đường dẫn tương đối `/api/*`, để
- *   `rewrites()` của Next proxy sang backend ⇒ trình duyệt thấy **cùng origin**, không CORS.
- * - Đặt `NEXT_PUBLIC_API_BASE=https://api.example.com`: gọi thẳng backend. Bớt được một chặng
- *   proxy cho luồng SSE dài ~90 giây, đổi lại cần CORS + cookie có `Domain` ở phía backend.
+ * - Left empty (the default, and the local setup): use relative `/api/*` paths so Next's
+ *   `rewrites()` proxies to the backend ⇒ the browser sees the **same origin**, no CORS.
+ * - Set `NEXT_PUBLIC_API_BASE=https://api.example.com`: call the backend directly. That drops
+ *   one proxy hop for the ~90 second SSE stream, at the cost of needing CORS + a cookie with
+ *   `Domain` on the backend side.
  *
- * `NEXT_PUBLIC_*` được **nướng vào bundle lúc build**, không đọc lúc chạy — nên nó phải là
- * `--build-arg` trong Dockerfile, không phải biến môi trường của container.
+ * `NEXT_PUBLIC_*` is **baked into the bundle at build time**, not read at runtime — so it must
+ * be a `--build-arg` in the Dockerfile, not a container environment variable.
  */
 export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? '').replace(/\/+$/, '');
 
-/** Dựng URL tuyệt đối cho những chỗ không đi qua `fetch` — ví dụ `EventSource`, link tải file. */
+/** Build an absolute URL for the places that bypass `fetch` — `EventSource`, download links. */
 export function apiUrl(path: string): string {
   return API_BASE ? `${API_BASE}${path}` : `/api${path}`;
 }
 
 /**
- * Client duy nhất đi ra API. Cấm `fetch()` trực tiếp trong component (frontend/CLAUDE.md §3).
- * Đường dẫn luôn tương đối `/api/...` — Next `rewrites()` chuyển sang backend, nên FE và BE
- * cùng origin và cookie httpOnly tự đi kèm.
+ * The single client that reaches the API. Calling `fetch()` directly inside a component is
+ * forbidden (frontend/CLAUDE.md §3). Paths stay relative `/api/...` — Next `rewrites()`
+ * forwards them to the backend, so FE and BE share an origin and the httpOnly cookie rides along.
  */
 
 export class ApiError extends Error {
@@ -46,7 +47,7 @@ async function tryRefresh(): Promise<boolean> {
     });
     return res.ok;
   })().finally(() => {
-    // Nhả khoá ở nhịp sau để các request song song cùng đợi đúng một lần refresh.
+    // Release the lock on the next tick so parallel requests all await the same single refresh.
     setTimeout(() => {
       refreshing = null;
     }, 0);
@@ -78,7 +79,7 @@ async function request<T>(
   });
 
   if (res.status === 401 && !retried && !path.startsWith('/auth/')) {
-    // Access token hết hạn: làm mới **một** lần rồi thử lại đúng request đó.
+    // Access token expired: refresh **once**, then retry that exact request.
     if (await tryRefresh()) return request<T>(method, path, body, true);
   }
 
@@ -102,7 +103,7 @@ export const api = {
   del: <T>(path: string) => request<T>('DELETE', path),
 };
 
-/** Query key phân cấp — đổi dữ liệu xong thì invalidate đúng nhánh (frontend/CLAUDE.md §3). */
+/** Hierarchical query keys — after a mutation, invalidate the exact branch (frontend/CLAUDE.md §3). */
 export const qk = {
   me: ['me'] as const,
   projects: ['projects'] as const,
@@ -121,23 +122,23 @@ export const qk = {
     ['card-sources', cardSourceId, 'gate-options'] as const,
   diff: (id: string, against?: string) => ['spec-versions', id, 'diff', against] as const,
   job: (id: string) => ['jobs', id] as const,
-  // làn B · #7 — thêm dòng vào cuối theo luật chung 4, không sửa dòng của ai.
+  // Lane B · #7 — append at the end per shared rule 4; never edit someone else's line.
   overclaim: (id: string) => ['spec-versions', id, 'overclaim'] as const,
-  // làn C · #16 — thêm dòng vào cuối theo luật chung 4.
+  // Lane C · #16 — append at the end per shared rule 4.
   sourceMap: (id: string) => ['projects', id, 'source-map'] as const,
-  // làn C · #18 — khoá theo chuỗi query vì preview là hàm thuần: một cấu hình một kết quả.
+  // Lane C · #18 — keyed by the query string because the preview is pure: one config, one result.
   estimatePreview: (id: string, query: string) =>
     ['projects', id, 'estimate-preview', query] as const,
-  // làn A · #1 — thêm dòng vào cuối theo luật chung 4.
+  // Lane A · #1 — append at the end per shared rule 4.
   credibility: (id: string) => ['projects', id, 'credibility'] as const,
-  // làn A · #5 — trang giải trình nhãn.
+  // Lane A · #5 — the label explainability page.
   evidenceTrace: (id: string) =>
     ['spec-versions', id, 'evidence-trace'] as const,
-  // làn A · #3 — hàng đợi xung đột nguồn.
+  // Lane A · #3 — the source conflict queue.
   conflicts: (id: string) => ['spec-versions', id, 'conflicts'] as const,
-  // làn A · #4 — hàng đợi chấm mù.
+  // Lane A · #4 — the blind labelling queue.
   labelQueue: (id: string) => ['spec-versions', id, 'label-queue'] as const,
-  // làn B · #9 — thêm dòng vào cuối theo luật chung 4.
+  // Lane B · #9 — append at the end per shared rule 4.
   agreement: (id: string) =>
     ['spec-versions', id, 'judge-agreement'] as const,
 };

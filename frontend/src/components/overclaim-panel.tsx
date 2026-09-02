@@ -20,11 +20,11 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * **B1 · Cờ claim bị phóng đại** (#7) — hiển thị ở bước 4, cạnh bảng issue của hội đồng judge.
+ * **B1 · Overclaim flags** (#7) — shown at step 4, next to the judge panel's issue table.
  *
- * Khác bảng issue ở một điểm quan trọng: mỗi cờ **luôn kèm một câu thu hẹp dùng được ngay**,
- * không phải lời cảnh báo suông. Ba nút bên dưới là ba đường ra của Bước 10; bấm cái nào thì
- * lựa chọn đó được ghi thành `Decision`.
+ * One important difference from the issue table: every flag **always carries a narrowed sentence
+ * you can use as is**, not a bare warning. The three buttons below are the three exits of Step 10;
+ * whichever is pressed is recorded as a `Decision`.
  */
 export function OverclaimPanel({ versionId }: { versionId: string | undefined }) {
   const { data, isLoading } = useOverclaimFlags(versionId);
@@ -38,7 +38,7 @@ export function OverclaimPanel({ versionId }: { versionId: string | undefined })
     <Panel
       accent={flags.length > 0 ? 'decide' : 'neutral'}
       icon={Megaphone}
-      title="Claim bị phóng đại"
+      title="Overclaimed statements"
       action={
         <Button
           size="sm"
@@ -49,41 +49,41 @@ export function OverclaimPanel({ versionId }: { versionId: string | undefined })
               onSuccess: (res) => {
                 if (!res.enabled) {
                   toast.info(
-                    'Bộ bắt claim phóng đại đang tắt cho dự án này. Bật cờ overclaim_detector để dùng.',
+                    'The overclaim detector is off for this project. Enable the overclaim_detector flag to use it.',
                   );
                   return;
                 }
                 toast.success(
-                  `Đã quét ${res.scanned} khẳng định — ${res.flagged} bị cờ (${res.byRule} bằng luật, ${res.byLlm} lời gọi LLM).`,
+                  `Scanned ${res.scanned} claims — ${res.flagged} flagged (${res.byRule} by rules, ${res.byLlm} LLM calls).`,
                 );
               },
               onError: (err) =>
                 toast.error(
                   err instanceof ApiError
                     ? err.message
-                    : 'Hệ thống chưa quét được. Bạn vui lòng thử lại.',
+                    : 'The scan could not run. Please try again.',
                 ),
             })
           }
         >
-          {scan.isPending ? 'Đang quét…' : 'Quét lại'}
+          {scan.isPending ? 'Scanning…' : 'Scan again'}
         </Button>
       }
     >
       {isLoading ? (
-        <p className="text-ink-3 text-xs">Đang tải cờ phóng đại…</p>
+        <p className="text-ink-3 text-xs">Loading overclaim flags…</p>
       ) : flags.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
           tone="ok"
-          title="Không có khẳng định nào bị cờ"
-          description="Phạm vi mỗi khẳng định đều nằm trong thứ kế hoạch thí nghiệm chứng minh được."
+          title="No claim was flagged"
+          description="Every claim stays within what the experiment plan can actually prove."
         />
       ) : (
         <>
           <p className="text-ink-3 flex items-center gap-1.5 text-xs">
             <Zap className="size-3 shrink-0" aria-hidden />
-            {byRule}/{flags.length} cờ do tầng luật bắt, không tốn lời gọi LLM nào.
+            {byRule}/{flags.length} flags came from the rule layer, costing no LLM calls.
           </p>
           <ul className="space-y-2.5">
             {flags.map((flag) => (
@@ -117,7 +117,7 @@ function FlagRow({
   return (
     <li className="border-hairline bg-sunken rounded-md border px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-2">
-        {/* `NONE` không bao giờ được ghi xuống DB, nên mức ở đây luôn là một `Severity` hợp lệ. */}
+        {/* `NONE` is never written to the DB, so the level here is always a valid `Severity`. */}
         <SeverityBadge severity={flag.level as Severity} />
         <span className="text-ink-1 text-xs font-medium">{flag.card_title}</span>
         <span
@@ -143,7 +143,7 @@ function FlagRow({
 
       {flag.matched_terms.length > 0 && (
         <p className="text-ink-3 mt-1 text-xs">
-          Cụm bị bắt:{' '}
+          Matched phrases:{' '}
           <span className="font-mono">{flag.matched_terms.join(' · ')}</span>
         </p>
       )}
@@ -151,9 +151,9 @@ function FlagRow({
       {flag.suggested_narrowing && (
         <div className="border-decide-line bg-surface mt-2 rounded-md border px-2.5 py-2">
           <p className="text-ink-3 text-2xs mb-1 font-medium tracking-wide uppercase">
-            Câu thu hẹp đề xuất
+            Suggested narrowing
           </p>
-          {/* Nội dung spec là tiếng Anh backend trả về — FE render nguyên văn, không dịch. */}
+          {/* Spec content is the English the backend returns — the FE renders it verbatim. */}
           <p className="text-ink-1 text-xs">{flag.suggested_narrowing}</p>
         </div>
       )}
@@ -161,7 +161,7 @@ function FlagRow({
       {settled ? (
         <p className="text-ok-strong mt-2 flex items-center gap-1.5 text-xs font-medium">
           <Check className="size-3.5 shrink-0" aria-hidden />
-          Đã chọn: {labelOf(options, flag.chosen_exit)}
+          Chosen: {labelOf(options, flag.chosen_exit)}
         </p>
       ) : (
         <div className="mt-2.5 space-y-1.5">
@@ -178,8 +178,8 @@ function FlagRow({
                   isChosen
                     ? 'border-decide-line border-2 bg-decide-soft'
                     : 'border-hairline bg-surface hover:bg-sunken',
-                  // Tailwind v4 bỏ `cursor: pointer` mặc định của `<button>`; `option-list.tsx`
-                  // cũng khai tay đúng cặp này.
+                  // Tailwind v4 dropped the default `cursor: pointer` on `<button>`;
+                  // `option-list.tsx` declares the same pair by hand.
                   choose.isPending
                     ? 'cursor-not-allowed opacity-60'
                     : 'cursor-pointer',
@@ -189,7 +189,7 @@ function FlagRow({
                   {opt.label}
                   {opt.key === flag.recommended_exit && (
                     <span className="text-decide-strong ml-1.5 font-normal">
-                      · Hệ thống đề xuất
+                      · Recommended
                     </span>
                   )}
                 </span>
@@ -206,18 +206,18 @@ function FlagRow({
               choose.mutate(
                 { flagId: flag.id, exit: chosen },
                 {
-                  onSuccess: () => toast.success('Đã ghi lại lựa chọn của bạn.'),
+                  onSuccess: () => toast.success('Your choice has been recorded.'),
                   onError: (err) =>
                     toast.error(
                       err instanceof ApiError
                         ? err.message
-                        : 'Hệ thống chưa lưu được lựa chọn. Vui lòng thử lại.',
+                        : 'Your choice could not be saved. Please try again.',
                     ),
                 },
               );
             }}
           >
-            {choose.isPending ? 'Đang lưu…' : 'Ghi lại lựa chọn'}
+            {choose.isPending ? 'Saving…' : 'Record choice'}
           </Button>
         </div>
       )}

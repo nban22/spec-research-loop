@@ -3,16 +3,19 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Token đặt tên theo VAI TRÒ, không theo màu (DESIGN_SYSTEM §2). Đọc "viền của vùng decide"
- * thì biết ngay đó là chỗ chờ người dùng quyết; đọc "viền tím" thì không biết gì.
- * Cách đặt tên này cũng làm luật cấm màu thô (§7.2) kiểm tra được bằng grep.
+ * Tokens are named after their ROLE, not their colour (DESIGN_SYSTEM §2). Reading "the border of
+ * the decide area" tells you immediately it is a place awaiting a user decision; reading "purple
+ * border" tells you nothing. This naming also makes the raw-colour ban (§7.2) greppable.
  *
- * Sắc lấy từ palette mặc định của Tailwind. Mỗi họ ba nấc: soft (nền) · line (viền) · ink (chữ/nền đặc).
- * KHÔNG khai `--breakpoint-*`: giữ nguyên thang breakpoint mặc định vì shadcn dùng `sm:` bên trong.
+ * The hues come from Tailwind's default palette. Each family has three steps:
+ * soft (fill) · line (border) · ink (text / solid fill).
+ * `--breakpoint-*` is NOT declared: the default breakpoint scale stays, because shadcn uses `sm:`
+ * internally.
  */
 /*
- * Ánh xạ biến của shadcn thành utility class (`border-border`, `bg-background`, …).
- * Giữ nguyên khối này — `components/ui/` dựa vào nó; giá trị thật trỏ về token vai trò ở dưới.
+ * Maps the shadcn variables onto utility classes (`border-border`, `bg-background`, …).
+ * Leave this block alone — `components/ui/` depends on it; the real values point at the role
+ * tokens below.
  */
 @theme inline {
   --color-background: var(--background);
@@ -45,53 +48,53 @@
 }
 
 @theme {
-  /* brand — hành động chính, thứ do hệ thống sinh ra, link, nav đang chọn (blue) */
+  /* brand — primary actions, system-generated content, links, the active nav item (blue) */
   --color-brand-soft: oklch(0.97 0.014 254.6);
   --color-brand-line: oklch(0.882 0.059 254.13);
   --color-brand-ink: oklch(0.546 0.215 262.88);
   --color-brand-strong: oklch(0.488 0.217 264.38);
 
-  /* decide — CHỖ NGƯỜI DÙNG PHẢI QUYẾT: option A/B/C, bước hiện tại, CONFLICT (violet) */
+  /* decide — WHERE THE USER MUST DECIDE: options A/B/C, the current step, CONFLICT (violet) */
   --color-decide-soft: oklch(0.969 0.016 293.76);
   --color-decide-line: oklch(0.894 0.057 293.28);
   --color-decide-ink: oklch(0.541 0.281 293.01);
   --color-decide-strong: oklch(0.491 0.27 292.58);
 
-  /* ok — đã chốt, đã có bằng chứng, bước đã qua (green) */
+  /* ok — settled, evidenced, a step already passed (green) */
   --color-ok-soft: oklch(0.962 0.044 156.74);
   --color-ok-line: oklch(0.871 0.15 154.45);
   --color-ok-ink: oklch(0.527 0.154 150.07);
   --color-ok-strong: oklch(0.448 0.119 151.33);
 
-  /* warn — cần làm rõ, chưa chắc chắn (amber) */
+  /* warn — needs clarification, not yet certain (amber) */
   --color-warn-soft: oklch(0.987 0.022 95.28);
   --color-warn-line: oklch(0.879 0.169 91.61);
   --color-warn-ink: oklch(0.555 0.163 48.998);
   --color-warn-strong: oklch(0.473 0.137 46.2);
 
-  /* major — CHỈ Severity = MAJOR (orange) */
+  /* major — Severity = MAJOR ONLY (orange) */
   --color-major-soft: oklch(0.98 0.016 73.68);
   --color-major-ink: oklch(0.646 0.222 41.116);
   --color-major-strong: oklch(0.553 0.195 38.402);
 
-  /* minor — CHỈ Severity = MINOR (yellow) */
+  /* minor — Severity = MINOR ONLY (yellow) */
   --color-minor-soft: oklch(0.987 0.026 102.212);
   --color-minor-ink: oklch(0.852 0.199 91.936);
   --color-minor-strong: oklch(0.421 0.095 57.708);
 
-  /* danger — không có bằng chứng, lỗi chặn (red) */
+  /* danger — no evidence, a blocking failure (red) */
   --color-danger-soft: oklch(0.971 0.013 17.38);
   --color-danger-line: oklch(0.885 0.062 18.334);
   --color-danger-ink: oklch(0.577 0.245 27.325);
   --color-danger-strong: oklch(0.505 0.213 27.518);
 
-  /* neutral — MISSING, chữ phụ, viền phụ (slate) */
+  /* neutral — MISSING, secondary text, secondary borders (slate) */
   --color-neutral-soft: oklch(0.984 0.003 247.858);
   --color-neutral-line: oklch(0.929 0.013 255.508);
   --color-neutral-ink: oklch(0.554 0.046 257.417);
   --color-neutral-strong: oklch(0.372 0.044 257.287);
 
-  /* khung: nền trang xanh rất nhạt, mặt card trắng, nền chìm, viền, bốn nấc chữ */
+  /* the frame: a very pale blue page, white card surfaces, sunken fills, hairlines, four text steps */
   --color-canvas: oklch(0.984 0.007 247.9);
   --color-surface: oklch(1 0 0);
   --color-sunken: oklch(0.968 0.007 247.9);
@@ -101,32 +104,32 @@
   --color-ink-3: oklch(0.554 0.046 257.417);
   --color-ink-4: oklch(0.704 0.04 256.788);
 
-  /* ba nấc bóng — §4.5. Hộp lồng trong Panel KHÔNG BAO GIỜ có bóng. */
+  /* three shadow steps — §4.5. A box nested inside a Panel NEVER carries a shadow. */
   --shadow-card: 0 1px 2px 0 oklch(0.208 0.042 265.755 / 0.05);
   --shadow-float: 0 8px 24px -6px oklch(0.208 0.042 265.755 / 0.16);
   --shadow-sheet: 0 -8px 24px -6px oklch(0.208 0.042 265.755 / 0.14);
-  /* Bóng khi rê chuột lên thứ bấm được — nhạt hơn `float`, ám sắc `brand` để cảm giác
-     "nhấc lên" đi kèm màu của hành động chứ không phải một mảng xám. */
+  /* The hover shadow on clickable things — lighter than `float` and tinted `brand`, so the
+     "lifted" feeling carries the colour of the action rather than a grey smudge. */
   --shadow-lift: 0 2px 8px -2px oklch(0.546 0.215 262.88 / 0.14);
 
   /*
-   * Đường cong chuyển động. Trước đây mọi transition dùng **mặc định trình duyệt**, tức là
-   * `ease` — chậm ở đầu, giật ở cuối. Hai đường cong dưới đây là toàn bộ vốn chuyển động
-   * của hệ: `out-quart` cho mọi thay đổi trạng thái, `spring` cho thứ *xuất hiện*.
+   * Motion curves. Every transition used to run on the **browser default**, i.e. `ease` — slow at
+   * the start and abrupt at the end. The two curves below are the system's entire motion vocabulary:
+   * `out-quart` for every state change, `spring` for things that *appear*.
    *
-   * Thời lượng dùng thang số có sẵn của Tailwind, chốt ba nấc và không dùng nấc khác:
-   *   duration-150 → hover, focus, đổi màu      (thấy tức thì)
-   *   duration-200 → accordion, panel, tô nền   (theo kịp mắt)
-   *   duration-300 → sheet, dialog, phần tử vào (đủ để đọc được hướng chuyển động)
+   * Durations use Tailwind's built-in scale, fixed at three steps and no others:
+   *   duration-150 → hover, focus, colour changes  (feels instant)
+   *   duration-200 → accordions, panels, fills     (keeps up with the eye)
+   *   duration-300 → sheets, dialogs, entrances    (long enough to read the direction)
    */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
   /*
-   * `rise` — phần tử **xuất hiện lần đầu** trượt lên 6px kèm mờ dần. Dùng kèm `animationDelay`
-   * so le 40ms để một danh sách hiện ra theo thứ tự đọc thay vì bật ra cùng lúc.
-   * `both` giữ trạng thái đầu trong lúc chờ delay — không có nó thì phần tử nháy một nhịp
-   * ở trạng thái cuối rồi mới lùi về đầu.
+   * `rise` — an element **appearing for the first time** slides up 6px while fading in. Paired
+   * with a 40ms staggered `animationDelay` so a list appears in reading order instead of all at once.
+   * `both` holds the initial state during the delay — without it the element flashes for a frame in
+   * its final state before snapping back to the start.
    */
   --animate-rise: rise 300ms var(--ease-out-quart) both;
 
@@ -142,11 +145,12 @@
   }
 
   /*
-   * Chuyển bước 1→5 **có hướng**: đi tới thì nội dung trượt vào từ phải, quay lại thì từ trái.
-   * Hướng mang thông tin — người dùng biết mình vừa tiến hay lùi mà không phải đọc stepper.
+   * The 1→5 step transition is **directional**: forward slides in from the right, back from the left.
+   * Direction carries information — the user knows whether they moved forward or back without
+   * reading the stepper.
    *
-   * Không dùng View Transitions API: Next 16 chưa mở nó ở config ổn định, và tự làm bằng
-   * keyframe thì kiểm soát được hoàn toàn, không phụ thuộc cờ experimental.
+   * Not the View Transitions API: Next 16 has not promoted it to stable config, and hand-written
+   * keyframes give full control without depending on an experimental flag.
    */
   --animate-step-next: step-next 320ms var(--ease-out-quart) both;
   --animate-step-prev: step-prev 320ms var(--ease-out-quart) both;
@@ -173,7 +177,7 @@
     }
   }
 
-  /* Nội dung vừa được thay tại chỗ (đổi bộ lọc, áp dụng quyết định) — chỉ mờ dần, không trượt. */
+  /* Content replaced in place (a filter change, an applied decision) — fade only, no slide. */
   --animate-fade-in: fade-in 200ms var(--ease-out-quart) both;
 
   @keyframes fade-in {
@@ -186,17 +190,17 @@
   }
 
   /*
-   * Nấc chữ thứ sáu, thay cho `text-[10px]` và `text-[11px]` rải rác 13 chỗ.
-   * Thang chốt ở SÁU nấc: 2xs · xs · sm · base · lg · xl. Không thêm cỡ tuỳ tiện nữa.
-   * 10px bị gộp lên 11px — dưới 11px thì dấu tiếng Việt bắt đầu dính vào nhau.
+   * The sixth text step, replacing `text-[10px]` and `text-[11px]` scattered across 13 places.
+   * The scale is fixed at SIX steps: 2xs · xs · sm · base · lg · xl. No more ad-hoc sizes.
+   * 10px was folded up into 11px — below 11px, accented glyphs start to collide.
    */
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
 }
 
 /*
- * Trỏ bộ biến của shadcn về token của mình, để chỉ có MỘT nguồn sự thật (§2).
- * Đây là việc duy nhất được làm với `components/ui/` — không sửa file nào trong đó.
+ * Point the shadcn variables at our own tokens, so there is exactly ONE source of truth (§2).
+ * This is the only thing done to `components/ui/` — no file in there is edited.
  */
 :root {
   --radius: 0.625rem;
@@ -228,13 +232,13 @@
     @apply bg-background text-foreground;
     font-family: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
   }
-  /* Không tắt vòng focus — đi hết 5 bước bằng bàn phím là một mục nghiệm thu (§6.10). */
+  /* Never disable the focus ring — completing all 5 steps by keyboard is an acceptance criterion (§6.10). */
   :focus-visible {
     @apply outline-2 outline-offset-2;
   }
   /*
-   * Người bật "giảm chuyển động" ở hệ điều hành thì tắt **toàn bộ** chuyển động, không trừ
-   * component nào. Đặt ở `base` để không phải nhớ thêm `motion-reduce:` ở từng chỗ.
+   * When someone enables "reduce motion" at the OS level, **all** motion is switched off, with no
+   * component exempt. Declared in `base` so nobody has to remember `motion-reduce:` at each site.
    */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -249,7 +253,7 @@
 }
 
 @layer utilities {
-  /* Vùng an toàn đáy iPhone: DecisionSheet và ExportBar phải trừ nó ra (§6.7 luật 3). */
+  /* The iPhone bottom safe area: DecisionSheet and ExportBar must account for it (§6.7 rule 3). */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

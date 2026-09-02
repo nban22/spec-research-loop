@@ -24,13 +24,13 @@ import {
 } from '@/lib/use-project';
 
 /**
- * **B1 · Nhập ý tưởng & Làm rõ** — bản đồ màn hình ở DESIGN_SYSTEM §5.4.
+ * **S1 · Idea intake & clarification** — the screen map lives in DESIGN_SYSTEM §5.4.
  *
- * Cột 1 `IdeaInput` + `TopicChipList` · Cột 2 `ParaphraseCard` → `KeyProblemList` →
- * `HintBox` mức chắc chắn → **`CardBoard`** · Cột 3 các câu hỏi làm rõ.
+ * Column 1 `IdeaInput` + `TopicChipList` · Column 2 `ParaphraseCard` → `KeyProblemList` →
+ * the confidence `HintBox` → **`CardBoard`** · Column 3 the clarifying questions.
  *
- * `CardBoard` nằm ở cột giữa, **dưới** phần diễn giải — không tách thành bước riêng, vì
- * ARCHITECTURE §4 đã gộp bước 1–2 của đề vào B1 (§5.4 #1).
+ * `CardBoard` sits in the middle column, **below** the paraphrase — not split into its own step,
+ * because ARCHITECTURE §4 already merged the brief's steps 1–2 into S1 (§5.4 #1).
  */
 export function Step1({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -40,8 +40,8 @@ export function Step1({ projectId }: { projectId: string }) {
   const { data: pendingData } = usePendingDecisions(projectId);
   const job = useJobAction(projectId);
   const answer = useAnswerDecision(projectId);
-  /* Bản đồ là mặc định — đề gợi ý trả lời câu "tôi hiểu đúng chưa" bằng hình, và đường
-     đọc-văn-bản vẫn giữ nguyên ở tab thứ hai chứ không bị thay thế (#14). */
+  /* The map is the default — the brief suggests answering "did I understand you?" with a picture,
+     and the read-the-text path stays available on the second tab rather than being replaced (#14). */
   const [view, setView] = useState<'map' | 'board'>('map');
   const reduced = useReducedMotion();
 
@@ -52,7 +52,7 @@ export function Step1({ projectId }: { projectId: string }) {
 
   const context = (
     <>
-      <Panel accent="brand" icon={Lightbulb} title="Ý tưởng ban đầu">
+      <Panel accent="brand" icon={Lightbulb} title="The original idea">
         <IdeaInput
           value={detail?.project.raw_idea}
           variant="inline"
@@ -61,7 +61,7 @@ export function Step1({ projectId }: { projectId: string }) {
         />
         {meta?.topics && meta.topics.length > 0 && (
           <div className="space-y-1.5 pt-1">
-            <p className="text-ink-3 text-xs font-medium">Chủ đề hệ thống suy ra</p>
+            <p className="text-ink-3 text-xs font-medium">Topics the system inferred</p>
             <TopicChipList topics={meta.topics} />
           </div>
         )}
@@ -79,20 +79,20 @@ export function Step1({ projectId }: { projectId: string }) {
         <EmptyState
           icon={Lightbulb}
           tone="brand"
-          title="Chưa phân tích ý tưởng"
-          description="Bấm “Phân tích ý tưởng” ở cột bên trái. Hệ thống sẽ diễn giải lại ý tưởng, chỉ ra các vấn đề chính, và phân rã thành thẻ để bạn xác nhận."
+          title="The idea has not been analysed yet"
+          description="Press “Analyse idea” in the left column. The system will paraphrase the idea back, point out the key problems, and decompose it into cards for you to confirm."
         />
       ) : (
         <>
-          {/* ParaphraseCard — chức năng 2, hiện thực "Cách hệ thống đang hiểu ý tưởng" */}
-          <Panel accent="ok" icon={ClipboardList} title="Cách hệ thống đang hiểu ý tưởng">
+          {/* ParaphraseCard — feature 2, the "How the system reads your idea" panel */}
+          <Panel accent="ok" icon={ClipboardList} title="How the system reads your idea">
             <p className="bg-ok-soft text-ink-1 rounded-md px-3 py-2.5 text-sm leading-relaxed">
-              {meta?.paraphrase_vi}
+              {meta?.paraphrase_en}
             </p>
             {meta?.confidence && (
               <HintBox
                 tone={CONFIDENCE_STYLE[meta.confidence].tone}
-                title={`Mức chắc chắn: ${CONFIDENCE_STYLE[meta.confidence].label}`}
+                title={`Confidence: ${CONFIDENCE_STYLE[meta.confidence].label}`}
               >
                 {CONFIDENCE_STYLE[meta.confidence].hint}
               </HintBox>
@@ -100,8 +100,8 @@ export function Step1({ projectId }: { projectId: string }) {
           </Panel>
 
           {meta?.key_problems && meta.key_problems.length > 0 && (
-            <Panel accent="neutral" icon={ListChecks} title="Vấn đề chính">
-              {/* Họ `warn`, KHÔNG dùng cam như mockup — cam là tài sản riêng của Severity (§8 #5) */}
+            <Panel accent="neutral" icon={ListChecks} title="Key problems">
+              {/* The `warn` family, NOT the mockup's orange — orange belongs to Severity (§8 #5) */}
               <ul className="space-y-1.5">
                 {meta.key_problems.map((p, i) => (
                   <li key={i} className="text-ink-2 flex gap-2 text-sm">
@@ -116,12 +116,12 @@ export function Step1({ projectId }: { projectId: string }) {
           <Panel
             accent="neutral"
             icon={ClipboardList}
-            title="Bảng thẻ phân rã — 8 loại × 6 trạng thái"
+            title="Decomposition board — 8 types × 6 statuses"
             action={<ViewToggle view={view} onChange={setView} />}
           >
-            {/* Hai cách nhìn **cùng một tập thẻ**, nên chuyển giữa chúng phải liền mạch chứ
-                không phải thay nội dung. `mode="wait"` để chiều cao không giật: bản đồ và bảng
-                cao rất khác nhau. */}
+            {/* Two views of **the same set of cards**, so switching between them must feel
+                continuous rather than like a content swap. `mode="wait"` keeps the height from
+                jumping: the map and the board have very different heights. */}
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={view}
@@ -145,7 +145,7 @@ export function Step1({ projectId }: { projectId: string }) {
 
   const decide =
     pending.length > 0 ? (
-      <Panel accent="decide" icon={MessageCircleQuestion} title="Câu hỏi làm rõ">
+      <Panel accent="decide" icon={MessageCircleQuestion} title="Clarifying questions">
         <div className="space-y-5">
           {pending.map((d) => (
             <OptionList
@@ -166,16 +166,16 @@ export function Step1({ projectId }: { projectId: string }) {
         </div>
       </Panel>
     ) : analyzed ? (
-      <Panel accent="ok" icon={ListChecks} title="Đã trả lời hết câu hỏi">
+      <Panel accent="ok" icon={ListChecks} title="All questions answered">
         <HintBox tone="ok">
-          Bạn đã xác nhận cách hệ thống hiểu ý tưởng. Sang bước 2 để đi tìm tài liệu thật.
+          You have confirmed how the system reads your idea. Move to step 2 to search for real literature.
         </HintBox>
         <button
           type="button"
           onClick={() => router.push(`/projects/${projectId}/step/2`)}
           className="bg-brand-ink w-full cursor-pointer rounded-md px-4 py-2.5 text-sm font-medium text-white"
         >
-          Sang bước tiếp theo
+          Go to the next step
         </button>
       </Panel>
     ) : undefined;
@@ -183,22 +183,22 @@ export function Step1({ projectId }: { projectId: string }) {
   return (
     <WizardShell
       preset="balanced"
-      contextTitle="Ý tưởng ban đầu"
-      /* B1: KHÔNG thu gọn — `IdeaInput` là hành động chính của bước này (§6.9). */
+      contextTitle="The original idea"
+      /* S1: NOT collapsed — `IdeaInput` is the primary action of this step (§6.9). */
       contextDefaultOpen
       context={context}
       content={content}
       decide={decide}
       decideCount={pending.length}
       decideSummary={
-        pending.length > 0 ? `Cần bạn quyết: ${pending.length} câu hỏi` : undefined
+        pending.length > 0 ? `Waiting on you: ${pending.length} questions` : undefined
       }
       summaryBar={
         <SummaryBar
           round={1}
-          nodes={['Nhập ý tưởng', 'Làm rõ', 'Xác nhận', 'Sang bước tiếp theo']}
+          nodes={['Enter idea', 'Clarify', 'Confirm', 'Next step']}
           activeIndex={!analyzed ? 0 : pending.length > 0 ? 1 : 2}
-          hint="Không bước nào tự chốt — bạn xác nhận rồi hệ thống mới đi tiếp."
+          hint="No step confirms itself — the system only moves on once you say so."
         />
       }
     />

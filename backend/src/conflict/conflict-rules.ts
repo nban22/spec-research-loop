@@ -115,7 +115,7 @@ function polarityFinding(
     decisive: true,
     terms: [pa, pb],
     reason:
-      'Một nguồn được verifier chấm là hỗ trợ khẳng định, nguồn còn lại bị chấm là phản bác chính khẳng định đó.',
+      'One source was scored by the verifier as supporting the claim, while the other was scored as contradicting the same claim.',
     textA: textOf(a),
     textB: textOf(b),
   };
@@ -153,7 +153,7 @@ function numericFinding(
     kind: 'NUMERIC',
     decisive: false,
     terms: [shared[0], `${worst.x}${unit}`, `${worst.y}${unit}`],
-    reason: `Hai nguồn cùng báo cáo ${shared[0]} nhưng đưa ra hai con số khác nhau: ${worst.x}${unit} và ${worst.y}${unit}.`,
+    reason: `Both sources report ${shared[0]} but give two different numbers: ${worst.x}${unit} and ${worst.y}${unit}.`,
     textA,
     textB,
   };
@@ -175,7 +175,7 @@ function directionFinding(
       kind: 'DIRECTION',
       decisive: false,
       terms: [pair.label, poleA, poleB],
-      reason: `Hai nguồn nói ngược chiều nhau về cùng một điểm (${pair.label}).`,
+      reason: `The two sources point in opposite directions on the same point (${pair.label}).`,
       textA,
       textB,
     };
@@ -217,7 +217,7 @@ export function detectCrossCardConflict(
   return {
     ...finding,
     reason:
-      'Hai thẻ cùng dựa vào một bài báo nhưng theo hai chiều ngược nhau: một thẻ coi bài này là chứng cứ ủng hộ, thẻ kia coi nó là chứng cứ phản bác.',
+      'Two cards rely on the same paper in opposite directions: one treats it as supporting evidence, the other as contradicting evidence.',
   };
 }
 

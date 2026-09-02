@@ -36,7 +36,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let body: ErrorBody = {
       code: 'INTERNAL_ERROR',
-      message: 'Đã có lỗi xảy ra ở máy chủ.',
+      message: 'Something went wrong on the server.',
     };
 
     if (exception instanceof HttpException) {
@@ -45,9 +45,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (isErrorBody(payload)) {
         body = payload;
       } else if (status === HttpStatus.UNAUTHORIZED) {
-        body = { code: 'UNAUTHENTICATED', message: 'Bạn cần đăng nhập.' };
+        body = { code: 'UNAUTHENTICATED', message: 'You need to sign in.' };
       } else if (status === HttpStatus.NOT_FOUND) {
-        body = { code: 'NOT_FOUND', message: 'Không tìm thấy tài nguyên.' };
+        body = { code: 'NOT_FOUND', message: 'Resource not found.' };
       } else {
         body = { code: 'VALIDATION_FAILED', message: exception.message };
       }

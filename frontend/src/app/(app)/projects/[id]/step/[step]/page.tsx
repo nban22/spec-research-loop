@@ -14,10 +14,10 @@ import { api, qk } from '@/lib/api';
 import { STEPS, type ApiProjectDetail } from '@/lib/types';
 
 /**
- * Bước đang đứng nằm ở **URL**, không ở store: F5 phải về đúng chỗ và link phải gửi được
- * (SYSTEM_DESIGN_ANALYSIS S7 · F.4).
+ * The current step lives in the **URL**, not the store: a refresh must land in the right place and
+ * links must be shareable (SYSTEM_DESIGN_ANALYSIS S7 · F.4).
  *
- * Next.js 16: `params` là Promise, mở bằng `use()` trong Client Component.
+ * Next.js 16: `params` is a Promise, unwrapped with `use()` inside a Client Component.
  */
 export default function StepPage({ params }: PageProps<'/projects/[id]/step/[step]'>) {
   const { id, step } = use(params);
@@ -28,8 +28,8 @@ export default function StepPage({ params }: PageProps<'/projects/[id]/step/[ste
     queryFn: () => api.get<ApiProjectDetail>(`/projects/${id}`),
   });
 
-  // URL có thể bị nhập tay; chỉ render những bước backend đã xác nhận là đã tới.
-  // Trong lúc đang tải giữ nguyên URL requested để không nhấp nháy về bước 1.
+  // The URL can be typed by hand; only render steps the backend confirms have been reached.
+  // While loading, keep the requested step so the page does not flash back to step 1.
   const reachedNo = data
     ? (STEPS.find((s) => s.step === data.project.step)?.no ?? 1)
     : stepNo;
@@ -39,15 +39,15 @@ export default function StepPage({ params }: PageProps<'/projects/[id]/step/[ste
     <>
       <Stepper projectId={id} current={visibleStepNo} maxReached={reachedNo} />
 
-      {/* Tiêu đề nằm TRONG vùng chuyển: đổi bước thì cả tên bước lẫn nội dung cùng trượt,
-          còn `Stepper` đứng yên vì nó là điều hướng, không phải nội dung. */}
+      {/* The heading lives INSIDE the transition: changing step slides the step name together with
+          the content, while `Stepper` stays put because it is navigation, not content. */}
       <StepTransition step={visibleStepNo}>
         <div className="mx-auto w-full max-w-[1400px] px-3 pt-3 md:px-4">
           <h1 className="text-ink-1 text-lg font-semibold md:text-xl">
             {visibleStepNo}. {STEPS[visibleStepNo - 1]?.title}
           </h1>
           <p className="text-ink-3 line-clamp-2 text-xs md:text-sm">
-            {data?.project.title ?? 'Đang tải dự án…'}
+            {data?.project.title ?? 'Loading the project…'}
           </p>
         </div>
 

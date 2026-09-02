@@ -37,27 +37,28 @@ export type OverclaimOption = {
 export const OVERCLAIM_OPTIONS: OverclaimOption[] = [
   {
     key: 'NARROW_CLAIM',
-    label: 'Thu hẹp khẳng định về đúng phạm vi đã chứng minh',
+    label: 'Narrow the claim to the scope actually proven',
     explain:
-      'Giữ kết quả, sửa câu chữ cho khớp thứ thí nghiệm thật sự đo được. Rẻ nhất và gần như luôn dùng được.',
+      'Keep the result, reword it to match what the experiment actually measures. The cheapest option and almost always usable.',
     example:
-      'Ví dụ: "phương pháp hoạt động trên mọi domain" → "phương pháp hoạt động trên domain văn bản pháp luật".',
+      'For example: "the method works across every domain" → "the method works on the legal-text domain".',
     recommended: true,
   },
   {
     key: 'EXPAND_EXPERIMENT',
-    label: 'Giữ khẳng định, mở rộng thí nghiệm cho đủ phạm vi',
+    label: 'Keep the claim, widen the experiments to cover its scope',
     explain:
-      'Khẳng định đáng giữ nguyên độ rộng. Bạn phải thêm domain hoặc dataset vào kế hoạch thí nghiệm.',
-    example: 'Ví dụ: thêm một domain thứ hai để câu "nhiều domain" có chỗ dựa.',
+      'The claim is worth keeping at its current breadth. You must add a domain or dataset to the experiment plan.',
+    example:
+      'For example: add a second domain so that "multiple domains" has something behind it.',
   },
   {
     key: 'TO_RESEARCH_QUESTION',
-    label: 'Hạ xuống câu hỏi nghiên cứu',
+    label: 'Demote it to a research question',
     explain:
-      'Không bằng chứng nào chống lưng nổi ở phạm vi đáng nói. Giữ ý tưởng dưới dạng câu hỏi mở thay vì khẳng định.',
+      'No evidence can support it at any meaningful scope. Keep the idea as an open question rather than a claim.',
     example:
-      'Ví dụ: "phương pháp tổng quát hoá được" → "phương pháp có tổng quát hoá sang domain khác không?".',
+      'For example: "the method generalises" → "does the method generalise to other domains?".',
   },
 ];
 
@@ -197,7 +198,7 @@ export class OverclaimService {
     }
 
     this.logger.log(
-      `overclaim scan ${specVersionId}: ${flagged}/${claims.length} bị cờ (${byRule} bằng luật, ${byLlm} lời gọi LLM)`,
+      `overclaim scan ${specVersionId}: ${flagged}/${claims.length} flagged (${byRule} by rules, ${byLlm} LLM calls)`,
     );
     return {
       enabled: true,
@@ -261,7 +262,7 @@ export class OverclaimService {
       return out.data;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`overclaim LLM lỗi trên card ${card.id}: ${message}`);
+      this.logger.warn(`overclaim LLM failed on card ${card.id}: ${message}`);
       return null;
     }
   }
@@ -374,7 +375,7 @@ export class OverclaimService {
         project_id: version.project_id,
         spec_version_id: version.id,
         step: 'S4',
-        question: `Khẳng định "${flag.rationale}" — bạn muốn xử lý thế nào?`,
+        question: `The claim "${flag.rationale}" — how do you want to handle it?`,
         options: json(OVERCLAIM_OPTIONS),
         chosen_key: chosenExit,
         custom_text: customText ?? null,

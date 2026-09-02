@@ -14,7 +14,7 @@ export class ZodBody<T> implements PipeTransform<unknown, T> {
     if (!parsed.success) {
       throw new AppError(
         'VALIDATION_FAILED',
-        'Dữ liệu gửi lên không hợp lệ.',
+        'The submitted data is not valid.',
         HttpStatus.BAD_REQUEST,
         parsed.error.issues.map((i) => ({
           path: i.path.join('.'),

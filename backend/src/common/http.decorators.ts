@@ -20,7 +20,7 @@ export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): AuthUser => {
     const req = ctx.switchToHttp().getRequest<Request & { user?: AuthUser }>();
     if (!req.user)
-      throw new Error('CurrentUser dùng ngoài phạm vi JwtAuthGuard');
+      throw new Error('CurrentUser used outside the scope of JwtAuthGuard');
     return req.user;
   },
 );
@@ -28,7 +28,8 @@ export const CurrentUser = createParamDecorator(
 export const UserId = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): string => {
     const req = ctx.switchToHttp().getRequest<Request & { user?: AuthUser }>();
-    if (!req.user) throw new Error('UserId dùng ngoài phạm vi JwtAuthGuard');
+    if (!req.user)
+      throw new Error('UserId used outside the scope of JwtAuthGuard');
     return req.user.id;
   },
 );

@@ -54,10 +54,11 @@ export type DecisionOption = {
 /** Giao diện **luôn** chèn option này; backend cũng chèn để eval và API dùng chung một tập. */
 export const OTHER_OPTION: DecisionOption = {
   key: 'OTHER',
-  label: 'Khác — tôi tự mô tả',
+  label: 'Other — I will describe it myself',
   explain:
-    'Bạn mô tả cách xử lý của riêng mình; hệ thống ghi lại nguyên văn lý do.',
-  example: 'Ví dụ: giữ nguyên claim nhưng ghi chú rằng bằng chứng còn yếu.',
+    'Describe your own way of handling this; the system records your reason verbatim.',
+  example:
+    'For example: keep the claim as it stands but note that the evidence is still weak.',
 };
 
 /**
@@ -73,37 +74,39 @@ export const OTHER_OPTION: DecisionOption = {
 export const GATE_OPTIONS: DecisionOption[] = [
   {
     key: 'A',
-    label: 'Tìm nguồn khác cho khẳng định này',
+    label: 'Find another source for this claim',
     explain:
-      'Mở lại bước tìm nguồn cho đúng khẳng định đó. Spec chưa đổi gì; lựa chọn của bạn vẫn được ghi lại.',
-    example: 'Ví dụ: tìm thêm paper có đúng con số mà khẳng định đang nói.',
+      'Reopen the source search for that claim. The spec does not change; your choice is still recorded.',
+    example:
+      'For example: find a paper that reports the exact number the claim states.',
   },
   {
     key: 'B',
-    label: 'Sửa khẳng định cho khớp điều nguồn thật sự nói',
+    label: 'Narrow the claim to match what the source actually says',
     explain:
-      'Thu hẹp khẳng định về đúng phạm vi mà abstract của nguồn chống lưng được.',
+      'Pull the claim back to the scope the source abstract can support.',
     example:
-      'Ví dụ: "giảm 20% trên mọi domain" → "giảm được trên tập paper khoa học".',
+      'For example: "20% reduction across every domain" → "a reduction on scientific papers".',
   },
   {
     key: 'C',
-    label: 'Hạ xuống câu hỏi mở — giữ ý tưởng, bỏ khẳng định',
+    label: 'Demote it to an open question — keep the idea, drop the claim',
     explain:
-      'Thẻ vẫn còn trong spec nhưng không còn là một khẳng định cần bằng chứng.',
+      'The card stays in the spec but is no longer a claim that needs evidence.',
     example:
-      'Ví dụ: "Phương pháp tổng quát hoá được" → "Nó có tổng quát hoá được không?"',
+      'For example: "The method generalises" → "Does the method generalise?"',
     recommended: true,
   },
   {
-    // `key` phải là `OTHER` để `record`/`gateDecision` bắt buộc nhập lý do bằng đúng một luật.
-    // Nội dung khác `OTHER_OPTION` chung, vì ở đây "khác" có nghĩa cụ thể: **giữ nguyên**.
+    // The `key` must be `OTHER` so `record`/`gateDecision` enforce the reason with one single rule.
+    // The wording differs from the shared `OTHER_OPTION` because here "other" has a specific
+    // meaning: **keep it as is**.
     key: 'OTHER',
-    label: 'Giữ nguyên và ghi rõ lý do',
+    label: 'Keep it and state your reason',
     explain:
-      'Bạn vẫn là người quyết định cuối cùng. Trích dẫn được giữ lại, nhưng lý do của bạn được ghi vào lịch sử quyết định và đánh dấu ngay trong file xuất ra.',
+      'You remain the final decision maker. The citation is kept, but your reason goes into the decision log and is marked in the exported file.',
     example:
-      'Ví dụ: abstract không nói nhưng phần kết quả của paper có — tôi đã đọc bản đầy đủ.',
+      'For example: the abstract does not say it but the results section does — I read the full paper.',
   },
 ];
 
@@ -191,7 +194,7 @@ export class DecisionService {
     if (input.chosenKey === 'OTHER' && !input.customText?.trim()) {
       throw AppError.unprocessable(
         'OTHER_REASON_REQUIRED',
-        'Chọn "Khác" thì bắt buộc nhập lý do.',
+        'Choosing "Other" requires a reason.',
       );
     }
 
@@ -201,11 +204,11 @@ export class DecisionService {
         where: { id: input.decisionId, project_id: projectId },
       });
       if (!pending)
-        throw AppError.notFound('Không tìm thấy câu hỏi cần trả lời.');
+        throw AppError.notFound('The question to answer was not found.');
       if (pending.applied) {
         throw AppError.conflict(
           'DECISION_ALREADY_APPLIED',
-          'Quyết định này đã được áp dụng.',
+          'This decision has already been applied.',
           { resultingSpecVersionId: pending.resulting_spec_version_id },
         );
       }
@@ -227,7 +230,7 @@ export class DecisionService {
       ) {
         throw AppError.badRequest(
           'VALIDATION_FAILED',
-          'Thiếu dữ liệu để tạo quyết định mới.',
+          'Not enough data to create a new decision.',
         );
       }
       this.assertOptionExists(input.options, input.chosenKey);
@@ -323,7 +326,7 @@ export class DecisionService {
     if (input.chosenKey === 'OTHER' && !input.customText?.trim()) {
       throw AppError.unprocessable(
         'OTHER_REASON_REQUIRED',
-        'Giữ nguyên một trích dẫn không được hỗ trợ thì bắt buộc nhập lý do.',
+        'Keeping an unsupported citation requires a reason.',
       );
     }
     this.assertOptionExists(GATE_OPTIONS, input.chosenKey);
@@ -338,14 +341,14 @@ export class DecisionService {
         source: { select: { title: true } },
       },
     });
-    if (!pair) throw AppError.notFound('Không tìm thấy cặp khẳng định–nguồn.');
+    if (!pair) throw AppError.notFound('The claim-source pair was not found.');
 
     const decision = await this.prisma.decision.create({
       data: {
         project_id: projectId,
         spec_version_id: pair.card.spec_version_id,
         step: 'S5',
-        question: `Khẳng định “${pair.card.title}” đang trích “${pair.source.title}”, nhưng nguồn đó không chống lưng được nội dung khẳng định. Bạn muốn xử lý thế nào?`,
+        question: `The claim “${pair.card.title}” cites “${pair.source.title}”, but that source does not support what the claim says. How do you want to handle it?`,
         options: json(GATE_OPTIONS),
         chosen_key: input.chosenKey,
         custom_text: input.customText ?? null,
@@ -417,7 +420,7 @@ export class DecisionService {
     if (list.length > 0 && !list.some((o) => o.key === key)) {
       throw AppError.badRequest(
         'DECISION_OPTION_UNKNOWN',
-        `Phương án "${key}" không có trong danh sách đã hiện cho người dùng.`,
+        `Option "${key}" was not in the list shown to the user.`,
       );
     }
   }
@@ -535,11 +538,11 @@ export class DecisionService {
     const decision = await this.prisma.decision.findFirst({
       where: { id: decisionId, project_id: projectId },
     });
-    if (!decision) throw AppError.notFound('Không tìm thấy quyết định.');
+    if (!decision) throw AppError.notFound('The decision was not found.');
     if (decision.applied) {
       throw AppError.conflict(
         'DECISION_ALREADY_APPLIED',
-        'Quyết định này đã được áp dụng rồi.',
+        'This decision has already been applied.',
         { resultingSpecVersionId: decision.resulting_spec_version_id },
       );
     }
@@ -547,7 +550,7 @@ export class DecisionService {
     if (!parsedDraft.success) {
       throw AppError.badRequest(
         'VALIDATION_FAILED',
-        'Quyết định này chưa có bản nháp để áp dụng.',
+        'This decision has no draft to apply.',
       );
     }
 
@@ -604,7 +607,7 @@ export class DecisionService {
             parent_version_id: parent.id,
             created_by_decision_id: decision.id,
             status: 'DRAFT',
-            label: `Sau quyết định: ${parsedDraft.data.summary.slice(0, 60)}`,
+            label: `After the decision: ${parsedDraft.data.summary.slice(0, 60)}`,
             meta: jsonOrDbNull(parent.meta),
           },
         });
@@ -728,7 +731,7 @@ export class DecisionService {
         if (updated.count === 0) {
           throw AppError.conflict(
             'DECISION_ALREADY_APPLIED',
-            'Quyết định này vừa được áp dụng ở nơi khác.',
+            'This decision was just applied somewhere else.',
           );
         }
 
@@ -747,7 +750,7 @@ export class DecisionService {
       if (isUniqueViolation(err)) {
         throw AppError.conflict(
           'VERSION_CONFLICT',
-          'Spec đã thay đổi ở nơi khác. Tải lại rồi chọn lại.',
+          'The spec changed somewhere else. Reload and choose again.',
         );
       }
       throw err;

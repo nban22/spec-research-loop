@@ -53,7 +53,7 @@ export class SourceMapService {
       where: { id: projectId, user_id: userId },
       select: { id: true },
     });
-    if (!project) throw AppError.notFound('Không tìm thấy dự án.');
+    if (!project) throw AppError.notFound('Project not found.');
 
     const sources = await this.prisma.source.findMany({
       where: { project_id: projectId },

@@ -26,20 +26,20 @@ import {
 } from '@/lib/use-project';
 
 const FILTERS = [
-  { key: 'peer', label: 'Có nơi công bố (peer-reviewed)' },
-  { key: 'doi', label: 'Có DOI' },
-  { key: 'recent', label: 'Từ 2020 trở lại đây' },
-  { key: 'abstract', label: 'Có abstract để đối chiếu' },
-  // Làn A · #1 — chỉ có nghĩa khi cờ `source_credibility` bật; lọc bỏ ở dưới nếu tắt.
-  { key: 'trusted', label: 'Chỉ nguồn đáng tin' },
+  { key: 'peer', label: 'Has a venue (peer-reviewed)' },
+  { key: 'doi', label: 'Has a DOI' },
+  { key: 'recent', label: '2020 or newer' },
+  { key: 'abstract', label: 'Has an abstract to check against' },
+  // Lane A · #1 — only meaningful when the `source_credibility` flag is on; filtered out below if off.
+  { key: 'trusted', label: 'Trusted sources only' },
 ];
 
 /**
- * **B2 · Nghiên cứu liên quan & Research Gap** (DESIGN_SYSTEM §5.4, preset *giữa rộng*).
+ * **S2 · Related work & research gap** (DESIGN_SYSTEM §5.4, the *wide-middle* preset).
  *
- * Thứ tự **tìm nguồn thật trước, gọi LLM sau** là cả thiết kế của bước này (C1 · F.6):
- * bảng related work được điền **từ danh sách paper đã nằm trong kho**, không phải từ trí nhớ
- * của model.
+ * The order — **find real sources first, call the LLM second** — is the whole design of this step
+ * (C1 · F.6): the related-work table is filled **from the papers already in the store**, never from
+ * the model's memory.
  */
 export function Step2({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -55,8 +55,8 @@ export function Step2({ projectId }: { projectId: string }) {
 
   const [active, setActive] = useState<string[]>([]);
   const [sortByTrust, setSortByTrust] = useState(false);
-  /* Từ khoá mặc định suy ra từ meta **trong lúc render**; state chỉ giữ phần người dùng đã sửa,
-     nên không cần setState trong effect (gây render dây chuyền). */
+  /* The default keywords are derived from meta **during render**; state holds only what the user
+     edited, so no setState in an effect (which would cascade renders). */
   const [editedKeywords, setEditedKeywords] = useState<string[] | null>(null);
   const keywords =
     editedKeywords ?? (detail?.currentVersion?.meta?.search_keywords ?? []).slice(0, 4);
@@ -67,7 +67,7 @@ export function Step2({ projectId }: { projectId: string }) {
   const tierOf = new Map(
     (credibility?.sources ?? []).map((c) => [c.source_id, c]),
   );
-  /** Cờ tắt ⇒ giấu luôn cả filter, không để một ô tick không làm gì. */
+  /** Flag off ⇒ hide the filter entirely, rather than leaving a checkbox that does nothing. */
   const filters = credOn ? FILTERS : FILTERS.filter((f) => f.key !== 'trusted');
 
   const allSources = sourceData?.sources ?? [];
@@ -81,8 +81,8 @@ export function Step2({ projectId }: { projectId: string }) {
     return true;
   });
 
-  /* Backend trả sẵn theo số trích dẫn giảm dần. Khi có điểm tin cậy thì sắp lại ở client —
-     một nguồn nhiều trích dẫn nhưng không DOI, không nơi công bố vẫn nên đứng sau. */
+  /* The backend returns them by descending citation count. When credibility scores exist we
+     re-sort on the client — a heavily cited source with no DOI and no venue still belongs lower. */
   if (credOn && sortByTrust) {
     sources.sort(
       (a, b) => (tierOf.get(b.id)?.total ?? 0) - (tierOf.get(a.id)?.total ?? 0),
@@ -97,14 +97,14 @@ export function Step2({ projectId }: { projectId: string }) {
     : sources.slice(0, 12).map((s) => ({
         id: s.id,
         source: s,
-        what_done: s.abstract?.slice(0, 220) ?? 'Không có abstract từ provider.',
-        feedback_type: s.venue ? 'Đã công bố' : 'Bản tiền ấn',
+        what_done: s.abstract?.slice(0, 220) ?? 'The provider returned no abstract.',
+        feedback_type: s.venue ? 'Published' : 'Preprint',
         what_missing: '—',
       }));
 
   const context = (
     <>
-      <Panel accent="brand" icon={Search} title="Từ khoá tìm nguồn">
+      <Panel accent="brand" icon={Search} title="Source-search keywords">
         <KeywordChipInput keywords={keywords} onChange={setKeywords} />
         <Button
           className="w-full"
@@ -115,15 +115,15 @@ export function Step2({ projectId }: { projectId: string }) {
           }
         >
           <Search className="size-4" aria-hidden />
-          {job.busy ? 'Đang tìm…' : 'Tìm nguồn thật'}
+          {job.busy ? 'Searching…' : 'Search for real sources'}
         </Button>
         <HintBox tone="info">
-          Nguồn chỉ đến từ Semantic Scholar và OpenAlex. Hệ thống không được phép tự nghĩ ra
-          paper — cả hai nhà cung cấp cùng hỏng thì bước này dừng lại.
+          Sources come only from Semantic Scholar and OpenAlex. The system is never allowed to
+          invent a paper — if both providers fail, this step stops.
         </HintBox>
       </Panel>
 
-      <Panel accent="neutral" icon={Filter} title="Nguồn ưu tiên">
+      <Panel accent="neutral" icon={Filter} title="Preferred sources">
         <SourceFilterList
           filters={filters.map((f) => ({ ...f, checked: active.includes(f.key) }))}
           onToggle={(key) =>
@@ -133,7 +133,7 @@ export function Step2({ projectId }: { projectId: string }) {
           }
         />
         <p className="text-ink-3 text-xs">
-          Hiện {sources.length}/{allSources.length} nguồn
+          Showing {sources.length}/{allSources.length} sources
         </p>
         {credOn && (
           <Button
@@ -143,14 +143,14 @@ export function Step2({ projectId }: { projectId: string }) {
             aria-pressed={sortByTrust}
             onClick={() => setSortByTrust((v) => !v)}
           >
-            {sortByTrust ? "Đang sắp theo độ tin cậy" : "Sắp theo độ tin cậy"}
+            {sortByTrust ? 'Sorted by credibility' : 'Sort by credibility'}
           </Button>
         )}
         {credOn && (credibility?.low_credibility_cards.length ?? 0) > 0 && (
-          <HintBox tone="warn" title="Có khẳng định chỉ dựa vào nguồn yếu">
+          <HintBox tone="warn" title="Some claims rest on weak sources only">
             <p>
-              Những thẻ sau đang được chống lưng <strong>hoàn toàn</strong> bằng nguồn ở mức
-              cần cân nhắc. Tìm thêm một nguồn mạnh hơn cho chúng trước khi đi tiếp:
+              The cards below are backed <strong>entirely</strong> by sources in the needs-review
+              tier. Find a stronger source for them before moving on:
             </p>
             <ul className="mt-1 space-y-0.5">
               {credibility?.low_credibility_cards.map((c) => (
@@ -167,15 +167,15 @@ export function Step2({ projectId }: { projectId: string }) {
     <>
       <JobProgress view={job.view} onReload={job.reload} />
 
-      <Panel accent="ok" icon={BookMarked} title="Bảng nghiên cứu liên quan">
+      <Panel accent="ok" icon={BookMarked} title="Related-work table">
         {loadingSources ? (
           <TableSkeleton rows={4} cols={5} />
         ) : allSources.length === 0 ? (
           <EmptyState
             icon={Search}
             tone="brand"
-            title="Chưa tìm nguồn lần nào"
-            description="Sửa từ khoá bên trái rồi bấm “Tìm nguồn thật”. Mỗi paper lấy về đều được lưu kèm nguyên văn phản hồi API để chứng minh nó có thật."
+            title="No source search has run yet"
+            description="Edit the keywords on the left and press “Search for real sources”. Every paper retrieved is stored with the verbatim API response, as proof it exists."
           />
         ) : (
           <>
@@ -187,14 +187,14 @@ export function Step2({ projectId }: { projectId: string }) {
                 disabled={job.busy}
                 onClick={() => job.run(`/projects/${projectId}/related-work`)}
               >
-                Dựng nhận xét cho bảng
+                Build the table’s comments
               </Button>
               <Button
                 size="sm"
                 disabled={job.busy}
                 onClick={() => job.run(`/projects/${projectId}/gap`)}
               >
-                Rút research gap
+                Extract the research gap
               </Button>
             </div>
           </>
@@ -208,8 +208,9 @@ export function Step2({ projectId }: { projectId: string }) {
       <Panel accent="decide" icon={Telescope} title="Research gap">
         {gaps.length === 0 ? (
           <p className="text-ink-3 text-xs">
-            Chưa có gap nào. Tìm nguồn xong rồi bấm “Rút research gap”. Mỗi gap phải trả lời đủ
-            bốn câu hỏi của đề, và không được viện lý do “chưa thấy paper nào giống”.
+            No gap yet. Once the sources are in, press “Extract the research gap”. Every gap must
+            answer all four questions from the brief, and “I have not seen a similar paper” is
+            never an acceptable justification.
           </p>
         ) : (
           <div className="space-y-2">
@@ -221,7 +222,7 @@ export function Step2({ projectId }: { projectId: string }) {
       </Panel>
 
       {pending.length > 0 && (
-        <Panel accent="decide" icon={Telescope} title="Chọn hướng tập trung">
+        <Panel accent="decide" icon={Telescope} title="Choose a direction to focus on">
           {pending.map((d) => (
             <OptionList
               key={d.id}
@@ -242,7 +243,7 @@ export function Step2({ projectId }: { projectId: string }) {
       )}
 
       {gaps.length > 0 && pending.length === 0 && (
-        <Panel accent="ok" title="Đã chọn hướng">
+        <Panel accent="ok" title="Direction chosen">
           <Button
             className="w-full"
             size="lg"
@@ -251,7 +252,7 @@ export function Step2({ projectId }: { projectId: string }) {
               router.push(`/projects/${projectId}/step/3`);
             }}
           >
-            Sang bước tiếp theo
+            Go to the next step
           </Button>
         </Panel>
       )}
@@ -261,20 +262,20 @@ export function Step2({ projectId }: { projectId: string }) {
   return (
     <WizardShell
       preset="wide-middle"
-      contextTitle="Từ khoá & nguồn ưu tiên"
+      contextTitle="Keywords & preferred sources"
       context={context}
       content={content}
       decide={decide}
       decideCount={pending.length}
-      decideSummary={pending.length > 0 ? 'Chọn hướng nghiên cứu' : undefined}
+      decideSummary={pending.length > 0 ? 'Choose a research direction' : undefined}
       summaryBar={
         <SummaryBar
           round={1}
-          nodes={['Tìm nguồn', 'Bảng liên quan', 'Rút gap', 'Xác nhận']}
+          nodes={['Find sources', 'Related work', 'Extract gap', 'Confirm']}
           activeIndex={
             allSources.length === 0 ? 0 : gaps.length === 0 ? 1 : pending.length > 0 ? 2 : 3
           }
-          hint="Mọi nhận định đều phải liên kết được với một nguồn cụ thể."
+          hint="Every statement must be traceable to a specific source."
         />
       }
     />

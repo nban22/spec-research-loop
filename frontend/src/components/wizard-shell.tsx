@@ -11,7 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { DecisionSheet } from './decision-sheet';
 
-/** Ba tỉ lệ cột, khai thành preset (DESIGN_SYSTEM §6.4). */
+/** The three column ratios, declared as presets (DESIGN_SYSTEM §6.4). */
 export type ColumnPreset = 'balanced' | 'wide-middle' | 'two-column';
 
 const GRID: Record<ColumnPreset, string> = {
@@ -21,19 +21,19 @@ const GRID: Record<ColumnPreset, string> = {
 };
 
 /**
- * Ba tầng bố cục trên breakpoint **mặc định** của Tailwind (DESIGN_SYSTEM §6.1):
+ * Three layout tiers on Tailwind's **default** breakpoints (DESIGN_SYSTEM §6.1):
  *
- * | dưới `md` (mobile) | `md`→`xl` (tablet) | `xl`+ (desktop) |
- * | một cột + bottom sheet | hai cột, quyết định dính bên phải | ba cột đầy đủ |
+ * | below `md` (mobile) | `md`→`xl` (tablet) | `xl`+ (desktop) |
+ * | one column + bottom sheet | two columns, decisions pinned right | full three columns |
  *
- * Ba vai sống sót ở mọi bề rộng bằng **ba cơ chế khác nhau**, không phải bằng cách xếp chồng
- * cả ba (§6.3): ngữ cảnh → accordion · nội dung → toàn bề rộng · quyết định → `DecisionSheet`
- * neo đáy. Xếp thẳng ba cột thành ba khối dọc sẽ đẩy cột quyết định xuống đáy trang và phá
- * NFR-G-3, không chỉ là xấu.
+ * The three roles survive every width through **three different mechanisms**, not by stacking all
+ * three (§6.3): context → accordion · content → full width · decisions → the bottom-anchored
+ * `DecisionSheet`. Stacking the three columns into three vertical blocks would push the decision
+ * column to the bottom of the page and break NFR-G-3 — that is more than an aesthetic problem.
  */
 export function WizardShell({
   preset = 'balanced',
-  contextTitle = 'Ngữ cảnh',
+  contextTitle = 'Context',
   contextDefaultOpen = false,
   context,
   content,
@@ -52,7 +52,7 @@ export function WizardShell({
   decideSummary?: string;
   decideCount?: number;
   summaryBar?: ReactNode;
-  /** Thay `DecisionSheet` ở B5 — `ExportBar` thành thanh dính đáy (§6.4). */
+  /** Replaces `DecisionSheet` in B5 — `ExportBar` becomes the bottom-pinned bar (§6.4). */
   bottomBar?: ReactNode;
 }) {
   const hasDecide = Boolean(decide);
@@ -60,9 +60,9 @@ export function WizardShell({
   return (
     <div className="mx-auto w-full max-w-[1400px] px-3 py-3 md:px-4 md:py-4">
       <div className={cn('grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4', GRID[preset])}>
-        {/* ── Vai 1 · ngữ cảnh ─────────────────────────────────────────────
-            Mobile: accordion, mặc định đóng khi bước đó đã có dữ liệu — là thứ đã xong,
-            chỉ tra lại khi cần. Tablet/desktop: cột thật. */}
+        {/* ── Role 1 · context ─────────────────────────────────────────────
+            Mobile: an accordion, closed by default once the step has data — this is finished work,
+            consulted only on demand. Tablet/desktop: a real column. */}
         <div className="md:hidden">
           <Accordion
             type="single"
@@ -85,7 +85,7 @@ export function WizardShell({
         </div>
         <div className="hidden min-w-0 space-y-3 md:block">{context}</div>
 
-        {/* ── Vai 2 · nội dung · chiếm toàn bộ bề rộng ở mobile ───────────── */}
+        {/* ── Role 2 · content · full width on mobile ─────────────────────── */}
         <div
           className={cn(
             'min-w-0 space-y-3',
@@ -95,8 +95,8 @@ export function WizardShell({
           {content}
         </div>
 
-        {/* ── Vai 3 · quyết định ───────────────────────────────────────────
-            Tablet/desktop: cột dính khi cuộn. Mobile: chuyển hẳn xuống DecisionSheet. */}
+        {/* ── Role 3 · decisions ───────────────────────────────────────────
+            Tablet/desktop: a column that sticks while scrolling. Mobile: moves entirely into DecisionSheet. */}
         {hasDecide && (
           <div className="hidden min-w-0 space-y-3 md:sticky md:top-32 md:col-span-1 md:block md:self-start">
             {decide}
@@ -106,7 +106,7 @@ export function WizardShell({
 
       {summaryBar && <div className="mt-3 md:mt-4">{summaryBar}</div>}
 
-      {/* Trang nội dung chừa lề dưới đủ để dòng cuối không bị nấc "hé" che (§6.3). */}
+      {/* The content leaves enough bottom padding that the last line is not hidden by the peek notch (§6.3). */}
       <div className={cn('md:hidden', hasDecide || bottomBar ? 'h-28' : 'h-2')} aria-hidden />
 
       {hasDecide && (
