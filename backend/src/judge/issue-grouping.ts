@@ -15,6 +15,12 @@ export type Group = {
   judgeKeys: string[];
   issueIds: string[];
   targetCardId: string | null;
+  /**
+   * Bậc (đã qua `rankOf`) của issue đang giữ ngôi `maxSeverity`. **Nội bộ của phép gộp**, không
+   * ghi xuống DB — nó chỉ tồn tại để phép so không phải suy ngược bậc từ `maxSeverity`, vốn sẽ
+   * mất hiệu chỉnh của #44.
+   */
+  winnerRank: number;
 };
 
 const SEVERITY_RANK: Record<Severity, number> = {
@@ -42,7 +48,21 @@ function bucket(s: Severity): 'blocking' | 'minor' {
  * Đánh đổi đã biết: rule bỏ sót những cặp diễn đạt khác nhau hoàn toàn, nên `agreement_count`
  * là **cận dưới** của đồng thuận thật. Phải ghi vào báo cáo.
  */
-export function groupIssues(issues: RawIssue[]): Group[] {
+/**
+ * Bậc dùng để chọn **ai thắng nhóm**. Mặc định là bậc thô.
+ *
+ * Làn B · #44 truyền vào bậc **đã hiệu chỉnh theo từng judge** (liên tục), để một judge quen chấm
+ * nặng tay không tự động quyết mức của mọi nhóm nó tham gia. `maxSeverity` vẫn lưu **mức thô của
+ * người thắng** — không mức nào bị bịa ra, và `Issue.severity` không bị sửa.
+ */
+export type RankOf = (issue: RawIssue) => number;
+
+const rawRank: RankOf = (i) => SEVERITY_RANK[i.severity];
+
+export function groupIssues(
+  issues: RawIssue[],
+  rankOf: RankOf = rawRank,
+): Group[] {
   const groups: Group[] = [];
 
   for (const issue of issues) {
@@ -56,15 +76,20 @@ export function groupIssues(issues: RawIssue[]): Group[] {
       match.issueIds.push(issue.id);
       if (!match.judgeKeys.includes(issue.judgeKey))
         match.judgeKeys.push(issue.judgeKey);
-      if (SEVERITY_RANK[issue.severity] > SEVERITY_RANK[match.maxSeverity]) {
+      // So bằng `rankOf`, **không** bằng `SEVERITY_RANK[match.maxSeverity]`: mức của nhóm là mức
+      // thô của người thắng, còn phép so phải dùng bậc đã hiệu chỉnh của **người đang giữ ngôi**.
+      // Lấy bậc thô của `match.maxSeverity` là mất luôn hiệu chỉnh ngay sau lần gán đầu tiên.
+      if (rankOf(issue) > match.winnerRank) {
         match.maxSeverity = issue.severity;
         match.canonicalTitle = issue.title;
+        match.winnerRank = rankOf(issue);
       }
     } else {
       // Không khớp thì để thành nhóm riêng — thà nhiều nhóm còn hơn nhóm sai.
       groups.push({
         canonicalTitle: issue.title,
         maxSeverity: issue.severity,
+        winnerRank: rankOf(issue),
         judgeKeys: [issue.judgeKey],
         issueIds: [issue.id],
         targetCardId: issue.targetCardId,

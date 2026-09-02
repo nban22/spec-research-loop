@@ -209,6 +209,10 @@ model Project {
   overclaim_detector      Boolean       @default(false)
   // Cờ của làn B · #12. Mặc định **tắt** theo luật chung 1.
   ambiguity_detector      Boolean       @default(false)
+  // Cờ của làn B · #8 — gác **cả ba** cơ chế khử lệch (#43 xáo thứ tự · #44 chuẩn hoá thang
+  // điểm · #45 tự nhất quán). Một cờ chung theo đúng yêu cầu của #8, không tách ba cờ.
+  // Tắt ⇒ `input_digest` không đổi **một byte** so với mọi vòng judge đã chạy trước đây.
+  judge_debias            Boolean       @default(false)
   // Cờ của làn A · #1. Bật thì danh sách nguồn ở bước 2 có mức tin cậy và cảnh báo thẻ chỉ
   // dựa vào nguồn yếu. Mặc định **tắt** theo luật chung 1; cũng là cần gạt cho ablation ở #6.
   source_credibility      Boolean       @default(false)
@@ -372,6 +376,11 @@ model JudgeRun {
   prompt_id       String
   prompt_hash     String
   input_digest    String
+  /// Làn B · #43. Seed của phép xáo thứ tự thẻ mà **judge này** đã thấy. `null` khi cờ
+  /// `judge_debias` tắt (không xáo). Seed **suy ra được** từ `(input_digest, judge_key, round)`
+  /// nên người kiểm chứng tự tính lại và đối chiếu được — nó là bằng chứng, không phải một con số
+  /// tuỳ ý. Cùng với `input_digest` thì dựng lại được từng byte đầu vào của judge này.
+  shuffle_seed    String?
   raw_output      Json
   parse_attempts  Int            @default(1)
   status          JudgeRunStatus @default(OK)
@@ -890,4 +899,76 @@ model JudgeAgreement {
 
   @@unique([spec_version_id, round])
   @@index([spec_version_id])
+}
+
+// ------------------------------------------- làn B · #44 chuẩn hoá thang điểm theo judge
+
+/**
+ * Thống kê thang chấm của **một judge tại một thời điểm**, lưu lại để giải thích được nhãn.
+ *
+ * Vì sao lưu chứ không tính lại lúc gộp: cùng lý lẽ NFR-JDG-6 của `JudgeAgreement` — nhóm issue đã
+ * chốt thì phải giải thích được bằng **thống kê lúc đó**, không phải thống kê hôm nay. Lịch sử dài
+ * thêm một vòng là mọi trung bình đổi, và nếu tính lại thì một nhóm cũ sẽ được biện minh bằng con
+ * số nó chưa từng thấy.
+ *
+ * `usable = false` là trạng thái **bình thường và hay gặp**: dưới `MIN_ROUNDS_FOR_CALIBRATION`
+ * (5 vòng) thì không hiệu chỉnh, và `reason` nói vì sao. Đó là chốt chặn — không có nó thì cơ chế
+ * "khử lệch" tự tạo ra lệch từ một điểm dữ liệu.
+ *
+ * `spec_version_id` / `judge_key` để scalar trần, không relation — cùng lý do `OverclaimFlag`,
+ * `AmbiguityFlag`, `JudgeAgreement`: relation đòi thêm field ngược vào model đang có, mà luật chung
+ * 4 chỉ cho thêm dòng vào cuối file.
+ */
+model JudgeCalibration {
+  id              String   @id @default(uuid())
+  spec_version_id String
+  round           Int
+  judge_key       JudgeKey
+  /// Số vòng judge riêng biệt đã quan sát được của judge này.
+  rounds          Int
+  /// Số issue đã quan sát.
+  n               Int
+  mean_rank       Float
+  sd_rank         Float
+  /// `false` ⇒ mức của judge này đi qua nguyên vẹn, không hiệu chỉnh.
+  usable          Boolean  @default(false)
+  /// `OK` · `NOT_ENOUGH_ROUNDS` · `NO_VARIANCE` · `NO_HISTORY`.
+  reason          String
+  created_at      DateTime @default(now())
+
+  @@unique([spec_version_id, round, judge_key])
+  @@index([spec_version_id])
+}
+
+// ------------------------------------------------- làn B · #45 tự nhất quán k lần
+
+/**
+ * Một **lần chạy thô** trong k lần của cơ chế tự nhất quán (#45).
+ *
+ * Vì sao là bảng phụ chứ không phải thêm dòng `JudgeRun`: `JudgeRun` có
+ * `@@unique([spec_version_id, judge_key, round])`, nên k lần chạy cùng vòng cùng judge **vi phạm
+ * ràng buộc đó** — và luật chung 2 cấm sửa ràng buộc đang có. Luật 2 nói luôn cách làm: *"cần
+ * trạng thái mới thì thêm bảng phụ"*.
+ *
+ * Nhờ vậy `JudgeRun` vẫn **đúng 5 dòng mỗi vòng** và giữ kết quả **đã gộp**, nên bằng chứng độc lập
+ * (*"5 dòng cùng `input_digest`"*) và ngưỡng quorum `MIN_JUDGES_FOR_DONE` không phải sửa gì.
+ *
+ * `judge_run_id` để scalar trần, không relation — cùng lý do các model khác của làn B: relation đòi
+ * thêm field ngược vào `JudgeRun`, mà luật chung 4 chỉ cho thêm dòng vào cuối file.
+ */
+model JudgeAttempt {
+  id           String         @id @default(uuid())
+  /// `JudgeRun` mà lần chạy này đóng góp vào. Kết quả gộp nằm ở `JudgeRun.raw_output`.
+  judge_run_id String
+  /// 1..k. `attempt_no = 1` là lần chạy đầu.
+  attempt_no   Int
+  status       JudgeRunStatus @default(OK)
+  error_code   String?
+  /// Đầu ra thô của **đúng lần chạy này** — bằng chứng cho việc lọc nhất quán đã lọc cái gì.
+  raw_output   Json
+  latency_ms   Int            @default(0)
+  created_at   DateTime       @default(now())
+
+  @@unique([judge_run_id, attempt_no])
+  @@index([judge_run_id])
 }

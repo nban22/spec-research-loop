@@ -240,3 +240,39 @@ export type CardConflict = Prisma.CardConflictModel
  *  * dòng vào cuối file.
  */
 export type JudgeAgreement = Prisma.JudgeAgreementModel
+/**
+ * Model JudgeCalibration
+ * *
+ *  * Thống kê thang chấm của **một judge tại một thời điểm**, lưu lại để giải thích được nhãn.
+ *  *
+ *  * Vì sao lưu chứ không tính lại lúc gộp: cùng lý lẽ NFR-JDG-6 của `JudgeAgreement` — nhóm issue đã
+ *  * chốt thì phải giải thích được bằng **thống kê lúc đó**, không phải thống kê hôm nay. Lịch sử dài
+ *  * thêm một vòng là mọi trung bình đổi, và nếu tính lại thì một nhóm cũ sẽ được biện minh bằng con
+ *  * số nó chưa từng thấy.
+ *  *
+ *  * `usable = false` là trạng thái **bình thường và hay gặp**: dưới `MIN_ROUNDS_FOR_CALIBRATION`
+ *  * (5 vòng) thì không hiệu chỉnh, và `reason` nói vì sao. Đó là chốt chặn — không có nó thì cơ chế
+ *  * "khử lệch" tự tạo ra lệch từ một điểm dữ liệu.
+ *  *
+ *  * `spec_version_id` / `judge_key` để scalar trần, không relation — cùng lý do `OverclaimFlag`,
+ *  * `AmbiguityFlag`, `JudgeAgreement`: relation đòi thêm field ngược vào model đang có, mà luật chung
+ *  * 4 chỉ cho thêm dòng vào cuối file.
+ */
+export type JudgeCalibration = Prisma.JudgeCalibrationModel
+/**
+ * Model JudgeAttempt
+ * *
+ *  * Một **lần chạy thô** trong k lần của cơ chế tự nhất quán (#45).
+ *  *
+ *  * Vì sao là bảng phụ chứ không phải thêm dòng `JudgeRun`: `JudgeRun` có
+ *  * `@@unique([spec_version_id, judge_key, round])`, nên k lần chạy cùng vòng cùng judge **vi phạm
+ *  * ràng buộc đó** — và luật chung 2 cấm sửa ràng buộc đang có. Luật 2 nói luôn cách làm: *"cần
+ *  * trạng thái mới thì thêm bảng phụ"*.
+ *  *
+ *  * Nhờ vậy `JudgeRun` vẫn **đúng 5 dòng mỗi vòng** và giữ kết quả **đã gộp**, nên bằng chứng độc lập
+ *  * (*"5 dòng cùng `input_digest`"*) và ngưỡng quorum `MIN_JUDGES_FOR_DONE` không phải sửa gì.
+ *  *
+ *  * `judge_run_id` để scalar trần, không relation — cùng lý do các model khác của làn B: relation đòi
+ *  * thêm field ngược vào `JudgeRun`, mà luật chung 4 chỉ cho thêm dòng vào cuối file.
+ */
+export type JudgeAttempt = Prisma.JudgeAttemptModel

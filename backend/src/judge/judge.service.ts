@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { AppError } from '../common/app-error';
 import { json } from '../common/prisma-json';
@@ -9,15 +10,45 @@ import {
   MIN_JUDGES_FOR_DONE,
 } from '../contracts/enums';
 import { judgeOutputSchema } from '../contracts/llm-io/judge';
+import {
+  canonicalDigest,
+  legacyDigest,
+  seedFor,
+  shuffleForJudge,
+} from './card-shuffle';
 import { GeneratorService } from '../generator/generator.service';
-import { LlmService } from '../llm/llm.service';
+import { LlmService, type CompleteJsonResult } from '../llm/llm.service';
+import type { LlmModel } from '../llm/llm-provider.interface';
 import { SourcesService } from '../sources/sources.service';
 import { SpecService } from '../spec/spec.service';
 import { AgreementService } from './agreement/agreement.service';
-import { groupIssues, type RawIssue } from './issue-grouping';
+import { groupIssues, type RankOf, type RawIssue } from './issue-grouping';
+import { calibratedRank, groupScale, judgeStats } from './severity-calibration';
+import { consensusOf, judgeToRepeat } from './self-consistency';
 import type { JudgeKey } from './judge.types';
 
 type Progress = (done: number, total: number, message: string) => Promise<void>;
+
+/** Kiểu trả về của `completeJson` cho schema judge — tránh `as` khi dựng lại object. */
+type JudgeCall = CompleteJsonResult<z.infer<typeof judgeOutputSchema>>;
+
+/**
+ * Số lần chạy của cơ chế tự nhất quán (#45). `3` là con số đề bài #8 đặt.
+ *
+ * Chỉ áp cho **một** judge, không cả 5 — xem `judgeToRepeat`.
+ */
+export const SELF_CONSISTENCY_K = 3;
+
+/** Đọc `nullTest.disruptive` từ cột `JudgeAgreement.patterns` (Json) — `safeParse`, không `as`. */
+const disruptiveSchema = z.object({
+  nullTest: z
+    .object({
+      disruptive: z
+        .object({ judgeKey: z.string(), significant: z.boolean() })
+        .nullable(),
+    })
+    .optional(),
+});
 
 export type JudgeRoundResult = {
   round: number;
@@ -73,16 +104,46 @@ export class JudgeService {
       );
     }
 
-    // Dựng `spec_json` **đúng một lần**, băm nó, rồi đưa cùng một chuỗi đó cho cả 5 lời gọi.
+    // Dựng `spec_json` **đúng một lần**, băm nó, rồi đưa cho cả 5 lời gọi.
     // Nếu mỗi judge tự dựng đầu vào riêng thì `input_digest` khác nhau và bằng chứng độc lập
     // biến mất — không phải vì hệ thống sai, mà vì không còn cách nào chứng minh nó đúng (C3 · F.6).
     const specJson = await this.spec.buildSpecJson(specVersionId);
     const sourcesJson = await this.sources.sourcesForPrompt(version.project_id);
-    const sharedInput = JSON.stringify({
-      spec_json: specJson,
-      sources_json: sourcesJson,
-    });
-    const inputDigest = createHash('sha256').update(sharedInput).digest('hex');
+
+    // Làn B · #43 — khử lệch vị trí: xáo thứ tự thẻ riêng cho từng judge.
+    //
+    // ⚠️ **"0 token thêm" đúng về SỐ LỜI GỌI, không đúng về GIÁ.** `spec_json` được nhúng vào khối
+    // `## SYSTEM` của prompt judge, và DeepSeek chỉ cache theo **prefix** — nên khi bật cờ, 5 judge
+    // có 5 khối SYSTEM khác nhau và **mất prefix cache** mà chính cách xếp khối đó sinh ra để ăn.
+    // Đo được ở B2: cache hit 12,7% prompt token. Cờ tắt thì không mất gì.
+    // Muốn có cả hai thì phải chuyển `spec_json` xuống khối USER — đổi cấu trúc 5 prompt, ngoài
+    // phạm vi #43, và phải đo lại cache hit trước/sau.
+    //
+    // Cờ **tắt** là đường cũ **từng byte**: `legacyDigest` băm đúng chuỗi gốc như trước, và cả 5
+    // judge nhận cùng một `specJson`. Đây là điều kiện để mọi `input_digest` đã ghi trước đây vẫn
+    // đối chiếu được — không có nó thì tính năng mới âm thầm làm dữ liệu cũ thành vô dụng.
+    //
+    // Cờ **bật**: digest băm dạng **chuẩn hoá thứ tự**, nên 5 judge vẫn cùng digest dù thấy 5 thứ
+    // tự khác nhau; thứ tự của từng judge sinh từ seed suy tất định từ `(digest, judge_key, round)`
+    // và được ghi vào `shuffle_seed`. Xem `card-shuffle.ts` để biết vì sao cách này làm bằng chứng
+    // **mạnh hơn** chứ không yếu đi.
+    const debias = version.project.judge_debias;
+    const inputDigest = debias
+      ? canonicalDigest(specJson, sourcesJson)
+      : legacyDigest(specJson, sourcesJson);
+
+    // Làn B · #45 — chọn **một** judge chạy k lần. Không bật cho cả 5: job dài nhất ~90 giây, và
+    // 5 × 3 = 15 lời gọi có thể vượt. Judge được chọn là judge gây nhiễu nhất theo Δκ của #9 —
+    // con số **đã qua kiểm định null hoán vị** nên không buộc tội oan. Chưa có số đo ⇒ không bật
+    // cho ai, vì đoán sai là trả giá gấp ba cho một judge không có vấn đề.
+    const repeatKey = debias
+      ? judgeToRepeat(await this.disruptiveJudge(specVersionId))
+      : null;
+    if (repeatKey) {
+      this.logger.log(
+        `#45 tự nhất quán: chạy ${repeatKey} ${SELF_CONSISTENCY_K} lần (các judge khác 1 lần)`,
+      );
+    }
 
     await opts.onProgress?.(
       0,
@@ -96,15 +157,25 @@ export class JudgeService {
     const settled = await Promise.allSettled(
       JUDGE_DEFS.map(async (def) => {
         const startedAt = new Date();
+        // Seed **suy ra được**, không sinh ngẫu nhiên rồi lưu: người kiểm chứng tự tính lại và
+        // đối chiếu được, nên không thể chọn seed có lợi rồi khai khống.
+        const shuffleSeed = debias
+          ? seedFor(inputDigest, def.key, round)
+          : null;
+        const judgeSpecJson = shuffleSeed
+          ? shuffleForJudge(specJson, shuffleSeed)
+          : specJson;
+        const k = def.key === repeatKey ? SELF_CONSISTENCY_K : 1;
         try {
-          const out = await this.llm.completeJson({
+          // k = 1 là **đúng đường cũ**: một lời gọi, `attempts` không được ghi, `raw_output` là
+          // đầu ra thô. k > 1 thì `out.data.issues` bị thay bằng tập đã lọc nhất quán.
+          const { out, attempts } = await this.runAttempts(k, {
             promptId: def.promptId,
-            schema: judgeOutputSchema,
             model: def.model,
-            purpose: 'JUDGE',
-            reasoningEffort: 'low',
-            maxTokens: 8_000,
-            variables: { spec_json: specJson, sources_json: sourcesJson },
+            variables: {
+              spec_json: judgeSpecJson,
+              sources_json: sourcesJson,
+            },
             link: {
               projectId: version.project_id,
               specVersionId,
@@ -121,6 +192,7 @@ export class JudgeService {
               prompt_id: def.promptId,
               prompt_hash: out.promptHash,
               input_digest: inputDigest,
+              shuffle_seed: shuffleSeed,
               raw_output: json(out.data),
               parse_attempts: out.attempts,
               status: 'OK',
@@ -129,6 +201,22 @@ export class JudgeService {
             },
             select: { id: true },
           });
+
+          // #45 — lưu **từng lần chạy thô**: đó là bằng chứng cho việc lọc nhất quán đã lọc cái gì.
+          // Chỉ ghi khi thật sự chạy nhiều lần; k = 1 không sinh bản ghi nào, nên bảng này rỗng ở
+          // chế độ cũ và không ai phải giải thích một bảng đầy dữ liệu vô nghĩa.
+          if (attempts.length > 1) {
+            await this.prisma.judgeAttempt.createMany({
+              data: attempts.map((a, idx) => ({
+                judge_run_id: run.id,
+                attempt_no: idx + 1,
+                status: a.ok ? ('OK' as const) : ('FAILED' as const),
+                error_code: a.errorCode,
+                raw_output: json(a.raw),
+                latency_ms: a.latencyMs,
+              })),
+            });
+          }
 
           await this.prisma.issue.createMany({
             data: out.data.issues.map((i) => ({
@@ -163,6 +251,7 @@ export class JudgeService {
                 prompt_id: def.promptId,
                 prompt_hash: this.safePromptHash(def.promptId),
                 input_digest: inputDigest,
+                shuffle_seed: shuffleSeed,
                 raw_output: json({ error: message }),
                 parse_attempts: 0,
                 status: 'FAILED',
@@ -208,6 +297,7 @@ export class JudgeService {
       specVersionId,
       round,
       completed.length,
+      debias,
     );
     await this.prisma.project.update({
       where: { id: version.project_id },
@@ -275,6 +365,203 @@ export class JudgeService {
   }
 
   /**
+   * Judge gây nhiễu nhất theo #9, **chỉ khi kiểm định null nói nó đáng kể**.
+   *
+   * Đọc từ bản ghi `JudgeAgreement` đã lưu chứ không tính lại: số đo phải cố định (NFR-JDG-6), và
+   * tính lại ở đây là để một vòng judge tự chọn ai bị chạy ba lần dựa trên dữ liệu của chính nó.
+   */
+  private async disruptiveJudge(
+    specVersionId: string,
+  ): Promise<{ judgeKey: string; significant: boolean } | null> {
+    const row = await this.prisma.judgeAgreement.findFirst({
+      where: { spec_version_id: specVersionId },
+      orderBy: { round: 'desc' },
+      select: { patterns: true },
+    });
+    if (!row) return null;
+    const parsed = disruptiveSchema.safeParse(row.patterns);
+    if (!parsed.success) return null;
+    return parsed.data.nullTest?.disruptive ?? null;
+  }
+
+  /**
+   * Chạy một judge `k` lần rồi gộp bằng `consensusOf`.
+   *
+   * `k = 1` là **đúng đường cũ từng byte**: một lời gọi, trả nguyên `out`, không lọc gì.
+   *
+   * `Promise.allSettled` chứ không `Promise.all`, cùng lý do như 5 judge: một lần chạy lỗi không
+   * được làm rơi hai lần kia — chúng **đã tốn tiền thật**. Và mẫu số của phép lọc chỉ đếm lần chạy
+   * **thành công**; tính cả lần lỗi thì một sự cố mạng đẩy mọi issue trượt ngưỡng `≥ 2`.
+   */
+  private async runAttempts(
+    k: number,
+    req: {
+      promptId: string;
+      model: LlmModel;
+      variables: Record<string, unknown>;
+      link: {
+        projectId: string;
+        specVersionId: string;
+        evalRunId: string | null;
+      };
+    },
+  ): Promise<{
+    out: JudgeCall;
+    attempts: {
+      ok: boolean;
+      errorCode: string | null;
+      raw: unknown;
+      latencyMs: number;
+    }[];
+  }> {
+    const call = async () => {
+      const t0 = Date.now();
+      const out = await this.llm.completeJson({
+        promptId: req.promptId,
+        schema: judgeOutputSchema,
+        model: req.model,
+        purpose: 'JUDGE',
+        reasoningEffort: 'low',
+        maxTokens: 8_000,
+        variables: req.variables,
+        link: req.link,
+      });
+      return { out, latencyMs: Date.now() - t0 };
+    };
+
+    if (k <= 1) {
+      const { out, latencyMs } = await call();
+      return {
+        out,
+        attempts: [{ ok: true, errorCode: null, raw: out.data, latencyMs }],
+      };
+    }
+
+    const settled = await Promise.allSettled(
+      Array.from({ length: k }, () => call()),
+    );
+    const attempts = settled.map((r) =>
+      r.status === 'fulfilled'
+        ? {
+            ok: true,
+            errorCode: null,
+            raw: r.value.out.data,
+            latencyMs: r.value.latencyMs,
+          }
+        : {
+            ok: false,
+            // Cùng mã lỗi với đường `FAILED` của cả judge — không thêm mã mới cho một tình
+            // huống đã có mã.
+            errorCode: 'LLM_UNAVAILABLE',
+            raw: { error: String(r.reason) },
+            latencyMs: 0,
+          },
+    );
+
+    const okRuns = settled.flatMap((r) =>
+      r.status === 'fulfilled' ? [r.value.out] : [],
+    );
+    // Cả k lần đều lỗi ⇒ ném lại lỗi đầu tiên để judge này vào đường `FAILED` như trước.
+    if (okRuns.length === 0) {
+      const first = settled.find((r) => r.status === 'rejected');
+      throw first && first.status === 'rejected'
+        ? first.reason
+        : new Error('JUDGE_ALL_ATTEMPTS_FAILED');
+    }
+
+    // Truyền issue **nguyên vẹn**: `consensusOf` là generic nên kiểu chặt của `severity` và
+    // `target_card_title` đi xuyên qua, không cần dựng lại và không cần `as`.
+    const consensus = consensusOf(okRuns.map((o) => o.data.issues));
+    this.logger.log(
+      `#45 ${req.promptId}: ${consensus.attempts}/${k} lần chạy được · giữ ${consensus.issues.length} issue · loại ${consensus.dropped} (chỉ xuất hiện 1 lần)`,
+    );
+
+    // Trả về theo hình dạng của **một** lời gọi, với tập issue đã lọc. `promptHash` và `attempts`
+    // lấy từ lần chạy đầu thành công — chúng nói về prompt và số lần sửa JSON, không về k.
+    const base = okRuns[0];
+    return {
+      out: {
+        ...base,
+        data: { ...base.data, issues: consensus.issues },
+      },
+      attempts,
+    };
+  }
+
+  /**
+   * Dựng hàm bậc-đã-hiệu-chỉnh cho #44, và **lưu lại** thống kê đã dùng.
+   *
+   * Lưu chứ không tính lại: nhóm issue đã chốt phải giải thích được bằng thống kê **lúc đó**. Lịch
+   * sử dài thêm một vòng là mọi trung bình đổi, và tính lại thì một nhóm cũ sẽ được biện minh bằng
+   * con số nó chưa từng thấy — cùng lý lẽ NFR-JDG-6 của `JudgeAgreement`.
+   *
+   * Lịch sử **chỉ lấy từ `JudgeRun.status = 'OK'`**: nhận cả vòng `FAILED` là đưa nhiễu của một lỗi
+   * hạ tầng vào thống kê về thói quen chấm điểm.
+   */
+  private async calibrationRankOf(
+    specVersionId: string,
+    round: number,
+  ): Promise<RankOf | undefined> {
+    const history = await this.prisma.issue.findMany({
+      where: { judge_run: { status: 'OK' } },
+      select: {
+        severity: true,
+        judge_run: {
+          select: { judge_key: true, spec_version_id: true, round: true },
+        },
+      },
+    });
+
+    const stats = judgeStats(
+      history.map((h) => ({
+        judgeKey: h.judge_run.judge_key,
+        severity: h.severity,
+        roundKey: `${h.judge_run.spec_version_id}:${h.judge_run.round}`,
+      })),
+    );
+    const scale = groupScale(stats);
+    const byJudge = new Map(stats.map((s) => [s.judgeKey, s]));
+
+    await this.prisma.$transaction(
+      stats.map((st) =>
+        this.prisma.judgeCalibration.upsert({
+          where: {
+            spec_version_id_round_judge_key: {
+              spec_version_id: specVersionId,
+              round,
+              judge_key: st.judgeKey as JudgeKey,
+            },
+          },
+          create: {
+            spec_version_id: specVersionId,
+            round,
+            judge_key: st.judgeKey as JudgeKey,
+            rounds: st.rounds,
+            n: st.n,
+            mean_rank: st.mean,
+            sd_rank: st.sd,
+            usable: st.usable,
+            reason: st.reason,
+          },
+          update: {},
+        }),
+      ),
+    );
+
+    const usable = stats.filter((s) => s.usable).length;
+    this.logger.log(
+      `#44 hiệu chỉnh thang điểm: ${usable}/${stats.length} judge dùng được` +
+        (usable === 0 ? ' — chưa đủ lịch sử, mọi mức đi qua nguyên vẹn' : ''),
+    );
+    // Không judge nào dùng được ⇒ trả `undefined` để `groupIssues` đi đúng đường bậc thô, thay vì
+    // gọi một hàm luôn trả bậc thô. Rẻ hơn, và log ở trên nói rõ vì sao.
+    if (usable === 0) return undefined;
+
+    return (issue) =>
+      calibratedRank(issue.severity, byJudge.get(issue.judgeKey), scale).rank;
+  }
+
+  /**
    * Gộp một lần lúc chạy và **lưu lại** — không tính lại lúc render, vì `agreement_count`
    * là con số đi vào báo cáo (NFR-JDG-6).
    */
@@ -282,6 +569,7 @@ export class JudgeService {
     specVersionId: string,
     round: number,
     judgesCompleted: number,
+    debias: boolean,
   ): Promise<number> {
     const issues = await this.prisma.issue.findMany({
       where: {
@@ -304,7 +592,12 @@ export class JudgeService {
       targetCardId: i.target_card_id,
     }));
 
-    const groups = groupIssues(raw);
+    // Làn B · #44 — bậc dùng để chọn ai thắng nhóm, hiệu chỉnh theo thói quen chấm của từng judge.
+    // Cờ tắt ⇒ `rankOf` là `undefined` ⇒ `groupIssues` dùng bậc thô, hành vi giống hệt trước #44.
+    const rankOf = debias
+      ? await this.calibrationRankOf(specVersionId, round)
+      : undefined;
+    const groups = groupIssues(raw, rankOf);
 
     for (const g of groups) {
       const created = await this.prisma.issueGroup.create({
@@ -380,6 +673,10 @@ export class JudgeService {
         prompt_id: true,
         prompt_hash: true,
         input_digest: true,
+        // #43 — phải trả ra, không thì `shuffle_seed` chỉ là một chuỗi trong DB chứ không phải
+        // bằng chứng: người kiểm chứng cần nó để tự tính lại và đối chiếu với
+        // `seedFor(digest, judge_key, round)`.
+        shuffle_seed: true,
         raw_output: true,
         parse_attempts: true,
         status: true,

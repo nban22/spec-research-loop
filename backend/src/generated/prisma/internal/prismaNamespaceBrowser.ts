@@ -80,7 +80,9 @@ export const ModelName = {
   SourceFullText: 'SourceFullText',
   VerifierPassage: 'VerifierPassage',
   CardConflict: 'CardConflict',
-  JudgeAgreement: 'JudgeAgreement'
+  JudgeAgreement: 'JudgeAgreement',
+  JudgeCalibration: 'JudgeCalibration',
+  JudgeAttempt: 'JudgeAttempt'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -137,6 +139,7 @@ export const ProjectScalarFieldEnum = {
   judge_rounds_total: 'judge_rounds_total',
   overclaim_detector: 'overclaim_detector',
   ambiguity_detector: 'ambiguity_detector',
+  judge_debias: 'judge_debias',
   source_credibility: 'source_credibility',
   evidence_fulltext: 'evidence_fulltext',
   conflict_detector: 'conflict_detector',
@@ -243,6 +246,7 @@ export const JudgeRunScalarFieldEnum = {
   prompt_id: 'prompt_id',
   prompt_hash: 'prompt_hash',
   input_digest: 'input_digest',
+  shuffle_seed: 'shuffle_seed',
   raw_output: 'raw_output',
   parse_attempts: 'parse_attempts',
   status: 'status',
@@ -588,6 +592,37 @@ export const JudgeAgreementScalarFieldEnum = {
 } as const
 
 export type JudgeAgreementScalarFieldEnum = (typeof JudgeAgreementScalarFieldEnum)[keyof typeof JudgeAgreementScalarFieldEnum]
+
+
+export const JudgeCalibrationScalarFieldEnum = {
+  id: 'id',
+  spec_version_id: 'spec_version_id',
+  round: 'round',
+  judge_key: 'judge_key',
+  rounds: 'rounds',
+  n: 'n',
+  mean_rank: 'mean_rank',
+  sd_rank: 'sd_rank',
+  usable: 'usable',
+  reason: 'reason',
+  created_at: 'created_at'
+} as const
+
+export type JudgeCalibrationScalarFieldEnum = (typeof JudgeCalibrationScalarFieldEnum)[keyof typeof JudgeCalibrationScalarFieldEnum]
+
+
+export const JudgeAttemptScalarFieldEnum = {
+  id: 'id',
+  judge_run_id: 'judge_run_id',
+  attempt_no: 'attempt_no',
+  status: 'status',
+  error_code: 'error_code',
+  raw_output: 'raw_output',
+  latency_ms: 'latency_ms',
+  created_at: 'created_at'
+} as const
+
+export type JudgeAttemptScalarFieldEnum = (typeof JudgeAttemptScalarFieldEnum)[keyof typeof JudgeAttemptScalarFieldEnum]
 
 
 export const SortOrder = {

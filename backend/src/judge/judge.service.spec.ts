@@ -4,20 +4,65 @@ import { JudgeService } from './judge.service';
 describe('JudgeService', () => {
   const prisma = {
     specVersion: { findUniqueOrThrow: jest.fn(), update: jest.fn() },
-    judgeRun: { count: jest.fn(), create: jest.fn(), findMany: jest.fn() },
+    judgeRun: {
+      count: jest.fn(),
+      // Tham số hoá kiểu: `jest.fn()` trần trả `any`, và đọc thành viên trên `any` bị
+      // `no-unsafe-member-access` chặn. Bài học từ review PR #32.
+      create: jest.fn<
+        Promise<unknown>,
+        [{ data: { shuffle_seed: string | null; input_digest: string } }]
+      >(),
+      findMany: jest.fn(),
+    },
     issueGroup: { create: jest.fn(), findMany: jest.fn() },
     issue: {
       create: jest.fn(),
       createMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
-      findMany: jest.fn<Promise<unknown>, [{ orderBy?: unknown }]>(),
+      findMany: jest.fn<
+        Promise<unknown>,
+        [{ orderBy?: unknown; select?: unknown }]
+      >(),
     },
     card: { findMany: jest.fn() },
+    // #44 — `groupRound` ghi thống kê hiệu chỉnh khi cờ `judge_debias` bật.
+    // #45 — `disruptiveJudge` đọc bản ghi #9 để chọn judge chạy k lần.
+    judgeAgreement: { findFirst: jest.fn() },
+    judgeAttempt: {
+      createMany: jest.fn<
+        Promise<unknown>,
+        [{ data: { attempt_no: number; status: string }[] }]
+      >(),
+    },
+    judgeCalibration: {
+      upsert: jest.fn<
+        Promise<unknown>,
+        [
+          {
+            create: {
+              judge_key: string;
+              rounds: number;
+              usable: boolean;
+              reason: string;
+              mean_rank: number;
+            };
+          },
+        ]
+      >(),
+    },
+    $transaction: jest.fn((ops: unknown) =>
+      Array.isArray(ops) ? Promise.all(ops) : Promise.resolve([]),
+    ),
     project: { update: jest.fn() },
   };
 
-  const llm = { completeJson: jest.fn() };
+  const llm = {
+    completeJson: jest.fn<
+      Promise<unknown>,
+      [{ variables: { spec_json: unknown } }]
+    >(),
+  };
   const spec = { buildSpecJson: jest.fn() };
   const sources = { sourcesForPrompt: jest.fn() };
 
@@ -200,5 +245,271 @@ describe('JudgeService', () => {
     const runs = await service.listJudgeRuns('v-1');
     expect(runs).toHaveLength(1);
     expect(runs[0].judge_key).toBe('gap_finder');
+  });
+
+  /* ---------------------------------------------- #43 · khử lệch vị trí ở tầng service */
+
+  /** Dựng đủ mock cho một vòng judge chạy trót lọt. `debias` là cờ `Project.judge_debias`. */
+  function arrangeRound(debias: boolean) {
+    prisma.specVersion.findUniqueOrThrow.mockResolvedValue({
+      id: 'v-1',
+      project_id: 'p-1',
+      project: {
+        judge_round: 0,
+        judge_rounds_total: 0,
+        judge_debias: debias,
+      },
+    });
+    prisma.judgeRun.count.mockResolvedValue(0);
+    // Nhiều thẻ: một thẻ thì xáo là hàm đồng nhất và test không phân biệt được gì.
+    // Thứ tự thẻ ở đây **cố ý lệch** thứ tự chuẩn hoá (D, B, F, A, E, C thay vì A→F). Bản trước
+    // của fixture này xếp A→D, tức tình cờ đã chuẩn hoá — nên `canonicalDigest` và `legacyDigest`
+    // ra cùng một số và test "hai chế độ khác nhau" đỏ. Fixture đã chuẩn hoá sẵn thì không đo
+    // được việc chuẩn hoá.
+    spec.buildSpecJson.mockResolvedValue({
+      title: 'Spec',
+      cards: [
+        { title: 'D', type: 'EVIDENCE', body: 'd' },
+        { title: 'B', type: 'GAP', body: 'b' },
+        { title: 'F', type: 'OPEN_QUESTION', body: 'f' },
+        { title: 'A', type: 'CLAIM', body: 'a' },
+        { title: 'E', type: 'CONSTRAINT', body: 'e' },
+        { title: 'C', type: 'CONTRIBUTION', body: 'c' },
+      ],
+    });
+    sources.sourcesForPrompt.mockResolvedValue([]);
+    prisma.card.findMany.mockResolvedValue([]);
+    prisma.issue.findMany.mockResolvedValue([]);
+    prisma.issue.createMany.mockResolvedValue({ count: 0 });
+    llm.completeJson.mockResolvedValue({
+      promptHash: 'phash',
+      attempts: 1,
+      data: { issues: [] },
+    });
+    prisma.judgeRun.create.mockResolvedValue({ id: 'jr-1' });
+  }
+
+  /** Đối số `data` của 5 lệnh `judgeRun.create`. */
+  const createdRuns = () =>
+    prisma.judgeRun.create.mock.calls.map((c) => c[0].data);
+
+  /** `spec_json` mà từng judge thật sự nhận. */
+  const specsSeen = () =>
+    llm.completeJson.mock.calls.map((c) =>
+      JSON.stringify(c[0].variables.spec_json),
+    );
+
+  it('#43 cờ TẮT ⇒ 5 judge nhận CÙNG spec_json và shuffle_seed là null', async () => {
+    arrangeRound(false);
+    await service.runRound('v-1');
+
+    expect(new Set(specsSeen()).size).toBe(1);
+    for (const run of createdRuns()) expect(run.shuffle_seed).toBeNull();
+  });
+
+  it('#43 cờ BẬT ⇒ 5 spec_json KHÁC nhau, 5 seed khác nhau, digest GIỐNG nhau', async () => {
+    // Ba khẳng định của #43 trong một lượt chạy thật của `runRound`, không phải hàm thuần.
+    arrangeRound(true);
+    await service.runRound('v-1');
+
+    const runs = createdRuns();
+    // **5 seed khác nhau là tính chất được bảo đảm** — chúng suy từ `judge_key` nên không thể trùng.
+    expect(new Set(runs.map((r) => r.shuffle_seed)).size).toBe(5);
+    // Nhưng **"5 thứ tự đều khác nhau" thì KHÔNG được bảo đảm**: với n thẻ chỉ có n! hoán vị, và
+    // 5 lần rút có thể trùng. Với 4 thẻ (fixture cũ) thực tế chỉ ra 4 thứ tự. Khẳng định đúng là
+    // "có xáo thật", không phải "không judge nào trùng judge nào" — muốn thế phải thêm rejection
+    // sampling, mà với 11 thẻ thật thì 11! đủ lớn để chuyện đó không đáng đánh đổi độ phức tạp.
+    expect(new Set(specsSeen()).size).toBeGreaterThan(1);
+    expect(new Set(runs.map((r) => r.input_digest)).size).toBe(1);
+    for (const run of runs) expect(run.shuffle_seed).toMatch(/^[0-9a-f]{16}$/);
+  });
+
+  it('#43 cờ BẬT ⇒ mọi judge vẫn thấy ĐỦ tập thẻ, không mất thẻ nào', async () => {
+    // Xáo thứ tự không được làm rơi thẻ — nếu rơi thì judge chấm thiếu mà không ai biết.
+    arrangeRound(true);
+    await service.runRound('v-1');
+
+    for (const call of llm.completeJson.mock.calls) {
+      const spec = call[0].variables.spec_json as {
+        cards: { title: string }[];
+      };
+      expect([...spec.cards.map((c) => c.title)].sort()).toEqual([
+        'A',
+        'B',
+        'C',
+        'D',
+        'E',
+        'F',
+      ]);
+    }
+  });
+
+  it('#43 hai chế độ cho digest KHÁC nhau — không được lẫn bản ghi', async () => {
+    arrangeRound(false);
+    await service.runRound('v-1');
+    const off = createdRuns()[0].input_digest;
+
+    jest.clearAllMocks();
+    arrangeRound(true);
+    await service.runRound('v-1');
+    const on = createdRuns()[0].input_digest;
+
+    // `cards` trong mock cố ý KHÔNG ở thứ tự chuẩn hoá theo chuỗi JSON, nên hai digest phải khác.
+    expect(off).not.toBe(on);
+  });
+
+  it('#43 số lời gọi LLM KHÔNG đổi khi bật cờ — cơ chế này 0 token', async () => {
+    arrangeRound(false);
+    await service.runRound('v-1');
+    const callsOff = llm.completeJson.mock.calls.length;
+
+    jest.clearAllMocks();
+    arrangeRound(true);
+    await service.runRound('v-1');
+
+    expect(llm.completeJson.mock.calls.length).toBe(callsOff);
+    expect(callsOff).toBe(JUDGE_DEFS.length);
+  });
+
+  /* ---------------------------------------------- #44 · chuẩn hoá thang điểm ở tầng service */
+
+  it('#44 cờ TẮT ⇒ KHÔNG đọc lịch sử, KHÔNG ghi JudgeCalibration', async () => {
+    // Cờ tắt phải là đường cũ từng byte: không truy vấn thêm, không bảng mới nào được ghi.
+    arrangeRound(false);
+    await service.runRound('v-1');
+    expect(prisma.judgeCalibration.upsert).not.toHaveBeenCalled();
+  });
+
+  it('#44 cờ BẬT ⇒ ghi thống kê từng judge, kèm lý do', async () => {
+    arrangeRound(true);
+    // Lịch sử: J4 nặng tay (chỉ MAJOR/CRITICAL) qua 6 vòng; J1 dùng cả ba mức.
+    const hist: unknown[] = [];
+    for (let r = 1; r <= 6; r++) {
+      for (const sev of ['MAJOR', 'CRITICAL'])
+        hist.push({
+          severity: sev,
+          judge_run: { judge_key: 'J4', spec_version_id: 'v-0', round: r },
+        });
+      for (const sev of ['MINOR', 'MAJOR', 'CRITICAL'])
+        hist.push({
+          severity: sev,
+          judge_run: { judge_key: 'J1', spec_version_id: 'v-0', round: r },
+        });
+    }
+    // Phân biệt theo **hình dạng truy vấn**, không theo thứ tự gọi: truy vấn lịch sử dùng
+    // `select`, truy vấn issue của vòng dùng `include`. Dựa vào thứ tự là test vỡ ngay khi
+    // `runRound` thêm một lượt đọc khác ở giữa.
+    prisma.issue.findMany.mockImplementation((args: { select?: unknown }) =>
+      Promise.resolve(args?.select ? hist : []),
+    );
+
+    await service.runRound('v-1');
+
+    const written = prisma.judgeCalibration.upsert.mock.calls.map(
+      (c) => c[0].create,
+    );
+    expect(written.map((w) => w.judge_key).sort()).toEqual(['J1', 'J4']);
+    for (const w of written) {
+      expect(w.rounds).toBe(6);
+      expect(w.usable).toBe(true);
+      expect(w.reason).toBe('OK');
+    }
+    // J4 nặng tay ⇒ trung bình bậc cao hơn J1.
+    const j4 = written.find((w) => w.judge_key === 'J4')!;
+    const j1 = written.find((w) => w.judge_key === 'J1')!;
+    expect(j4.mean_rank).toBeGreaterThan(j1.mean_rank);
+  });
+
+  it('#44 lịch sử MỎNG ⇒ vẫn ghi bản ghi, nhưng usable = false', async () => {
+    // Trạng thái bình thường của dữ liệu hiện tại. Ghi lại để "chưa hiệu chỉnh" là một sự thật
+    // đọc được trong DB, không phải một im lặng.
+    arrangeRound(true);
+    prisma.issue.findMany.mockImplementation((args: { select?: unknown }) =>
+      Promise.resolve(
+        args?.select
+          ? [
+              {
+                severity: 'MAJOR',
+                judge_run: {
+                  judge_key: 'J1',
+                  spec_version_id: 'v-0',
+                  round: 1,
+                },
+              },
+            ]
+          : [],
+      ),
+    );
+
+    await service.runRound('v-1');
+    const w = prisma.judgeCalibration.upsert.mock.calls[0][0].create;
+    expect(w.usable).toBe(false);
+    expect(w.reason).toBe('NOT_ENOUGH_ROUNDS');
+  });
+
+  /* ---------------------------------------------- #45 · tự nhất quán k lần ở tầng service */
+
+  /** Bản ghi #9 nói J5 gây nhiễu và **đáng kể** ⇒ J5 được chọn chạy k lần. */
+  const agreementSaying = (judgeKey: string, significant: boolean) => ({
+    patterns: { nullTest: { disruptive: { judgeKey, significant } } },
+  });
+
+  it('#45 cờ TẮT ⇒ đúng 5 lời gọi LLM, không ghi JudgeAttempt', async () => {
+    arrangeRound(false);
+    await service.runRound('v-1');
+    expect(llm.completeJson.mock.calls.length).toBe(JUDGE_DEFS.length);
+    expect(prisma.judgeAttempt.createMany).not.toHaveBeenCalled();
+  });
+
+  it('#45 cờ BẬT + có judge đáng kể ⇒ 5 + 2 = 7 lời gọi, KHÔNG phải 15', async () => {
+    // Đường lui của epic #22: chỉ bật cho judge gây nhiễu nhất, không cả 5.
+    arrangeRound(true);
+    prisma.judgeAgreement.findFirst.mockResolvedValue(
+      agreementSaying('J5', true),
+    );
+    await service.runRound('v-1');
+    expect(llm.completeJson.mock.calls.length).toBe(JUDGE_DEFS.length + 2);
+  });
+
+  it('#45 Δκ KHÔNG đáng kể ⇒ đúng 5 lời gọi, không trả giá gấp ba', async () => {
+    arrangeRound(true);
+    prisma.judgeAgreement.findFirst.mockResolvedValue(
+      agreementSaying('J5', false),
+    );
+    await service.runRound('v-1');
+    expect(llm.completeJson.mock.calls.length).toBe(JUDGE_DEFS.length);
+  });
+
+  it('#45 CHƯA có số đo #9 ⇒ đúng 5 lời gọi, KHÔNG đoán', async () => {
+    arrangeRound(true);
+    prisma.judgeAgreement.findFirst.mockResolvedValue(null);
+    await service.runRound('v-1');
+    expect(llm.completeJson.mock.calls.length).toBe(JUDGE_DEFS.length);
+  });
+
+  it('#45 bật ⇒ vẫn đúng 5 dòng JudgeRun, cùng input_digest', async () => {
+    // Tiêu chí hoàn thành của #45: bảng phụ giữ k lần chạy, `JudgeRun` vẫn 5 dòng nên bằng chứng
+    // độc lập và ngưỡng quorum không phải sửa gì.
+    arrangeRound(true);
+    prisma.judgeAgreement.findFirst.mockResolvedValue(
+      agreementSaying('J5', true),
+    );
+    await service.runRound('v-1');
+    const runs = createdRuns();
+    expect(runs).toHaveLength(JUDGE_DEFS.length);
+    expect(new Set(runs.map((r) => r.input_digest)).size).toBe(1);
+  });
+
+  it('#45 ghi JudgeAttempt CHỈ cho judge chạy nhiều lần', async () => {
+    arrangeRound(true);
+    prisma.judgeAgreement.findFirst.mockResolvedValue(
+      agreementSaying('J5', true),
+    );
+    await service.runRound('v-1');
+    // Đúng một lượt ghi (cho J5), với 3 bản ghi.
+    expect(prisma.judgeAttempt.createMany).toHaveBeenCalledTimes(1);
+    const rows = prisma.judgeAttempt.createMany.mock.calls[0][0].data;
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => r.attempt_no)).toEqual([1, 2, 3]);
   });
 });
