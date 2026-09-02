@@ -165,37 +165,56 @@ export class LlmService {
       lastError = parsed.error;
 
       /**
-       * Bị **cắt ngang** thì dừng ngay, không thử lại.
+       * Bị **cắt ngang** thì thử lại, nhưng phải **bảo model viết ngắn lại** — không lặp y nguyên.
        *
-       * Thử lại chỉ cứu được câu trả lời *sai schema*: đính lỗi zod vào rồi model sửa. Còn câu
-       * trả lời *đụng trần* thì lượt sau cũng dài đúng ngần ấy và cũng bị cắt đúng chỗ đó —
-       * ba lượt để hỏng y hệt, tốn gấp ba tiền.
+       * Đo trên 43 lượt judge thật: lượt đầu đụng trần rồi lượt sau sống là chuyện **thường**,
+       * không phải may hiếm — `judge_experiment` 12 lần, `judge_evidence` 10 lần, `judge_gap` và
+       * `judge_readiness` mỗi con 1 lần. Nó sống được vì lượt sau **không phải cùng một prompt**:
+       * hệ thống đính lỗi zod vào, đầu vào đổi, model trả câu ngắn hơn.
        *
-       * Đo thật: J4 `judge_evidence` hỏng 3/19 lượt, mỗi lần ghi `completion_tokens = 24 000`
-       * = 3 × trần 8 000. Toàn bộ số đó là tiền đốt để nhận cùng một lỗi.
+       * Đường cứu đó trước đây là **tình cờ** — nó chỉ chạy vì câu bị cắt trông giống câu sai
+       * schema. Ở đây nó thành **cố ý**: nói thẳng ra là bị cắt và yêu cầu ít phát hiện hơn, thay
+       * vì để model đoán từ một thông báo lỗi zod nói về chuyện khác.
        *
-       * Mã lỗi cũng phải khác: `LLM_INVALID_JSON` đọc ra là "model trả rác", trong khi model
-       * trả JSON đúng và **ta** mới là bên đặt trần quá thấp. Sai chỗ đổ lỗi thì người sửa đi
-       * dò nhầm hướng.
+       * Vẫn phải có điểm dừng: hết lượt thì báo `LLM_OUTPUT_TRUNCATED` chứ không phải
+       * `LLM_INVALID_JSON` — model trả JSON đúng, **ta** mới là bên đặt trần quá thấp. Sai chỗ
+       * đổ lỗi thì người sửa đi dò nhầm hướng.
        */
       if (finishReason === 'length') {
+        if (attempts > maxRetries) {
+          this.logger.warn(
+            `[${opts.promptId}] output hit the ${maxTokens}-token ceiling on every attempt.`,
+          );
+          await this.recordCall(
+            opts,
+            promptHash,
+            total,
+            attempts,
+            false,
+            'LLM_OUTPUT_TRUNCATED',
+          );
+          throw AppError.unavailable(
+            'LLM_OUTPUT_TRUNCATED',
+            'The model ran out of output budget before it finished, even after being asked to be brief. Try again with fewer sources, or raise the ceiling for this step.',
+            { promptId: opts.promptId, maxTokens },
+          );
+        }
         this.logger.warn(
-          `[${opts.promptId}] output hit the ${maxTokens}-token ceiling and was truncated ` +
-            `at attempt ${attempts}; not retrying — a retry would be cut at the same place.`,
+          `[${opts.promptId}] output hit the ${maxTokens}-token ceiling at attempt ${attempts}; ` +
+            `retrying with an explicit instruction to report fewer findings.`,
         );
-        await this.recordCall(
-          opts,
-          promptHash,
-          total,
-          attempts,
-          false,
-          'LLM_OUTPUT_TRUNCATED',
-        );
-        throw AppError.unavailable(
-          'LLM_OUTPUT_TRUNCATED',
-          'The model ran out of output budget before it finished. Try again with fewer sources, or raise the ceiling for this step.',
-          { promptId: opts.promptId, maxTokens },
-        );
+        conversation.push({ role: 'assistant', content });
+        conversation.push({
+          role: 'user',
+          content:
+            `Your previous reply was cut off: it reached the ${maxTokens}-token output limit ` +
+            `before the json object was closed, so none of it could be used.\n` +
+            `Answer again, shorter. Keep only the most severe findings, drop the rest, and say ` +
+            `in the summary that you left some out and roughly how many. A short honest answer ` +
+            `is usable; a long truncated one is not.\n` +
+            `Return the complete json object.`,
+        });
+        continue;
       }
 
       this.logger.warn(

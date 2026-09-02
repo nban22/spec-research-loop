@@ -219,12 +219,13 @@ describe('LlmService', () => {
   });
 
   /**
-   * Câu trả lời **bị cắt** và câu trả lời **sai schema** đều làm `safeParse` từ chối, nhưng cách
-   * xử lý ngược nhau: sai schema thì đính lỗi zod vào rồi model sửa được; bị cắt thì lượt sau
-   * cũng dài đúng ngần ấy và cũng bị cắt đúng chỗ đó.
+   * Câu trả lời **bị cắt** và câu trả lời **sai schema** đều làm `safeParse` từ chối, nhưng lời
+   * nhắn gửi kèm lượt sau phải khác nhau: sai schema thì đính lỗi zod vào, còn bị cắt thì phải
+   * **nói thẳng là bị cắt và bảo viết ngắn lại**.
    *
-   * Đo thật trước khi sửa: J4 `judge_evidence` hỏng 3/19 lượt, mỗi lần ghi
-   * `completion_tokens = 24 000` = 3 × trần 8 000 — toàn bộ là tiền đốt để nhận cùng một lỗi.
+   * Đo trên 43 lượt judge thật: lượt đầu đụng trần rồi lượt sau sống là chuyện thường —
+   * `judge_experiment` 12 lần, `judge_evidence` 10 lần. Nên **không** được dừng ngay ở lượt đầu;
+   * cái phải bỏ là lặp lại y nguyên, không phải bỏ luôn vòng thử lại.
    */
   describe('đầu ra bị cắt vì đụng trần token', () => {
     const truncated = {
@@ -248,12 +249,37 @@ describe('LlmService', () => {
         maxTokens: 8000,
       });
 
-    it('dừng NGAY, không thử lại — thử lại chỉ tốn thêm để hỏng y hệt', async () => {
+    it('thử lại kèm lệnh viết ngắn lại, chỉ bỏ cuộc khi hết lượt', async () => {
       provider.complete.mockResolvedValue(truncated);
       await expect(call()).rejects.toMatchObject({
         code: 'LLM_OUTPUT_TRUNCATED',
       });
-      expect(provider.complete).toHaveBeenCalledTimes(1);
+      expect(provider.complete).toHaveBeenCalledTimes(3);
+    });
+
+    it('lượt sau nói rõ là BỊ CẮT, không phải lỗi zod — hai ca cần hai cách sửa khác nhau', async () => {
+      provider.complete.mockResolvedValue(truncated);
+      await expect(call()).rejects.toBeDefined();
+
+      const providerCalls = provider.complete.mock.calls as unknown[][];
+      const second = providerCalls[1][0] as {
+        messages: { role: string; content: string }[];
+      };
+      const nudge = second.messages[second.messages.length - 1].content;
+      expect(nudge).toContain('cut off');
+      expect(nudge).toContain('shorter');
+      expect(nudge).not.toContain('json schema');
+    });
+
+    it('lượt sau viết ngắn lại và lọt thì judge SỐNG, không bị bỏ', async () => {
+      provider.complete.mockResolvedValueOnce(truncated).mockResolvedValueOnce({
+        ...truncated,
+        content: '{"foo": "bar"}',
+        finish_reason: 'stop',
+      });
+
+      await expect(call()).resolves.toMatchObject({ data: { foo: 'bar' } });
+      expect(provider.complete).toHaveBeenCalledTimes(2);
     });
 
     it('mã lỗi KHÁC `LLM_INVALID_JSON` — model không sai, trần đặt quá thấp mới sai', async () => {
@@ -273,7 +299,8 @@ describe('LlmService', () => {
       };
       expect(arg.data.ok).toBe(false);
       expect(arg.data.error_code).toBe('LLM_OUTPUT_TRUNCATED');
-      expect(arg.data.completion_tokens).toBe(8000);
+      // Cộng dồn cả ba lượt, không nuốt mất hai lượt đầu.
+      expect(arg.data.completion_tokens).toBe(24000);
     });
 
     it('dừng vì lý do khác mà sai schema thì VẪN thử lại như cũ', async () => {
