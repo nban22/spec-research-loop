@@ -100,12 +100,29 @@ export type VerifierFlag = z.infer<typeof verifierFlagSchema>;
 
 // 5 judge có tên cụ thể theo đề (kim-chỉ-nam §3 bước 9).
 /**
- * Trần token đầu ra mặc định của một judge.
+ * Trần token đầu ra của một judge nói **về bản spec** (J1 gap, J2 contribution, J5 readiness).
  *
- * Đo trên 19 lượt chạy thật: bốn judge nói **về bản spec** nên số phát hiện bị chặn tự nhiên,
- * lượt tốn nhiều nhất là 7 796/8 000. Trần này vừa đủ cho chúng.
+ * 12 000 chứ không phải 8 000. Số đo trên 43 lượt chạy thật cho thấy 8 000 **không** đủ như tao
+ * tưởng lúc đầu: ba con này lần lượt đụng trần 1 lần mỗi con, và lượt tốn nhiều nhất trong số
+ * *sống sót* đã là 7 771 — tức mẫu đó bị thiên lệch, những lượt to hơn đã chết trước khi được ghi
+ * là thành công. Đặt trần sát ngay trên số quan sát được là đặt trần theo mẫu còn sống.
+ *
+ * Nâng trần **không tốn thêm tiền**: `max_tokens` là mức chặn, không phải mức mua. Chỉ trả cho
+ * token thật sự sinh ra. Cái giữ đầu ra ngắn là prompt, không phải trần.
  */
-const JUDGE_MAX_TOKENS = 8_000;
+const JUDGE_MAX_TOKENS = 12_000;
+
+/**
+ * Trần cho `judge_experiment` (J3).
+ *
+ * J3 là judge **phụ thuộc vòng thử lại nặng nhất**: 12/21 lượt có lượt đầu bị cắt ở 8 000 rồi
+ * lượt sau mới lọt. Đầu ra của nó tỉ lệ với **số claim × số thí nghiệm**, nên nó phình theo bản
+ * spec chứ không theo số nguồn như J4.
+ *
+ * Trước đây chuyện đó không lộ ra vì câu bị cắt trông y hệt câu sai schema nên được thử lại một
+ * cách tình cờ. Khi `LlmService` bắt đầu phân biệt hai ca đó, J3 là con chết đầu tiên.
+ */
+const JUDGE_EXPERIMENT_MAX_TOKENS = 16_000;
 
 /**
  * Trần riêng cho `judge_evidence` (J4).
@@ -118,11 +135,14 @@ const JUDGE_MAX_TOKENS = 8_000;
  * nhiều cặp phải kiểm, và J4 lại chính là judge kiểm chứng cứ — mất nó là mất phiếu quan trọng
  * nhất của bảng đồng thuận.
  *
+ * 24 000 chứ không phải 16 000: sau khi nâng lên 16 000 nó **vẫn đụng trần thêm 2 lần**, và
+ * một lượt thành công đã tiêu 14 732 token chỉ trong một lượt thử.
+ *
  * Nâng trần **chỉ cầm máu**, không chữa gốc: dự án đủ lớn vẫn tràn. Phần chữa gốc nằm ở
  * `prompts/judge_evidence.md` — nó bị buộc phải báo **tối đa 12 phát hiện nặng nhất**, để đầu ra
  * bị chặn theo *thiết kế* thay vì theo may mắn.
  */
-const JUDGE_EVIDENCE_MAX_TOKENS = 16_000;
+const JUDGE_EVIDENCE_MAX_TOKENS = 24_000;
 
 export const JUDGE_DEFS = [
   {
@@ -141,7 +161,7 @@ export const JUDGE_DEFS = [
     key: 'J3',
     promptId: 'judge_experiment',
     model: 'deepseek-v4-pro',
-    maxTokens: JUDGE_MAX_TOKENS,
+    maxTokens: JUDGE_EXPERIMENT_MAX_TOKENS,
   },
   {
     key: 'J4',
