@@ -224,7 +224,7 @@
 
 <header>
   <h1>SpecResearch Loop — Bản đồ luồng sản phẩm</h1>
-  <span class="hint">4 tab = 4 mục trên thanh điều hướng · click 1 node hoặc 1 bước để xem thiết kế kỹ thuật</span>
+  <span class="hint">4 tab = 4 mục trên thanh điều hướng · click 1 node hoặc 1 bước để xem thiết kế kỹ thuật · <b>giao diện sản phẩm là tiếng Anh</b>, tài liệu này tiếng Việt</span>
   <div class="tabs" id="tabs"></div>
 </header>
 
@@ -254,10 +254,10 @@ const KIND = {
 };
 
 const TABS = [
-  {id:'home',     label:'Trang chủ',         route:'/',          hint:'Điểm vào của app: đăng nhập, nhập ý tưởng thô, mở dự án mới.'},
-  {id:'projects', label:'Dự án',             route:'/projects',  hint:'Tab nặng nhất — danh sách dự án và trọn wizard 5 bước.'},
-  {id:'versions', label:'Lịch sử phiên bản', route:'/versions',  hint:'Chọn dự án rồi so hai phiên bản bất kỳ + đọc lịch sử quyết định.'},
-  {id:'help',     label:'Trợ giúp',          route:'/help',      hint:'Một màn tĩnh, không gọi API nào.'},
+  {id:'home',     label:'Home',              route:'/',          hint:'Điểm vào của app: đăng nhập, nhập ý tưởng thô, mở dự án mới.'},
+  {id:'projects', label:'Projects',          route:'/projects',  hint:'Tab nặng nhất — danh sách dự án và trọn wizard 5 bước.'},
+  {id:'versions', label:'Version history',   route:'/versions',  hint:'Chọn dự án rồi so hai phiên bản bất kỳ + đọc lịch sử quyết định.'},
+  {id:'help',     label:'Help',              route:'/help',      hint:'Một màn tĩnh, không gọi API nào.'},
   {id:'reqs',     label:'16 chức năng',      route:'—',          hint:'Đối chiếu từng chức năng bắt buộc của đề với nhóm component đáp ứng nó.'},
 ];
 
@@ -405,7 +405,7 @@ const NODES = [
  infra:['PostgreSQL · Project','PostgreSQL · SpecVersion'],
  files:['frontend/src/components/idea-input.tsx:35','backend/src/project/project.service.ts:41 (create)','backend/src/project/project.service.ts:8 (createProjectSchema)'],
  cases:[
-  {t:'', s:'<b>Dưới 20 ký tự</b> — nút "Phân tích ý tưởng" bị khoá, hiện dòng nhắc. Backend cũng chặn bằng zod nên gọi thẳng API cũng không lọt.'},
+  {t:'', s:'<b>Dưới 20 ký tự</b> — nút "Analyse idea" bị khoá, hiện dòng nhắc. Backend cũng chặn bằng zod nên gọi thẳng API cũng không lọt.'},
   {t:'ok', s:'<b>Đủ dài</b> — tạo <code>Project</code> + <code>SpecVersion v1</code> trong một lượt, rồi chuyển sang <code>/projects/:id/step/1</code>.'},
   {t:'', s:'<b>Tiêu đề dự án</b> lấy tự động từ dòng đầu của ý tưởng, cắt còn 120 ký tự.'},
   {t:'err', s:'<b>API lỗi</b> — hiện ErrorState ngay dưới ô nhập, chữ đã gõ được giữ nguyên.'},
@@ -476,7 +476,7 @@ const NODES = [
  files:['frontend/src/components/steps/step-1.tsx:32','frontend/src/components/spec-cards.tsx (CardBoard)','backend/src/generator/generator.service.ts (analyze)','prompts/generator.md'],
  cases:[
   {t:'', s:'<b>Chưa phân tích</b> — cột giữa là trạng thái rỗng, cột phải trống.'},
-  {t:'', s:'<b>Bấm "Phân tích ý tưởng"</b> → mở job nền, thanh tiến độ chạy bằng SSE.'},
+  {t:'', s:'<b>Bấm "Analyse idea"</b> → mở job nền, thanh tiến độ chạy bằng SSE.'},
   {t:'', s:'<b>Sửa lại ý tưởng rồi phân tích lần nữa</b> — bộ thẻ cũ bị <b>xoá và ghi lại</b>, không cộng dồn.'},
   {t:'', s:'<b>Mức chắc chắn</b> HIGH / MEDIUM / LOW đổi tông hộp gợi ý; LOW khuyên viết lại ý tưởng cho cụ thể rồi phân tích lại.'},
   {t:'', s:'<b>Bảng thẻ</b> lọc được theo 6 trạng thái: Đã xác nhận · Đề xuất · Còn thiếu · Chưa rõ nghĩa · Không có nguồn · Mâu thuẫn.'},
@@ -500,16 +500,19 @@ const NODES = [
  ]},
 
 {id:'p-s3', tab:'projects', zone:'screen', name:'B3 · Contribution & Thí nghiệm', sub:'claim 5 trường · ước lượng', badge:'chức năng 9·10',
- purpose:'Sinh đóng góp, thẻ Claim–Evidence 5 trường (có "điều kiện bác bỏ"), kế hoạch thí nghiệm, rồi ước lượng tài nguyên bằng công thức thuần.',
+ purpose:'Sinh đóng góp, thẻ Claim–Evidence 5 trường (có "điều kiện bác bỏ"), kế hoạch thí nghiệm, rồi ước lượng tài nguyên bằng công thức thuần — <b>khi kế hoạch có phần tính toán</b>.',
  tech:['TanStack Query','DeepSeek','công thức thuần (0 LLM)'],
  infra:['PostgreSQL · Card (CONTRIBUTION, CLAIM)','PostgreSQL · ExperimentPlan','PostgreSQL · ResourceEstimate'],
- files:['frontend/src/components/steps/step-3.tsx:27','backend/src/estimator/estimator.service.ts:60','prompts/generator_contribution.md','prompts/generator_experiment.md'],
+ files:['frontend/src/components/steps/step-3.tsx:27','frontend/src/components/estimate-form.tsx','backend/src/contracts/estimator.ts','backend/src/estimator/estimator.service.ts','prompts/generator_experiment.md'],
  cases:[
-  {t:'', s:'<b>Nút "Dựng kế hoạch thí nghiệm" bị khoá</b> tới khi có ít nhất một khẳng định.'},
+  {t:'', s:'<b>Nút "Build the experiment plan" bị khoá</b> tới khi có ít nhất một khẳng định.'},
   {t:'', s:'<b>Ước lượng</b> ra VRAM · giờ chạy · token · chi phí, và có vừa RTX 3090 hay không. Không gọi mô hình nào.'},
-  {t:'ok', s:'<b>Vừa RTX 3090</b> → phương án <b>A "Duyệt kế hoạch"</b> mang nhãn GỢI Ý.'},
+  {t:'', s:'<b>Không phải kế hoạch nào cũng có ước lượng.</b> <code>estimator_inputs</code> hỏi cỡ model và mức lượng tử hoá; một thử nghiệm lâm sàng hay khảo sát người dùng thì không có model nào. Prompt cho model trả <code>null</code> kèm một câu nói nút thắt tài nguyên thật là gì, và <code>plan.estimate_status</code> ghi lại lý do — <code>OK</code> · <code>NOT_APPLICABLE</code> · <code>INVALID_PARAMS</code>.'},
+  {t:'err', s:'<b>Tham số hỏng</b> (<code>INVALID_PARAMS</code>) → cột phải mời người dùng <b>tự nhập bảy tham số</b> qua <code>POST /projects/:id/estimate</code>. Con số đó tồn tại, chỉ là chưa lấy được — khác hẳn ca không áp dụng.'},
+  {t:'ok', s:'<b>Vừa RTX 3090</b> → phương án <b>A "Approve the plan"</b> mang nhãn GỢI Ý.'},
   {t:'err', s:'<b>Vượt RTX 3090</b> → nhãn GỢI Ý <b>đảo sang B "Giảm quy mô theo đề xuất"</b>, kèm hộp cảnh báo. Phần ví dụ của B lấy thẳng lý do giảm quy mô nên nói đúng con số cần cắt.'},
   {t:'', s:'<b>Khối quyết định này được thêm so với mockup</b> — mockup để cột phải thuần thông báo, nghĩa là bước tự chốt, trái với yêu cầu của đề.'},
+  {t:'', s:'<b>Khối quyết định mở theo việc CÓ KẾ HOẠCH</b>, không theo việc có ước lượng. Khoá theo ước lượng thì một nghiên cứu không chạy trên mô hình sẽ kẹt vĩnh viễn ở bước này vì nút chốt không bao giờ hiện. Không có ước lượng thì phương án B bị ẩn — không có đề xuất nào để áp.'},
   {t:'ok', s:'<b>Chốt xong</b> → tự chuyển sang bước 4.'},
  ]},
 
@@ -743,7 +746,7 @@ const EDGES = [
 {tab:'home', f:'h-home', t:'h-idea', k:'ui', st:'6', act:'Gõ ý tưởng nghiên cứu thô',
  api:'state cục bộ, chưa gọi API', why:'Chức năng 1 của đề.',
  resp:'nút mở khoá khi đủ 20 ký tự', src:'idea-input.tsx:49', dst:'idea-input.tsx:103'},
-{tab:'home', f:'h-idea', t:'h-api-project', k:'http', st:'7', act:'Bấm "Phân tích ý tưởng"',
+{tab:'home', f:'h-idea', t:'h-api-project', k:'http', st:'7', act:'Bấm "Analyse idea"',
  api:'POST /api/projects { raw_idea }', why:'Mở dự án mới.',
  resp:'{ project }', src:'idea-input.tsx:53', dst:'project.controller.ts:49'},
 {tab:'home', f:'h-api-project', t:'h-db', k:'db', st:'8', act:'Tạo dự án và phiên bản đầu',
@@ -766,7 +769,7 @@ const EDGES = [
 {tab:'projects', f:'p-stepper', t:'p-s1', k:'ui', st:'3', act:'Đứng ở bước 1',
  api:'visibleStepNo = min(URL, project.step)', why:'URL không phải nguồn sự thật; bước đã tới mới là.',
  resp:'render B1', src:'step/[step]/page.tsx:35', dst:'steps/step-1.tsx'},
-{tab:'projects', f:'p-s1', t:'p-api-gen', k:'sse', st:'4', act:'Bấm "Phân tích ý tưởng"',
+{tab:'projects', f:'p-s1', t:'p-api-gen', k:'sse', st:'4', act:'Bấm "Analyse idea"',
  api:'POST /api/projects/:id/analyze → { jobId } → EventSource', why:'Diễn giải lại + phân rã thẻ + sinh câu hỏi làm rõ.',
  resp:'job.progress → job.done', src:'step-1.tsx:53', dst:'project.controller.ts:84'},
 {tab:'projects', f:'p-api-gen', t:'p-llm', k:'llm', st:'5', act:'Gọi mô hình sinh nội dung',
