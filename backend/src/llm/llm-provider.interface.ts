@@ -23,7 +23,19 @@ export type LlmUsage = {
   latency_ms: number;
 };
 
-export type LlmResponse = { content: string; usage: LlmUsage };
+export type LlmResponse = {
+  content: string;
+  usage: LlmUsage;
+  /**
+   * Vì sao model dừng. `'length'` nghĩa là **đụng trần `max_tokens`**, tức câu trả lời bị cắt
+   * ngang chứ không phải model trả sai.
+   *
+   * Phân biệt được hai ca đó là chuyện đáng tiền: một câu JSON bị cắt và một câu JSON sai cú pháp
+   * đều làm `safeParse` từ chối, nhưng **cách xử lý ngược nhau** — sai cú pháp thì thử lại có thể
+   * cứu được, còn bị cắt thì thử lại chỉ tốn thêm đúng ngần ấy token để hỏng y hệt.
+   */
+  finish_reason: string | null;
+};
 
 /**
  * Chừa sẵn interface để sau này cắm thêm provider chỉ tốn một file (STACK §2.1).

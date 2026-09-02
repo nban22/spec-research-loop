@@ -58,6 +58,7 @@ export class DeepseekProvider implements LlmProvider {
 
       return {
         content,
+        finish_reason: res.choices[0]?.finish_reason ?? null,
         usage: {
           prompt_tokens: usage?.prompt_tokens ?? 0,
           completion_tokens: usage?.completion_tokens ?? 0,

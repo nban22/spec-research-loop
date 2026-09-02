@@ -27,6 +27,11 @@ export const ERROR_MESSAGE: Record<string, string> = {
   LLM_INVALID_JSON:
     'The model returned data in an unexpected shape. Please run this step again.',
 
+  /* Cố ý nói khác `LLM_INVALID_JSON`: ở đây model không sai, nó chỉ hết chỗ để viết. Bảo người
+     dùng "chạy lại" là bảo họ lặp lại đúng thất bại — hướng ra là bớt nguồn. */
+  LLM_OUTPUT_TRUNCATED:
+    'This step produced more findings than the model had room to write. Try again with fewer sources, or tell the team to raise the limit for this step.',
+
   JUDGE_ROUND_EXISTS:
     'This judge round has already run on the current version. Please create a new version before running again.',
   JUDGE_ROUND_LIMIT: 'This project has used all 3 judge rounds allowed.',

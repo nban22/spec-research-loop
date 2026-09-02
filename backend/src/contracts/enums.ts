@@ -99,16 +99,67 @@ export const verifierFlagSchema = z.enum([
 export type VerifierFlag = z.infer<typeof verifierFlagSchema>;
 
 // 5 judge có tên cụ thể theo đề (kim-chỉ-nam §3 bước 9).
+/**
+ * Trần token đầu ra mặc định của một judge.
+ *
+ * Đo trên 19 lượt chạy thật: bốn judge nói **về bản spec** nên số phát hiện bị chặn tự nhiên,
+ * lượt tốn nhiều nhất là 7 796/8 000. Trần này vừa đủ cho chúng.
+ */
+const JUDGE_MAX_TOKENS = 8_000;
+
+/**
+ * Trần riêng cho `judge_evidence` (J4).
+ *
+ * J4 là judge duy nhất có **đầu ra tỉ lệ với số cặp claim–nguồn**, chứ không tỉ lệ với độ dài
+ * bản spec. Đo thật: J4 nhận tới 94 452 token đầu vào — gần gấp ba J2 — và **3/19 lượt đụng
+ * đúng trần 8 000**, cả ba lượt thử đều bị cắt ngang nên JSON đứt và judge bị bỏ.
+ *
+ * Loại lỗi này tệ ở chỗ **nó xuất hiện khi dự án làm nghiêm túc**: càng nhiều nguồn thì càng
+ * nhiều cặp phải kiểm, và J4 lại chính là judge kiểm chứng cứ — mất nó là mất phiếu quan trọng
+ * nhất của bảng đồng thuận.
+ *
+ * Nâng trần **chỉ cầm máu**, không chữa gốc: dự án đủ lớn vẫn tràn. Phần chữa gốc nằm ở
+ * `prompts/judge_evidence.md` — nó bị buộc phải báo **tối đa 12 phát hiện nặng nhất**, để đầu ra
+ * bị chặn theo *thiết kế* thay vì theo may mắn.
+ */
+const JUDGE_EVIDENCE_MAX_TOKENS = 16_000;
+
 export const JUDGE_DEFS = [
-  { key: 'J1', promptId: 'judge_gap', model: 'deepseek-v4-pro' },
-  { key: 'J2', promptId: 'judge_contribution', model: 'deepseek-v4-flash' },
-  { key: 'J3', promptId: 'judge_experiment', model: 'deepseek-v4-pro' },
-  { key: 'J4', promptId: 'judge_evidence', model: 'deepseek-v4-flash' },
-  { key: 'J5', promptId: 'judge_readiness', model: 'deepseek-v4-pro' },
+  {
+    key: 'J1',
+    promptId: 'judge_gap',
+    model: 'deepseek-v4-pro',
+    maxTokens: JUDGE_MAX_TOKENS,
+  },
+  {
+    key: 'J2',
+    promptId: 'judge_contribution',
+    model: 'deepseek-v4-flash',
+    maxTokens: JUDGE_MAX_TOKENS,
+  },
+  {
+    key: 'J3',
+    promptId: 'judge_experiment',
+    model: 'deepseek-v4-pro',
+    maxTokens: JUDGE_MAX_TOKENS,
+  },
+  {
+    key: 'J4',
+    promptId: 'judge_evidence',
+    model: 'deepseek-v4-flash',
+    maxTokens: JUDGE_EVIDENCE_MAX_TOKENS,
+  },
+  {
+    key: 'J5',
+    promptId: 'judge_readiness',
+    model: 'deepseek-v4-pro',
+    maxTokens: JUDGE_MAX_TOKENS,
+  },
 ] as const satisfies ReadonlyArray<{
   key: JudgeKey;
   promptId: string;
   model: string;
+  maxTokens: number;
 }>;
 
 export const MAX_JUDGE_ROUNDS = 3;

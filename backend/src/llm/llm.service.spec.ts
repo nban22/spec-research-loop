@@ -217,4 +217,76 @@ describe('LlmService', () => {
       expect(provider.complete).toHaveBeenCalledTimes(1);
     });
   });
+
+  /**
+   * Câu trả lời **bị cắt** và câu trả lời **sai schema** đều làm `safeParse` từ chối, nhưng cách
+   * xử lý ngược nhau: sai schema thì đính lỗi zod vào rồi model sửa được; bị cắt thì lượt sau
+   * cũng dài đúng ngần ấy và cũng bị cắt đúng chỗ đó.
+   *
+   * Đo thật trước khi sửa: J4 `judge_evidence` hỏng 3/19 lượt, mỗi lần ghi
+   * `completion_tokens = 24 000` = 3 × trần 8 000 — toàn bộ là tiền đốt để nhận cùng một lỗi.
+   */
+  describe('đầu ra bị cắt vì đụng trần token', () => {
+    const truncated = {
+      content: '{"foo": "bar', // JSON đứt ngang, thiếu cả dấu đóng
+      usage: {
+        prompt_tokens: 100,
+        completion_tokens: 8000,
+        cache_hit_tokens: 0,
+        cache_miss_tokens: 100,
+        latency_ms: 10,
+      },
+      finish_reason: 'length',
+    };
+
+    const call = () =>
+      service.completeJson({
+        promptId: 'test_prompt',
+        schema: z.object({ foo: z.string() }),
+        model: 'deepseek-v4-pro',
+        purpose: 'ANALYSIS' as never,
+        maxTokens: 8000,
+      });
+
+    it('dừng NGAY, không thử lại — thử lại chỉ tốn thêm để hỏng y hệt', async () => {
+      provider.complete.mockResolvedValue(truncated);
+      await expect(call()).rejects.toMatchObject({
+        code: 'LLM_OUTPUT_TRUNCATED',
+      });
+      expect(provider.complete).toHaveBeenCalledTimes(1);
+    });
+
+    it('mã lỗi KHÁC `LLM_INVALID_JSON` — model không sai, trần đặt quá thấp mới sai', async () => {
+      provider.complete.mockResolvedValue(truncated);
+      await expect(call()).rejects.not.toMatchObject({
+        code: 'LLM_INVALID_JSON',
+      });
+    });
+
+    it('vẫn ghi lại lời gọi kèm token đã tiêu, không nuốt mất chi phí', async () => {
+      provider.complete.mockResolvedValue(truncated);
+      await expect(call()).rejects.toBeDefined();
+
+      const calls = prisma.llmCall.create.mock.calls as unknown[][];
+      const arg = calls[0][0] as {
+        data: { ok: boolean; error_code: string; completion_tokens: number };
+      };
+      expect(arg.data.ok).toBe(false);
+      expect(arg.data.error_code).toBe('LLM_OUTPUT_TRUNCATED');
+      expect(arg.data.completion_tokens).toBe(8000);
+    });
+
+    it('dừng vì lý do khác mà sai schema thì VẪN thử lại như cũ', async () => {
+      provider.complete
+        .mockResolvedValueOnce({ ...truncated, finish_reason: 'stop' })
+        .mockResolvedValueOnce({
+          ...truncated,
+          content: '{"foo": "bar"}',
+          finish_reason: 'stop',
+        });
+
+      await expect(call()).resolves.toMatchObject({ data: { foo: 'bar' } });
+      expect(provider.complete).toHaveBeenCalledTimes(2);
+    });
+  });
 });
