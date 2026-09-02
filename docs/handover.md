@@ -108,6 +108,7 @@ nguyên và nói ra. Người chấm phân biệt được "demo thật có như
 
 | Muốn biết | Đọc |
 | --- | --- |
+| **Kịch bản trình bày hai bản đồ** | **`docs/kich-ban-trinh-bay.md`** — 2 kịch bản 6–8 phút, click gì · nói gì · câu chốt |
 | **Trả lời 12 câu vấn đáp** | **`docs/vandap.md`** — kiến trúc · session · judge · chi phí thật |
 | Chạy thử tại máy | `README.md` |
 | Hệ thống làm gì, luồng ra sao | `docs/product-flow-map.html` (mở bằng trình duyệt) |
