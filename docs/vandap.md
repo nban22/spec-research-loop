@@ -224,6 +224,9 @@ inputs: [spec_json, sources_json]
 - `sources_json` — danh sách nguồn **đã nằm trong kho của dự án**, kèm id. Judge chỉ được nói về
   nguồn trong danh sách này.
 
+**Ví dụ thật của hai đầu vào này** — trích từ một dự án có thật trong DB, kèm phân bố nhãn và
+số đo quy mô: **→ `docs/api-components.md` §4.2**.
+
 Judge thứ sáu `judge_overclaim` nhận input khác — `[claim_json, plan_json, rule_signals_json]` —
 vì nó so **claim với kế hoạch thí nghiệm**, cộng tín hiệu từ rule chứ không chỉ LLM.
 

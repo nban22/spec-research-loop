@@ -317,7 +317,174 @@ này là bằng chứng kỹ thuật cho điều đó, đọc thẳng được t
 9. **Chốt số đo bất đồng ngay lúc chạy** — `:225`. Và lỗi ở bước này **không** được làm rơi cả vòng
    judge vừa tốn tiền: `.catch()` ghi log rồi đi tiếp — cùng lý lẽ với `allSettled`.
 
-## 4.2 Technical design
+## 4.2 Hai đầu vào trông như thế nào — ví dụ thật
+
+Trích từ một dự án có thật trong DB (`spec_version` `9613659e`, "Improving Sleep in Older Adults",
+version 3). Đây **đúng là chuỗi** đã đưa cho cả 5 judge trong lượt chạy đó.
+
+**Quy mô một lượt:** `spec_json` + `sources_json` = **121 189 byte JSON** → 19 thẻ · 22 cặp claim–nguồn ·
+25 nguồn · 14 mục. Cùng một chuỗi đó nhân 5 judge.
+
+### `spec_json` — dựng từ DB bởi `spec.service.ts:294`
+
+Tám khoá ở tầng ngoài cùng:
+
+```jsonc
+{
+  "title": "Improving Sleep in Older Adults: Research Specification",
+  "domain": "Sleep Medicine",
+  "version_no": 3,
+  "cards":         [ /* 19 thẻ  */ ],
+  "card_sources":  [ /* 22 cặp */ ],
+  "experiment_plan": { /* … */ },
+  "resource_estimate": null,
+  "sections":      [ /* 14 mục, mỗi mục kèm present: true|false */ ]
+}
+```
+
+**`cards`** — bộ thẻ, phân bố thật của dự án này: 4 `CONTRIBUTION` · 4 `CLAIM` · 3 `GAP` ·
+2 `PROBLEM` · 2 `RESEARCH_QUESTION` · 2 `OPEN_QUESTION` · 1 `EVIDENCE` · 1 `CONSTRAINT`.
+Mỗi thẻ có bốn trường cố định cộng một `payload` **khác nhau theo `type`**:
+
+```jsonc
+// type: "CLAIM" — payload mang bốn trường của ma trận claim–evidence
+{
+  "title":  "Mindfulness meditation produces a greater improvement in subjective sleep quality than sleep hygiene education…",
+  "type":   "CLAIM",
+  "status": "PROPOSED",
+  "body":   "Mindfulness meditation produces a greater improvement…",
+  "payload": {
+    "metric":   "Change in Pittsburgh Sleep Quality Index (PSQI) global score from baseline to 8 weeks",
+    "baseline": "Sleep hygiene education (SHE) delivered in the same format and duration",
+    "evidence": "Between-group mean difference in PSQI change ≥1.5 points, with a 95% CI lower bound >0.5, intent-to-treat",
+    "refutation_condition": "The mindfulness arm does not achieve a mean PSQI reduction at 8 weeks at least 1.5 points greater than SHE, or the difference is not significant at P<0.05…"
+  }
+}
+```
+
+```jsonc
+// type: "GAP" — payload đổi sang bốn trường khác hẳn
+{ "type": "GAP", "payload": { "limitation": "…", "prior_work": "…",
+                              "why_it_matters": "…", "testable_experiment": "…" } }
+
+// type: "CONSTRAINT" — không có payload
+{ "type": "CONSTRAINT", "payload": null }
+```
+
+Đây là lý do `payload` để kiểu `Json` chứ không tách cột: **mỗi loại thẻ có một hình dạng riêng**,
+và cái ràng buộc hình dạng đó là zod ở tầng ứng dụng, không phải schema DB.
+
+**`card_sources`** — 22 cặp *(thẻ, nguồn)* **kèm nhãn verifier đã chấm**. Đây là chỗ verifier và
+judge gặp nhau: J4 không tự đi kiểm lại từ đầu, nó **đọc kết luận của verifier** rồi soi xem claim
+có nói quá so với nhãn không.
+
+```jsonc
+// một cặp SUPPORTED — sạch cờ
+{
+  "card_title":   "Mindfulness meditation produces a greater improvement…",
+  "source_id":    "9086dc16-3161-4897-952f-e7a2521df841",
+  "source_title": "Mindfulness Meditation and Improvement in Sleep Quality and Daytime Impairment Among Older Adults…",
+  "support_label": "SUPPORTED",
+  "evidence_sentence": null,
+  "flags": []
+}
+
+// một cặp WEAK — thẻ GAP nên bị chốt loại thẻ chặn ở verifier.service.ts:340
+{
+  "card_title":   "Evidence from trials in older adults with multimorbidity is limited by restrictive eligibility criteria",
+  "source_id":    "c02a390b-51e9-4d5c-9c5c-3618eb1a293a",
+  "support_label": "WEAK",
+  "evidence_sentence": null,
+  "flags": ["NUMBER_NOT_IN_SOURCE", "CITATION_ONLY"]
+}
+```
+
+Phân bố nhãn thật của lượt này: **18 `WEAK` · 2 `SUPPORTED` · 2 `UNSUPPORTED`**. Phần lớn `WEAK`
+mang cờ `CITATION_ONLY` — tức thẻ `GAP`/`CONTRIBUTION` bị chốt loại thẻ chặn trước khi tới L3–L4,
+đúng như §3.2 điểm 3 mô tả.
+
+**Hai chi tiết dễ bỏ qua nhưng nói lên cả cơ chế:**
+
+- Cặp `SUPPORTED` ở trên có `evidence_sentence: null`. **Không phải thiếu dữ liệu** — nó đi đường
+  tắt ở `verifier.service.ts:430` (`simMax >= tau_high` và không cờ nào), nên **L4 chưa từng chạy**
+  và không có câu trích dẫn nào để ghi. Nhãn `SUPPORTED` này tốn **0 token**.
+- Thân thẻ `GAP` nhắc nguồn bằng **tiền tố id** (`1a43a519`, `302471a5`, `c02a390b`) chứ không bằng
+  tên tác giả. Đó là hệ quả trực tiếp của việc mô hình được đưa `source_id` — nó không có cách nào
+  trỏ vào một paper ngoài danh sách.
+
+**`sections`** — 14 mục kèm cờ `present`, để judge biết cái gì **thiếu** chứ không chỉ cái gì có:
+
+```jsonc
+[{ "no": 1, "title": "Problem statement",  "present": true  },
+ …
+ { "no": 11, "title": "Compute budget",    "present": false },   // ← mục duy nhất thiếu
+ { "no": 14, "title": "Decision history",  "present": true  }]
+```
+
+**`experiment_plan` + `resource_estimate`** — và đây chính là ca `NOT_APPLICABLE` mà §2.2 mô tả:
+
+```jsonc
+"experiment_plan": {
+  "experiments": [
+    { "code": "TN1",
+      "title": "Mindfulness meditation vs sleep hygiene education for subjective sleep quality in older adults",
+      "bullets": ["Compare 8-week mindfulness program vs standard sleep hygiene education, matched for session length…",
+                  "On 200 community-dwelling adults aged 60+ with moderate sleep disturbances (PSQI >5)",
+                  "Metric: change in PSQI global score from baseline to 8 weeks, per intent-to-treat",
+                  "Success: mindfulness arm achieves a mean PSQI reduction ≥1.5 points greater than SHE, 95% CI lower bound >0.5"],
+      "linked_claim_title": "Mindfulness meditation produces a greater improvement…" },
+    { "code": "TN2", … }
+  ],
+  "baselines_and_metrics": "Baselines: sleep hygiene education…, wait-list control…, general sleep education…",
+  "ablation_plan": "Remove meditation-specific exercises from the…",
+  "risks_and_limitations": "…",
+  "estimate_status": "NOT_APPLICABLE",
+  "estimate_note": "The binding resource is participant recruitment and retention across three parallel
+                    randomized controlled trials, including trained nonclinician facilitators and
+                    actigraphy equipment, not computational model training."
+},
+"resource_estimate": null
+```
+
+Ba thứ khớp nhau và **phải** khớp nhau: `estimate_status: "NOT_APPLICABLE"` → `resource_estimate:
+null` → mục 11 *Compute budget* `present: false`. Không có `estimate_status` thì judge nhìn thấy
+`null` mà không biết đó là *"chưa chạy"* hay *"không áp dụng được"* — và sẽ báo một `MAJOR` sai.
+
+### `sources_json` — dựng bởi `sources.service.ts:214`
+
+**Tối đa 25 nguồn**, xếp theo `citation_count` giảm dần rồi `year` giảm dần —
+`sources.service.ts:229-230`. Chín trường, không có trường nào thừa:
+
+```jsonc
+{
+  "source_id":      "ef3e7222-e6a2-4ef8-bb64-438ab86fba51",
+  "title":          "Is Sleep Duration Associated With Childhood Obesity? A Systematic Review and Meta-analysis",
+  "year":           2008,
+  "venue":          "Obesity",
+  "doi":            "10.1038/oby.2007.63",
+  "url":            "https://doi.org/10.1038/oby.2007.63",
+  "retrieved_from": "OPENALEX",
+  "external_id":    "W1966782702",
+  "abstract":       "Obesity is a major public health epidemic worldwide in children and adults…"
+}
+```
+
+**Nguồn đầu tiên của danh sách này nói về béo phì trẻ em, trong một dự án về giấc ngủ người cao
+tuổi.** Nó nằm đó vì được trích dẫn nhiều nhất, không phải vì nó liên quan — và đó chính là điều
+cần hiểu về `sources_json`:
+
+> Nó là **danh sách trắng để chặn bịa**, không phải một thư mục tài liệu đã tuyển chọn.
+
+Mô hình bị cấm trỏ ra ngoài danh sách này; nó **không** được bảo rằng mọi thứ trong danh sách đều
+dùng được. Bắt một claim trích vào đúng cái nguồn béo phì trẻ em kia là **việc của J4**, và đó là lý
+do J4 tồn tại.
+
+Hai số đo thật khác của lượt này: **7/25 nguồn có `abstract` rỗng** (chúng sẽ dính cờ
+`EMPTY_ABSTRACT` ở L1 và bị hạ trần xuống `WEAK` — `verifier.service.ts:310`), và **25/25 đến từ
+OpenAlex**.
+
+
+## 4.3 Technical design
 
 **Ba thứ làm cho "độc lập" là kỹ thuật chứ không phải lời hứa:**
 
@@ -338,7 +505,7 @@ rule bỏ sót những cặp diễn đạt khác nhau hoàn toàn, nên con số
 Phần lớn loại lỗi chỉ có đúng một judge có quyền nêu, nên `1/5` là **trần toán học** chứ không phải
 dấu hiệu bất đồng.
 
-## 4.3 Techstack và một bài học đã trả giá
+## 4.4 Techstack và một bài học đã trả giá
 
 | Thứ | Làm gì |
 | --- | --- |
