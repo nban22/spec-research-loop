@@ -6,7 +6,7 @@
 | --- | --- | ---: |
 | Nguyễn Bá An | 22127472 | 43 |
 | Nguyễn Phước Sang | 22127362 | 53 |
-| Phạm Trịnh Bảo Tín | 22127485 | 54 |
+| Phạm Trịnh Bảo Tín | 22127487 | 54 |
 | | **tổng** | **150** |
 
 Cột commit không phải tự khai — kiểm bằng `git shortlog -sne` trên nhánh `main`. Mỗi người xuất hiện
