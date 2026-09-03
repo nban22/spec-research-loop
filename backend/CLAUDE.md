@@ -62,7 +62,9 @@ Chỉ nói *viết code thế nào*. Chọn công nghệ gì → `docs/STACK.md`
 - Mọi lời gọi LLM đi qua `LlmService.completeJson` (STACK §2.4). `client.chat.completions.create`
   chỉ được xuất hiện trong `src/llm/`.
 - Mỗi lời gọi ghi `usage` + `attempts` + latency vào DB (STACK §1 luật 5). Không có ngoại lệ "tạm thời".
-- 5 judge: 5 lời gọi độc lập, `Promise.all`, không truyền output judge này sang judge kia.
+- 5 judge: 5 lời gọi độc lập, **`Promise.allSettled`** (không phải `Promise.all` — một judge ném lỗi
+  không được làm rơi bốn kết quả kia, chúng đã tốn tiền thật), không truyền output judge này sang
+  judge kia.
 
 ## 7. Prisma
 

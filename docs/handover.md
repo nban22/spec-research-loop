@@ -108,6 +108,7 @@ nguyên và nói ra. Người chấm phân biệt được "demo thật có như
 
 | Muốn biết | Đọc |
 | --- | --- |
+| **Năm component tầng API** | **`docs/api-components.md`** — luồng step-by-step, techstack, thiết kế, 115 neo dòng code |
 | **Trả lời 12 câu vấn đáp** | **`docs/vandap.md`** — kiến trúc · session · judge · chi phí thật |
 | Chạy thử tại máy | `README.md` |
 | Hệ thống làm gì, luồng ra sao | `docs/product-flow-map.html` (mở bằng trình duyệt) |
